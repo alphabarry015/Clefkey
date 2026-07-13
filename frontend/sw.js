@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v34';
+const CACHE_VERSION = 'v36';
 const CACHE_STATIC = `coffre-fort-static-${CACHE_VERSION}`;
 
 const PRECACHE = [

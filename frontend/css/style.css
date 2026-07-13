@@ -227,26 +227,6 @@ body {
   grid-column: 1 / -1;
 }
 
-.auth-security {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.security-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.security-item svg,
-.security-item .lucide { width: 14px; height: 14px; flex-shrink: 0; color: var(--accent); }
-
 /* ── Loading ───────────────────────────────────────────── */
 .loading-overlay {
   position: fixed;

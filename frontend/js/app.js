@@ -39,6 +39,7 @@ const state = {
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
+const EMPTY_VALUE = '…';
 
 function buildDisplayName(user) {
   return [user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ');
@@ -688,7 +689,7 @@ function renderDashboard() {
 }
 
 function formatProfileDate(iso) {
-  if (!iso) return '—';
+  if (!iso) return EMPTY_VALUE;
   return new Date(iso).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'long',
@@ -697,13 +698,13 @@ function formatProfileDate(iso) {
 }
 
 function formatMemberSince(iso) {
-  if (!iso) return '—';
+  if (!iso) return EMPTY_VALUE;
   const date = new Date(iso);
   return `Depuis ${date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`;
 }
 
 function shortenUserId(id) {
-  if (!id || id.length < 12) return id || '—';
+  if (!id || id.length < 12) return id || EMPTY_VALUE;
   return `${id.slice(0, 8)}…${id.slice(-4)}`;
 }
 
@@ -721,10 +722,10 @@ function applyUserToUI(user) {
   const normalized = normalizeUser(user);
   setAvatar($('#profile-avatar'), normalized.display_name);
   setAvatar($('#user-avatar'), normalized.display_name);
-  $('#profile-display-name').textContent = normalized.display_name || '—';
-  $('#profile-detail-first-name').textContent = normalized.first_name || '—';
+  $('#profile-display-name').textContent = normalized.display_name || EMPTY_VALUE;
+  $('#profile-detail-first-name').textContent = normalized.first_name || EMPTY_VALUE;
   $('#profile-detail-middle-name').textContent = normalized.middle_name || 'Non renseigné';
-  $('#profile-detail-last-name').textContent = normalized.last_name || '—';
+  $('#profile-detail-last-name').textContent = normalized.last_name || EMPTY_VALUE;
   $('#profile-email').textContent = normalized.email;
   $('#profile-detail-email').textContent = normalized.email;
   $('#user-name').textContent = normalized.display_name;
@@ -759,8 +760,8 @@ async function renderProfile() {
     $('#profile-member-since').textContent = formatMemberSince(profile.created_at);
     $('#profile-chip-entries').textContent = profile.entries_count;
   } catch {
-    $('#profile-detail-created').textContent = '—';
-    $('#profile-member-since').textContent = '—';
+    $('#profile-detail-created').textContent = EMPTY_VALUE;
+    $('#profile-member-since').textContent = EMPTY_VALUE;
   }
 
   refreshIcons($('#profile-view'));
@@ -950,7 +951,7 @@ $('#btn-profile-lock').addEventListener('click', lockVault);
 
 $('#btn-copy-profile-email').addEventListener('click', async () => {
   const email = $('#profile-detail-email').textContent;
-  if (!email || email === '—') return;
+  if (!email || email === EMPTY_VALUE) return;
   await copyText(email, $('#btn-copy-profile-email'));
   toast('Email copié', 'success');
 });

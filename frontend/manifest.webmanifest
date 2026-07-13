@@ -1,6 +1,6 @@
 {
-  "name": "Coffre-Fort",
-  "short_name": "Coffre-Fort",
+  "name": "Coffre Fort",
+  "short_name": "Coffre Fort",
   "description": "Gestionnaire de mots de passe chiffré de bout en bout",
   "start_url": "/",
   "scope": "/",
