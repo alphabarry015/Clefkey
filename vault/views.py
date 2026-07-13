@@ -1,5 +1,7 @@
 """Vues HTTP de BINALPH93 (auth, entrées chiffrées, favicons, PWA)."""
 
+import hashlib
+import hmac
 import json
 
 from django.conf import settings
@@ -13,6 +15,35 @@ from .decorators import api_error, require_auth
 from .favicon import fetch_site_favicon, normalize_page_url
 from .models import VaultEntry, VaultUser
 from .ratelimit import rate_limit
+
+# Taille max d'un blob d'entrée (décodé) — limite DoS / stockage.
+MAX_ENCRYPTED_ENTRY_BYTES = 256 * 1024
+# Sel factice 16 octets pour réponses /auth/salt sans révéler l'existence d'un compte.
+SALT_SIZE = 16
+_DUMMY_AUTH_VERIFIER = b"\x00" * 32
+
+
+def _decode_encrypted_blob(encrypted_b64: str) -> bytes | str:
+    """Décode le base64 ; retourne bytes ou message d'erreur."""
+    try:
+        raw = b64_decode(encrypted_b64)
+    except Exception:
+        return "encrypted_data invalide"
+    if len(raw) > MAX_ENCRYPTED_ENTRY_BYTES:
+        return "encrypted_data trop volumineux"
+    if not raw:
+        return "encrypted_data requis"
+    return raw
+
+
+def _dummy_salt_for_email(email: str) -> bytes:
+    """Sel déterministe pour emails inconnus (anti-énumération, même format que les vrais)."""
+    digest = hmac.new(
+        settings.SECRET_KEY.encode("utf-8"),
+        f"salt:{email}".encode("utf-8"),
+        hashlib.sha256,
+    ).digest()
+    return digest[:SALT_SIZE]
 
 
 def _profile_payload(user: VaultUser, entries_count: int | None = None) -> dict:
@@ -172,10 +203,16 @@ def login(request):
         return api_error("Identifiants invalides", 401)
 
     user = VaultUser.objects.filter(email=email).first()
-    if not user:
+
+    try:
+        provided = b64_decode(auth_verifier_b64)
+    except Exception:
         return api_error("Identifiants invalides", 401)
 
-    if b64_decode(auth_verifier_b64) != bytes(user.auth_verifier):
+    # Comparaison toujours exécutée (utilisateur absent → vérifieur factice) pour limiter
+    # les oracles de timing / d'existence de compte.
+    stored = bytes(user.auth_verifier) if user else _DUMMY_AUTH_VERIFIER
+    if len(provided) != len(stored) or not hmac.compare_digest(provided, stored) or user is None:
         return api_error("Identifiants invalides", 401)
 
     return JsonResponse(_auth_response(user))
@@ -242,15 +279,14 @@ def _update_profile(request):
 @require_GET
 @rate_limit("auth-salt", limit=20, window_seconds=60)
 def get_salt(request):
+    """Retourne toujours un sel (réel ou factice) pour ne pas révéler si l'email existe."""
     email = request.GET.get("email", "").strip().lower()
     if not email:
         return api_error("Email requis", 400)
 
     user = VaultUser.objects.filter(email=email).first()
-    if not user:
-        return api_error("Utilisateur introuvable", 404)
-
-    return JsonResponse({"salt": b64_encode(user.salt)})
+    salt = bytes(user.salt) if user else _dummy_salt_for_email(email)
+    return JsonResponse({"salt": b64_encode(salt)})
 
 
 def _get_owned_entry(request, entry_id) -> VaultEntry | None:
@@ -274,10 +310,13 @@ def vault_entries(request):
         encrypted = data.get("encrypted_data")
         if not encrypted:
             return api_error("encrypted_data requis", 400)
+        raw = _decode_encrypted_blob(encrypted)
+        if isinstance(raw, str):
+            return api_error(raw, 400)
 
         entry = VaultEntry.objects.create(
             owner=request.vault_user,
-            encrypted_data=b64_decode(encrypted),
+            encrypted_data=raw,
         )
         return JsonResponse(_entry_response(entry), status=201)
     return api_error("Méthode non autorisée", 405)
@@ -308,8 +347,11 @@ def update_entry(request, entry_id):
     encrypted = data.get("encrypted_data")
     if not encrypted:
         return api_error("encrypted_data requis", 400)
+    raw = _decode_encrypted_blob(encrypted)
+    if isinstance(raw, str):
+        return api_error(raw, 400)
 
-    entry.encrypted_data = b64_decode(encrypted)
+    entry.encrypted_data = raw
     entry.save(update_fields=["encrypted_data", "updated_at"])
     return JsonResponse(_entry_response(entry))
 

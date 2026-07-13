@@ -53,6 +53,15 @@ docs/             # Cette documentation
 
 Schéma SQL de référence : `supabase/schema.sql`.
 
+## Frontend
+
+- UI vanilla dans `frontend/` (HTML / CSS / modules ES)
+- Crypto & icônes **vendored** dans `frontend/vendor/` (pas de CDN)
+- Listes SecLists (sélection) : `frontend/data/` + `js/common-passwords.js` / `js/master-password.js` (chargement 2 phases)
+- Sync listes : `python scripts/sync_common_password_lists.py`
+- Régénération vendor : `python scripts/vendor_frontend_deps.py`
+- Archive : `backend/` (FastAPI) n’est **pas** déployé — ne pas y ajouter de features
+
 ## Mode développement UI
 
 `frontend/js/dev.js` : sur localhost, bypass API avec des entrées mock. Inactif hors localhost (sauf `?dev=1`).

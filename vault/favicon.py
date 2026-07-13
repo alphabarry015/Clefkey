@@ -11,12 +11,22 @@ from urllib.parse import quote, urljoin, urlparse
 
 import httpx
 
-USER_AGENT = "CoffreFort/1.0 (+favicon; usage personnel)"
+USER_AGENT = "BINALPH93/1.0 (+favicon; usage personnel)"
 TIMEOUT = 6.0
 MAX_ICON_BYTES = 512_000
 MAX_HTML_BYTES = 200_000
+# Cache en mémoire borné (processus serverless / long-running).
+MAX_CACHE_ENTRIES = 256
 
 _cache: dict[str, tuple[bytes, str] | None] = {}
+
+
+def _cache_put(key: str, value: tuple[bytes, str] | None) -> None:
+    if key in _cache:
+        _cache.pop(key, None)
+    elif len(_cache) >= MAX_CACHE_ENTRIES:
+        _cache.pop(next(iter(_cache)), None)
+    _cache[key] = value
 
 
 @dataclass
@@ -316,10 +326,10 @@ def fetch_site_favicon(page_url: str) -> tuple[bytes, str] | None:
                     break
 
             if best:
-                _cache[cache_key] = best
+                _cache_put(cache_key, best)
                 return best
     except httpx.HTTPError:
         pass
 
-    _cache[cache_key] = None
+    _cache_put(cache_key, None)
     return None

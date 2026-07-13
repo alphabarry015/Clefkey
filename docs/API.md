@@ -26,7 +26,7 @@ Authorization: Bearer <access_token>
 |---------|-------|------|-------------|
 | POST | `/auth/register` | Non | Création de compte |
 | POST | `/auth/login` | Non | Connexion → JWT |
-| GET | `/auth/salt?email=` | Non | Salt public pour dérivation client |
+| GET | `/auth/salt?email=` | Non | Salt pour dérivation client (toujours 200 si email fourni — sel factice si compte inconnu) |
 | GET | `/auth/me` | Oui | Profil |
 | PATCH | `/auth/me` | Oui | Mise à jour profil (noms, email) |
 

@@ -26,4 +26,14 @@ urlpatterns = [
         serve,
         {"document_root": settings.BASE_DIR / "frontend" / "icons"},
     ),
+    re_path(
+        r"^vendor/(?P<path>.*)$",
+        serve,
+        {"document_root": settings.BASE_DIR / "frontend" / "vendor"},
+    ),
+    re_path(
+        r"^data/(?P<path>.*)$",
+        serve,
+        {"document_root": settings.BASE_DIR / "frontend" / "data"},
+    ),
 ]

@@ -17,7 +17,9 @@ Page d’accueil avec :
 Renseignez :
 - prénom, nom (deuxième prénom optionnel)
 - email
-- mot de passe maître (**min. 12 caractères**, majuscules, minuscules, chiffre et caractère spécial) + confirmation
+- mot de passe maître (**min. 12 caractères**, majuscules, minuscules, chiffre, caractère spécial, **pas dans les listes SecLists de mots de passe courants**) + confirmation
+
+**Important** : ne laissez **pas** le navigateur enregistrer le mot de passe maître (l’app désactive volontairement cette suggestion).
 
 Le mot de passe maître **n’est pas envoyé** au serveur : le navigateur en dérive des clés, puis envoie uniquement des données déjà chiffrées.
 

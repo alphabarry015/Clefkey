@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v39';
+const CACHE_VERSION = 'v44';
 const CACHE_STATIC = `binalph93-static-${CACHE_VERSION}`;
 
 const PRECACHE = [
@@ -11,6 +11,12 @@ const PRECACHE = [
   '/js/favicon.js',
   '/js/icons.js',
   '/js/pwa.js',
+  '/js/common-passwords.js',
+  '/js/master-password.js',
+  '/js/auth-secrets.js',
+  '/vendor/hash-wasm.esm.min.js',
+  '/vendor/noble-ed25519.bundle.js',
+  '/vendor/lucide.bundle.js',
   '/manifest.webmanifest',
   '/icons/icon.svg',
   '/icons/icon-mark.svg',

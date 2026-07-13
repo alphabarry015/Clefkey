@@ -14,6 +14,7 @@ Toute la doc détaillée est dans [`docs/`](./docs/) :
 | [docs/API.md](./docs/API.md) | Endpoints HTTP |
 | [docs/DEPLOIEMENT.md](./docs/DEPLOIEMENT.md) | Local, Supabase, Vercel |
 | [docs/SECURITE.md](./docs/SECURITE.md) | Modèle de sécurité |
+| [docs/AUDIT.md](./docs/AUDIT.md) | Audit sécu / perf / maintenance |
 
 ## Démarrage rapide
 
@@ -45,11 +46,13 @@ Sans `DATABASE_URL`, Django utilise SQLite (`vault.db`).
 ```
 coffre/      Settings Django, WSGI
 vault/       API auth + coffre
-frontend/    UI PWA
-supabase/    schema.sql
-docs/        Documentation
-cli/         CLI optionnel
-backend/     Archive FastAPI (non utilisée)
+frontend/       # UI PWA
+frontend/vendor/# Dépendances JS locales (hash-wasm, noble, lucide)
+supabase/       # schema.sql
+docs/           # Documentation
+scripts/        # Icônes PWA, vendor JS, sync listes SecLists
+cli/            # CLI optionnel
+backend/        # Archive FastAPI (non déployée — ne pas étendre)
 ```
 
 ## Licence / repo

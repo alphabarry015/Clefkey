@@ -19,6 +19,12 @@ import {
   getFaviconUrl, getSiteDomain, normalizeEntryUrl, prepareEntry,
   preloadFavicon, setupFaviconImages,
 } from './favicon.js';
+import { clearAuthSecrets } from './auth-secrets.js';
+import { prefetchCommonPasswords } from './common-passwords.js';
+import {
+  checkStrength,
+  validateMasterPassword,
+} from './master-password.js';
 
 const state = {
   token: null,
@@ -327,38 +333,7 @@ async function copyText(text, btn) {
   }
 }
 
-// ── Password strength ────────────────────────────────────
-
-const MASTER_PASSWORD_MIN_LENGTH = 12;
-
-function checkStrength(password) {
-  let score = 0;
-  if (password.length >= MASTER_PASSWORD_MIN_LENGTH) score++;
-  if (password.length >= 16) score++;
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-  if (/\d/.test(password)) score++;
-  if (/[^a-zA-Z0-9]/.test(password)) score++;
-  return score;
-}
-
-function validateMasterPassword(password) {
-  if (!password || password.length < MASTER_PASSWORD_MIN_LENGTH) {
-    return `Minimum ${MASTER_PASSWORD_MIN_LENGTH} caractères`;
-  }
-  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) {
-    return 'Ajoutez des majuscules et des minuscules';
-  }
-  if (!/\d/.test(password)) {
-    return 'Ajoutez au moins un chiffre';
-  }
-  if (!/[^a-zA-Z0-9]/.test(password)) {
-    return 'Ajoutez au moins un caractère spécial';
-  }
-  if (checkStrength(password) < 4) {
-    return 'Mot de passe maître trop faible';
-  }
-  return null;
-}
+// ── Password strength (UI) ───────────────────────────────
 
 $('#register-password').addEventListener('input', (e) => {
   const pwd = e.target.value;
@@ -394,6 +369,7 @@ function openAuthTab(tab = 'login') {
   $('#tab-register').classList.toggle('active', tab === 'register');
   $('#form-login').classList.toggle('hidden', tab !== 'login');
   $('#form-register').classList.toggle('hidden', tab !== 'register');
+  if (tab === 'register') prefetchCommonPasswords();
   showScreen('auth');
   refreshIcons($('#screen-auth'));
 }
@@ -508,8 +484,8 @@ function validateLoginForm() {
     $('#login-email').focus();
     return null;
   }
-  if (!master || master.length < 8) {
-    toast('Veuillez saisir votre mot de passe maître (min. 8 caractères)', 'error');
+  if (!master) {
+    toast('Veuillez saisir votre mot de passe maître', 'error');
     $('#login-password').focus();
     return null;
   }
@@ -522,6 +498,7 @@ $('#form-login').addEventListener('submit', async (e) => {
   const master = $('#login-password').value;
 
   if (shouldUseDevBypass(email, master)) {
+    clearAuthSecrets();
     enterDevMode(state);
     showVault();
     return;
@@ -537,6 +514,7 @@ $('#form-login').addEventListener('submit', async (e) => {
     const authVerifier = await prepareLogin(creds.email, creds.master, window.location.origin);
     const data = await api.login(creds.email, authVerifier);
     const keys = await unlockSession(data, creds.master);
+    clearAuthSecrets();
     state.devMode = false;
     state.token = data.access_token;
     state.user = userFromProfile(data);
@@ -563,7 +541,7 @@ $('#form-register').addEventListener('submit', async (e) => {
   const master = $('#register-password').value;
   const confirm = $('#register-password-confirm').value;
   if (master !== confirm) { toast('Les mots de passe ne correspondent pas', 'error'); return; }
-  const masterError = validateMasterPassword(master);
+  const masterError = await validateMasterPassword(master);
   if (masterError) { toast(masterError, 'error'); return; }
   if (!$('#register-first-name').value.trim()) { toast('Le prénom est requis', 'error'); return; }
   if (!$('#register-last-name').value.trim()) { toast('Le nom est requis', 'error'); return; }
@@ -589,6 +567,7 @@ $('#form-register').addEventListener('submit', async (e) => {
     state.privateKey = prep.privateKey;
     state.publicKey = prep.publicKey;
     state.entries = [];
+    clearAuthSecrets();
     showVault();
     toast('Compte créé avec succès', 'success');
   } catch (err) {
@@ -616,7 +595,9 @@ function lockVault() {
     dashSearch: '',
   });
   closeAllModals();
+  clearAuthSecrets();
   clearLoginForm();
+  $('#form-register')?.reset();
   collapseSidebar();
   showScreen('landing');
   refreshIcons($('#screen-landing'));

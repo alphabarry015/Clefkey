@@ -3,10 +3,11 @@
 -- =============================================================================
 -- Où exécuter : Supabase Dashboard → SQL Editor → New query → Run
 --
--- Méthode recommandée (plus simple) :
---   1. Renseigner DATABASE_URL dans .env
---   2. Lancer : python manage.py migrate
---   (fait aussi automatiquement au build Vercel)
+-- Méthode recommandée :
+--   1. Renseigner DATABASE_URL + DIRECT_DATABASE_URL dans .env
+--   2. En local : python manage.py migrate
+--   (Le build Vercel ne lance PAS migrate — IPv6 / pooler ; appliquer le schéma
+--    ici ou via migrate en local contre DIRECT_DATABASE_URL.)
 --
 -- Ce fichier SQL est utile si vous préférez créer les tables à la main.
 -- =============================================================================

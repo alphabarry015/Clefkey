@@ -1,3 +1,5 @@
+"""JWT et helpers base64 pour l'API auth BINALPH93."""
+
 import base64
 from datetime import datetime, timedelta, timezone
 

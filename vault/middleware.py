@@ -6,7 +6,7 @@ from __future__ import annotations
 class SecurityHeadersMiddleware:
     """Ajoute des en-têtes défensifs sur toutes les réponses."""
 
-    # Scripts/modules depuis esm.sh (crypto + lucide) ; polices Google
+    # Dépendances crypto/UI servies depuis /vendor (plus de CDN esm.sh)
     CSP = (
         "default-src 'self'; "
         "base-uri 'self'; "
@@ -16,8 +16,8 @@ class SecurityHeadersMiddleware:
         "img-src 'self' data: https: blob:; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "script-src 'self' https://esm.sh 'wasm-unsafe-eval'; "
-        "connect-src 'self' https://esm.sh; "
+        "script-src 'self' 'wasm-unsafe-eval'; "
+        "connect-src 'self'; "
         "worker-src 'self'; "
         "manifest-src 'self'"
     )

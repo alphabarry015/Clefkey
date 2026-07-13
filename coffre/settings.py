@@ -45,9 +45,16 @@ def _default_allowed_hosts() -> list[str]:
     return list(dict.fromkeys(hosts))
 
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-production")
+_DEFAULT_DEV_SECRET = "dev-secret-change-in-production"
+SECRET_KEY = os.getenv("SECRET_KEY", _DEFAULT_DEV_SECRET).strip() or _DEFAULT_DEV_SECRET
 
 DEBUG = os.getenv("DEBUG", "false" if IS_VERCEL else "true").lower() in ("1", "true", "yes")
+
+# En production (Vercel), refuser la clé de développement.
+if IS_VERCEL and SECRET_KEY == _DEFAULT_DEV_SECRET:
+    raise RuntimeError(
+        "SECRET_KEY doit être défini sur Vercel (ne pas utiliser la valeur de développement)."
+    )
 
 ALLOWED_HOSTS = _default_allowed_hosts()
 

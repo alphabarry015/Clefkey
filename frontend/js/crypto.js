@@ -1,7 +1,7 @@
 /* Crypto côté client — compatible avec le backend Python */
 
-import { argon2id } from 'https://esm.sh/hash-wasm@4.12.0';
-import { x25519 } from 'https://esm.sh/@noble/curves@1.8.1/ed25519';
+import { argon2id } from '/vendor/hash-wasm.esm.min.js';
+import { x25519 } from '/vendor/noble-ed25519.bundle.js';
 
 const SALT_SIZE = 16;
 const NONCE_SIZE = 12;
@@ -13,7 +13,13 @@ const PARALLELISM = 4;
 // ── Utilitaires ──────────────────────────────────────────
 
 export function toB64(bytes) {
-  return btoa(String.fromCharCode(...bytes));
+  // Évite le débordement de pile sur de gros tableaux (spread ...bytes).
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
 }
 
 export function fromB64(b64) {
@@ -145,7 +151,7 @@ export async function unlockSession(authResponse, masterPassword) {
 
 export async function prepareLogin(email, masterPassword, apiBase) {
   const resp = await fetch(`${apiBase}/auth/salt?email=${encodeURIComponent(email)}`);
-  if (!resp.ok) throw new Error('Utilisateur introuvable');
+  if (!resp.ok) throw new Error('Impossible de préparer la connexion');
   const { salt: saltB64 } = await resp.json();
   const salt = fromB64(saltB64);
   const derived = await deriveKey(masterPassword, salt);
