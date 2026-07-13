@@ -1,4 +1,10 @@
-/* Application principale */
+/**
+ * Application principale — Coffre-Fort
+ *
+ * Écrans : auth → dashboard / liste / profil
+ * Mode dev : localhost + champs vides → données mock en mémoire
+ * Mode réel : JWT + chiffrement WebCrypto, sync via api.js
+ */
 
 import {
   toB64, fromB64, prepareRegistration, unlockSession, prepareLogin,
@@ -7,8 +13,12 @@ import {
 import { api } from './api.js';
 import { initIcons, refreshIcons, setLucideIcon } from './icons.js';
 import {
-  enterDevMode, shouldUseDevBypass, isDevAction,
+  enterDevMode, shouldUseDevBypass, createDevEntry, deleteDevEntry,
 } from './dev.js';
+import {
+  getFaviconUrl, getSiteDomain, normalizeEntryUrl, prepareEntry,
+  preloadFavicon, setupFaviconImages,
+} from './favicon.js';
 
 const state = {
   token: null,
@@ -17,10 +27,14 @@ const state = {
   privateKey: null,
   publicKey: null,
   entries: [],
+  devMode: false,
   page: 'dashboard',
   search: '',
-  vaultFilter: null,
+  dashTab: 'popular',
+  dashSearch: '',
   confirmCallback: null,
+  confirmDeleteName: null,
+  detailEntryId: null,
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -127,6 +141,92 @@ function esc(str) {
   return d.innerHTML;
 }
 
+function debounce(fn, delay = 250) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+function filterEntriesByQuery(list, query) {
+  if (!query) return list;
+  const q = query.toLowerCase();
+  return list.filter(e =>
+    e.title.toLowerCase().includes(q) ||
+    e.username.toLowerCase().includes(q) ||
+    (e.url && e.url.toLowerCase().includes(q))
+  );
+}
+
+function entryLetter(entry) {
+  return esc((entry.title?.[0] || '?').toUpperCase());
+}
+
+function dashTileIconMarkup(entry) {
+  const letter = entryLetter(entry);
+  const siteUrl = normalizeEntryUrl(entry.url);
+  const faviconUrl = getFaviconUrl(siteUrl);
+  if (!faviconUrl) return `<span class="dash-tile-letter">${letter}</span>`;
+
+  return `
+    <span class="dash-tile-logo">
+      <img
+        class="dash-tile-favicon"
+        src="${esc(faviconUrl)}"
+        alt=""
+        decoding="async"
+        data-site-url="${esc(siteUrl)}"
+        onerror="window.onFaviconError(this)"
+      >
+      <span class="dash-tile-letter dash-tile-letter-fallback">${letter}</span>
+    </span>`;
+}
+
+function dashTileClassName(entry) {
+  return getSiteDomain(entry.url) ? 'dash-tile dash-tile-branded' : 'dash-tile';
+}
+
+function dashTileStyle(entry, index) {
+  const delay = `animation-delay:${index * 0.03}s`;
+  if (getSiteDomain(entry.url)) return delay;
+  const [c1, c2] = getAvatarColor(entry.title);
+  return `background:linear-gradient(160deg,${c1},${c2});${delay}`;
+}
+
+function entryAvatarMarkup(entry) {
+  const letter = entryLetter(entry);
+  const [c1, c2] = getAvatarColor(entry.title);
+  const siteUrl = normalizeEntryUrl(entry.url);
+  const faviconUrl = getFaviconUrl(siteUrl);
+  if (!faviconUrl) {
+    return `<div class="entry-avatar" style="background:linear-gradient(135deg,${c1},${c2})">${letter}</div>`;
+  }
+  return `
+    <div class="entry-avatar entry-icon entry-icon-branded">
+      <img class="entry-favicon" src="${esc(faviconUrl)}" alt="" width="24" height="24" decoding="async" data-site-url="${esc(siteUrl)}" onerror="window.onFaviconError(this)">
+      <span class="entry-letter">${letter}</span>
+    </div>`;
+}
+
+function setEntryAvatar(el, entry) {
+  const letter = entryLetter(entry);
+  const [c1, c2] = getAvatarColor(entry.title);
+  const faviconUrl = getFaviconUrl(normalizeEntryUrl(entry.url));
+  el.className = 'entry-avatar lg entry-icon entry-icon-branded';
+  el.style.background = '';
+  if (!faviconUrl) {
+    el.style.background = `linear-gradient(135deg,${c1},${c2})`;
+    el.textContent = (entry.title?.[0] || '?').toUpperCase();
+    return;
+  }
+  el.classList.add('entry-icon');
+  el.innerHTML = `
+    <img class="entry-favicon" src="${esc(faviconUrl)}" alt="" width="28" height="28" decoding="async" data-site-url="${esc(normalizeEntryUrl(entry.url))}" onerror="window.onFaviconError(this)">
+    <span class="entry-letter">${letter}</span>`;
+  setupFaviconImages(el);
+}
+
 function toast(msg, type = 'info') {
   const icons = { success: 'check-circle', error: 'x-circle', info: 'info' };
   const el = document.createElement('div');
@@ -164,29 +264,58 @@ function closeModal(modal) {
 function closeAllModals() {
   $$('.modal.open').forEach(m => m.classList.remove('open'));
   syncBodyModalLock();
+  resetDeleteConfirm();
+  state.detailEntryId = null;
 }
 
-function showConfirm(title, message, onConfirm) {
-  $('#confirm-title').textContent = title;
-  $('#confirm-message').textContent = message;
-  state.confirmCallback = onConfirm;
-  openModal($('#modal-confirm'));
+function resetDeleteConfirm() {
+  $('#confirm-name-input').value = '';
+  $('#btn-confirm-ok').disabled = true;
+  state.confirmDeleteName = null;
+  state.confirmCallback = null;
 }
+
+function showDeleteConfirm(entry, onConfirm) {
+  $('#confirm-title').textContent = 'Supprimer l\'entrée';
+  $('#confirm-message').textContent =
+    'Cette action est irréversible. Toutes les informations de cette entrée seront définitivement supprimées.';
+  $('#confirm-name-expected').textContent = entry.title;
+  state.confirmDeleteName = entry.title;
+  state.confirmCallback = onConfirm;
+  $('#confirm-name-input').value = '';
+  $('#btn-confirm-ok').disabled = true;
+  openModal($('#modal-confirm'));
+  refreshIcons($('#modal-confirm'));
+  setTimeout(() => $('#confirm-name-input')?.focus(), 50);
+}
+
+$('#confirm-name-input').addEventListener('input', (e) => {
+  $('#btn-confirm-ok').disabled = e.target.value !== state.confirmDeleteName;
+});
+
+$('#confirm-name-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !$('#btn-confirm-ok').disabled) {
+    e.preventDefault();
+    $('#btn-confirm-ok').click();
+  }
+});
 
 $('#btn-confirm-cancel').addEventListener('click', () => {
   closeModal($('#modal-confirm'));
-  state.confirmCallback = null;
+  resetDeleteConfirm();
 });
 
 $('#btn-close-confirm').addEventListener('click', () => {
   closeModal($('#modal-confirm'));
-  state.confirmCallback = null;
+  resetDeleteConfirm();
 });
 
 $('#btn-confirm-ok').addEventListener('click', () => {
+  if ($('#btn-confirm-ok').disabled) return;
+  const callback = state.confirmCallback;
   closeModal($('#modal-confirm'));
-  if (state.confirmCallback) state.confirmCallback();
-  state.confirmCallback = null;
+  resetDeleteConfirm();
+  if (callback) callback();
 });
 
 async function copyText(text, btn) {
@@ -239,7 +368,7 @@ function showScreen(name) {
 }
 
 const PAGE_TITLES = {
-  dashboard: { title: 'Dashboard', subtitle: 'Vue d\'ensemble de votre coffre' },
+  dashboard: { title: 'Accueil', subtitle: 'Vos connexions en un coup d\'œil' },
   vault: { title: 'Tous les mots de passe', subtitle: 'Votre coffre complet' },
   profile: { title: 'Mon profil', subtitle: 'Informations de votre compte' },
 };
@@ -250,7 +379,6 @@ function updatePageTitle() {
   $('#page-subtitle').textContent = page.subtitle;
   const onProfile = state.page === 'profile';
   $('#topbar-total').classList.toggle('hidden', onProfile);
-  $('.topbar-actions').classList.toggle('hidden', onProfile);
   $('#fab-add').classList.toggle('hidden', onProfile);
 }
 
@@ -283,10 +411,6 @@ function isMobileLayout() {
 
 function setSidebarExpanded(expanded) {
   $('#screen-vault').classList.toggle('sidebar-expanded', expanded);
-}
-
-function openSidebar() {
-  setSidebarExpanded(true);
 }
 
 function collapseSidebar() {
@@ -455,7 +579,8 @@ function lockVault() {
     devMode: false,
     page: 'dashboard',
     search: '',
-    vaultFilter: null,
+    dashTab: 'popular',
+    dashSearch: '',
   });
   closeAllModals();
   clearLoginForm();
@@ -474,46 +599,15 @@ async function loadEntries() {
     try {
       const encrypted = fromB64(e.encrypted_data);
       const data = await decryptData(encrypted, state.vaultKey);
-      state.entries.push({ ...data, ...e });
+      state.entries.push(prepareEntry({ ...data, ...e }));
     } catch (err) {
       console.warn('Entrée ignorée (déchiffrement impossible):', e.id, err);
     }
   }
 }
 
-function applyVaultFilter(list) {
-  switch (state.vaultFilter) {
-    case 'url':
-      return list.filter(e => e.url && e.url.trim());
-    case 'notes':
-      return list.filter(e => e.notes && e.notes.trim());
-    case 'weak':
-      return list.filter(e => checkStrength(e.password || '') < 3);
-    default:
-      return list;
-  }
-}
-
-function openVaultFilter(filter) {
-  state.vaultFilter = filter === 'all' ? null : filter;
-  state.search = '';
-  const searchInput = $('#search-input');
-  if (searchInput) searchInput.value = '';
-  $('#btn-clear-search')?.classList.add('hidden');
-  switchPage('vault');
-}
-
 function getFilteredEntries() {
-  let list = applyVaultFilter(state.entries);
-  if (state.search) {
-    const q = state.search.toLowerCase();
-    list = list.filter(e =>
-      e.title.toLowerCase().includes(q) ||
-      e.username.toLowerCase().includes(q) ||
-      (e.url && e.url.toLowerCase().includes(q))
-    );
-  }
-  return list;
+  return filterEntriesByQuery(state.entries, state.search);
 }
 
 function refreshCurrentView() {
@@ -527,50 +621,59 @@ function updateEntryCounts() {
   $('#nav-count-all').textContent = state.entries.length;
 }
 
-function getRecentEntries(limit = 5) {
-  return [...state.entries]
-    .sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0))
-    .slice(0, limit);
+function getDashboardEntries() {
+  const list = filterEntriesByQuery(state.entries, state.dashSearch);
+  if (state.dashTab === 'az') {
+    return [...list].sort((a, b) => a.title.localeCompare(b.title, 'fr', { sensitivity: 'base' }));
+  }
+  return [...list].sort(
+    (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)
+  );
 }
 
 function renderDashboard() {
   updateEntryCounts();
-  const firstName = state.user?.first_name || (state.user?.display_name || '').split(' ')[0] || 'vous';
-  $('#dash-greeting-name').textContent = firstName;
+  const entries = getDashboardEntries();
+  const grid = $('#dash-tiles-grid');
+  const empty = $('#dash-tiles-empty');
 
-  const withUrl = state.entries.filter(e => e.url && e.url.trim()).length;
-  const withNotes = state.entries.filter(e => e.notes && e.notes.trim()).length;
-  const weak = state.entries.filter(e => checkStrength(e.password || '') < 3).length;
+  $$('.dash-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.dashTab === state.dashTab);
+  });
 
-  $('#dash-stat-total').textContent = state.entries.length;
-  $('#dash-stat-urls').textContent = withUrl;
-  $('#dash-stat-notes').textContent = withNotes;
-  $('#dash-stat-weak').textContent = weak;
-
-  const recent = getRecentEntries();
-  const list = $('#dash-recent-list');
-  const empty = $('#dash-recent-empty');
-
-  if (recent.length === 0) {
-    list.innerHTML = '';
-    empty.classList.remove('hidden');
-  } else {
-    empty.classList.add('hidden');
-    list.innerHTML = recent.map(e => {
-      const [c1, c2] = getAvatarColor(e.title);
-      return `
-      <button type="button" class="dash-recent-item" onclick="window.showEntry('${e.id}')">
-        <div class="entry-avatar sm" style="background:linear-gradient(135deg,${c1},${c2})">${esc(e.title[0] || '?')}</div>
-        <div class="dash-recent-info">
-          <span class="dash-recent-title">${esc(e.title)}</span>
-          <span class="dash-recent-username">${esc(e.username)}</span>
-        </div>
-        <i data-lucide="chevron-right" class="dash-recent-chevron"></i>
+  if (entries.length === 0 && state.entries.length === 0) {
+    grid.innerHTML = `
+      <button type="button" class="dash-tile dash-tile-add" id="dash-tile-add-only">
+        <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
+        <span class="dash-tile-name">Nouvelle entrée</span>
       </button>`;
-    }).join('');
-    refreshIcons(list);
+    empty.classList.add('hidden');
+    $('#dash-tile-add-only')?.addEventListener('click', openAddModal);
+    refreshIcons(grid);
+    return;
   }
-  refreshIcons($('#dashboard-view'));
+
+  if (entries.length === 0) {
+    grid.innerHTML = '';
+    empty.classList.remove('hidden');
+    empty.querySelector('p').textContent = 'Aucun résultat pour cette recherche';
+    return;
+  }
+
+  empty.classList.add('hidden');
+  empty.querySelector('p').textContent = 'Aucun mot de passe pour le moment';
+  grid.innerHTML = entries.map((e, i) => `
+      <button type="button" class="${dashTileClassName(e)}" style="${dashTileStyle(e, i)}" onclick="window.showEntry('${e.id}')">
+        ${dashTileIconMarkup(e)}
+        <span class="dash-tile-name">${esc(e.title)}</span>
+      </button>`).join('') + `
+    <button type="button" class="dash-tile dash-tile-add" onclick="document.getElementById('btn-dash-add').click()">
+      <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
+      <span class="dash-tile-name">Nouvelle entrée</span>
+    </button>`;
+
+  refreshIcons(grid);
+  setupFaviconImages(grid);
 }
 
 function formatProfileDate(iso) {
@@ -616,7 +719,6 @@ function applyUserToUI(user) {
   $('#user-name').textContent = normalized.display_name;
   $('#user-email').textContent = normalized.email;
   $('#user-avatar').title = `${normalized.display_name} (${normalized.email})`;
-  $('#dash-greeting-name').textContent = normalized.first_name || 'vous';
 }
 
 async function renderProfile() {
@@ -773,11 +875,9 @@ function renderEntries() {
     return;
   }
 
-  container.innerHTML = list.map((e, i) => {
-    const [c1, c2] = getAvatarColor(e.title);
-    return `
+  container.innerHTML = list.map((e, i) => `
     <div class="entry-card" data-id="${e.id}" style="animation-delay:${i * 0.04}s" onclick="window.showEntry('${e.id}')">
-      <div class="entry-avatar" style="background:linear-gradient(135deg,${c1},${c2})">${esc(e.title[0] || '?')}</div>
+      ${entryAvatarMarkup(e)}
       <div class="entry-info">
         <div class="entry-title">${esc(e.title)}</div>
         <div class="entry-username">${esc(e.username)}</div>
@@ -790,28 +890,45 @@ function renderEntries() {
           <i data-lucide="trash-2"></i>
         </button>
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
   refreshIcons(container);
+  setupFaviconImages(container);
 }
 
 $$('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
     const page = btn.dataset.page;
     if (!page) return;
-    if (page === 'vault') state.vaultFilter = null;
     switchPage(page);
     if (isMobileLayout()) collapseSidebar();
   });
 });
 
-$$('[data-vault-filter]').forEach(btn => {
-  btn.addEventListener('click', () => openVaultFilter(btn.dataset.vaultFilter));
-});
-
 $('#btn-dash-add').addEventListener('click', openAddModal);
 $('#btn-dash-add-empty').addEventListener('click', openAddModal);
-$('#btn-dash-view-all').addEventListener('click', () => openVaultFilter('all'));
+
+$$('.dash-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    state.dashTab = tab.dataset.dashTab;
+    renderDashboard();
+  });
+});
+
+const debouncedRenderDashboard = debounce(() => renderDashboard());
+const debouncedRenderEntries = debounce(() => renderEntries());
+
+$('#dash-search-input').addEventListener('input', (e) => {
+  state.dashSearch = e.target.value;
+  $('#btn-clear-dash-search').classList.toggle('hidden', !state.dashSearch);
+  debouncedRenderDashboard();
+});
+
+$('#btn-clear-dash-search').addEventListener('click', () => {
+  $('#dash-search-input').value = '';
+  state.dashSearch = '';
+  $('#btn-clear-dash-search').classList.add('hidden');
+  renderDashboard();
+});
 
 $('#btn-profile-sidebar').addEventListener('click', () => {
   switchPage('profile');
@@ -837,7 +954,7 @@ $('#btn-copy-profile-id').addEventListener('click', async () => {
 $('#search-input').addEventListener('input', (e) => {
   state.search = e.target.value;
   $('#btn-clear-search').classList.toggle('hidden', !state.search);
-  renderEntries();
+  debouncedRenderEntries();
 });
 
 $('#btn-clear-search').addEventListener('click', () => {
@@ -860,7 +977,8 @@ window.showEntry = function(id) {
   const e = state.entries.find(x => x.id === id);
   if (!e) return;
 
-  setAvatar($('#detail-avatar'), e.title);
+  state.detailEntryId = id;
+  setEntryAvatar($('#detail-avatar'), e);
   $('#detail-title').textContent = e.title;
   $('#detail-username').textContent = e.username;
   $('#detail-password').textContent = '••••••••••••';
@@ -885,12 +1003,14 @@ window.showEntry = function(id) {
     notesField.classList.add('hidden');
   }
 
-  const badge = $('#detail-badge');
-  badge.textContent = 'Personnel';
-  badge.className = 'badge badge-mine';
   openModal($('#modal-detail'));
   refreshIcons($('#modal-detail'));
 };
+
+$('#btn-delete-detail').addEventListener('click', () => {
+  if (!state.detailEntryId) return;
+  window.deleteEntry(state.detailEntryId);
+});
 
 $('#btn-toggle-pwd').addEventListener('click', () => {
   const el = $('#detail-password');
@@ -914,7 +1034,10 @@ $$('.btn-copy-field[data-copy]').forEach(btn => {
   });
 });
 
-$('#btn-close-detail').addEventListener('click', () => closeModal($('#modal-detail')));
+$('#btn-close-detail').addEventListener('click', () => {
+  closeModal($('#modal-detail'));
+  state.detailEntryId = null;
+});
 
 window.copyPassword = function(id) {
   const e = state.entries.find(x => x.id === id);
@@ -929,9 +1052,31 @@ function openAddModal() {
   $('#form-entry').reset();
   $('#entry-generated').classList.add('hidden');
   openModal($('#modal-add'));
+  refreshIcons($('#modal-add'));
+  setTimeout(() => $('#entry-title')?.focus(), 50);
 }
 
-$('#btn-add').addEventListener('click', openAddModal);
+function readEntryFormData() {
+  const title = $('#entry-title').value.trim();
+  const username = $('#entry-username').value.trim();
+  const password = $('#entry-password').value;
+  const url = normalizeEntryUrl($('#entry-url').value);
+  const notes = $('#entry-notes').value.trim();
+
+  if (!title) {
+    toast('Le titre est requis', 'error');
+    $('#entry-title').focus();
+    return null;
+  }
+  if (!password) {
+    toast('Le mot de passe est requis', 'error');
+    $('#entry-password').focus();
+    return null;
+  }
+
+  return { title, username, password, url, notes };
+}
+
 $('#btn-add-sidebar').addEventListener('click', () => {
   openAddModal();
   if (window.innerWidth <= 900) collapseSidebar();
@@ -948,20 +1093,25 @@ $('#btn-generate').addEventListener('click', () => {
 
 $('#form-entry').addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (state.devMode) { toast(isDevAction().message, 'info'); return; }
+  const data = readEntryFormData();
+  if (!data) return;
+
   const btn = $('#btn-save-entry');
   btn.disabled = true;
   try {
-    const data = {
-      title: $('#entry-title').value.trim(),
-      username: $('#entry-username').value.trim(),
-      password: $('#entry-password').value,
-      url: $('#entry-url').value.trim(),
-      notes: $('#entry-notes').value.trim(),
-    };
+    if (state.devMode) {
+      createDevEntry(state.entries, data);
+      if (data.url) await preloadFavicon(data.url);
+      refreshCurrentView();
+      closeModal($('#modal-add'));
+      toast(`"${data.title}" ajouté`, 'success');
+      return;
+    }
+
     const encrypted = await encryptData(data, state.vaultKey);
     await api.createEntry(state.token, toB64(encrypted));
     await loadEntries();
+    if (data.url) await preloadFavicon(data.url);
     refreshCurrentView();
     closeModal($('#modal-add'));
     toast(`"${data.title}" ajouté`, 'success');
@@ -975,13 +1125,26 @@ $('#form-entry').addEventListener('submit', async (e) => {
 // ── Supprimer ────────────────────────────────────────────
 
 window.deleteEntry = function(id) {
-  if (state.devMode) { toast(isDevAction().message, 'info'); return; }
   const e = state.entries.find(x => x.id === id);
   if (!e) return;
-  showConfirm('Supprimer', `Voulez-vous vraiment supprimer "${e.title}" ? Cette action est irréversible.`, async () => {
+  showDeleteConfirm(e, async () => {
     try {
+      if (state.devMode) {
+        deleteDevEntry(state.entries, id);
+        if ($('#modal-detail').classList.contains('open')) {
+          closeModal($('#modal-detail'));
+          state.detailEntryId = null;
+        }
+        refreshCurrentView();
+        toast(`"${e.title}" supprimé`, 'info');
+        return;
+      }
       await api.deleteEntry(state.token, id);
       await loadEntries();
+      if ($('#modal-detail').classList.contains('open')) {
+        closeModal($('#modal-detail'));
+        state.detailEntryId = null;
+      }
       refreshCurrentView();
       toast(`"${e.title}" supprimé`, 'info');
     } catch (err) {

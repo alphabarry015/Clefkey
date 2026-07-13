@@ -1,4 +1,5 @@
-import base64
+"""Modèles persistants. Les secrets restent chiffrés côté client (zero-knowledge)."""
+
 import uuid
 
 from django.db import models

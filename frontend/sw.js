@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v23';
 const CACHE_STATIC = `coffre-fort-static-${CACHE_VERSION}`;
 
 const PRECACHE = [
@@ -8,6 +8,7 @@ const PRECACHE = [
   '/js/api.js',
   '/js/crypto.js',
   '/js/dev.js',
+  '/js/favicon.js',
   '/js/icons.js',
   '/js/pwa.js',
   '/manifest.webmanifest',

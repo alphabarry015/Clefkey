@@ -1,3 +1,5 @@
+"""Décorateurs et helpers d'authentification JWT pour l'API vault."""
+
 from functools import wraps
 
 from django.http import JsonResponse

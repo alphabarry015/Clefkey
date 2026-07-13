@@ -1,4 +1,7 @@
-/* Client API */
+/**
+ * Client HTTP vers l'API Django (/auth, /vault).
+ * Toutes les méthodes lèvent Error avec le message serveur en cas d'échec.
+ */
 
 const API_BASE = window.location.origin;
 

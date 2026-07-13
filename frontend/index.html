@@ -200,92 +200,38 @@
           <span class="topbar-total-label">Total</span>
           <strong id="entry-count">0</strong>
         </div>
-        <div class="topbar-actions">
-        <button id="btn-add" class="btn btn-primary btn-sm">
-          <i data-lucide="plus"></i>
-          <span>Ajouter</span>
-        </button>
-        </div>
       </header>
 
       <main class="vault-main">
         <div id="dashboard-view" class="dashboard-view">
-          <section class="dashboard-welcome">
-            <div class="dashboard-welcome-text">
-              <h2>Bonjour, <span id="dash-greeting-name">—</span></h2>
-              <p>Vue d'ensemble de votre coffre sécurisé</p>
+          <div class="dash-toolbar">
+            <div class="search-box dash-search">
+              <span class="search-icon"><i data-lucide="search"></i></span>
+              <input type="text" id="dash-search-input" placeholder="Rechercher dans le coffre...">
+              <button type="button" id="btn-clear-dash-search" class="btn-clear hidden" aria-label="Effacer la recherche">
+                <i data-lucide="x"></i>
+              </button>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" id="btn-dash-add">
+            <button type="button" class="btn btn-primary btn-sm dash-toolbar-add" id="btn-dash-add">
               <i data-lucide="plus"></i>
-              <span>Nouvelle entrée</span>
+              <span>Nouveau</span>
             </button>
-          </section>
+          </div>
 
-          <section class="dashboard-stats">
-            <button type="button" class="dash-stat-card dash-stat-card-btn" data-vault-filter="all" aria-label="Voir tous les mots de passe">
-              <div class="dash-stat-icon dash-stat-icon-accent">
-                <i data-lucide="key-round"></i>
-              </div>
-              <div class="dash-stat-body">
-                <span class="dash-stat-label">Mots de passe</span>
-                <strong class="dash-stat-value" id="dash-stat-total">0</strong>
-              </div>
+          <div class="dash-tabs" role="tablist" aria-label="Trier les entrées">
+            <button type="button" class="dash-tab active" data-dash-tab="popular" role="tab">Populaires</button>
+            <button type="button" class="dash-tab" data-dash-tab="recent" role="tab">Récents</button>
+            <button type="button" class="dash-tab" data-dash-tab="az" role="tab">A-Z</button>
+          </div>
+
+          <div id="dash-tiles-grid" class="dash-tiles-grid"></div>
+          <div id="dash-tiles-empty" class="dash-tiles-empty hidden">
+            <i data-lucide="key-round"></i>
+            <p>Aucun mot de passe pour le moment</p>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-dash-add-empty">
+              <i data-lucide="plus"></i>
+              Ajouter une entrée
             </button>
-            <button type="button" class="dash-stat-card dash-stat-card-btn" data-vault-filter="url" aria-label="Voir les mots de passe avec URL">
-              <div class="dash-stat-icon dash-stat-icon-info">
-                <i data-lucide="link"></i>
-              </div>
-              <div class="dash-stat-body">
-                <span class="dash-stat-label">Avec URL</span>
-                <strong class="dash-stat-value" id="dash-stat-urls">0</strong>
-              </div>
-            </button>
-            <article class="dash-stat-card">
-              <div class="dash-stat-icon dash-stat-icon-success">
-                <i data-lucide="sticky-note"></i>
-              </div>
-              <div class="dash-stat-body">
-                <span class="dash-stat-label">Avec notes</span>
-                <strong class="dash-stat-value" id="dash-stat-notes">0</strong>
-              </div>
-            </article>
-            <article class="dash-stat-card">
-              <div class="dash-stat-icon dash-stat-icon-warning">
-                <i data-lucide="shield-alert"></i>
-              </div>
-              <div class="dash-stat-body">
-                <span class="dash-stat-label">À renforcer</span>
-                <strong class="dash-stat-value" id="dash-stat-weak">0</strong>
-              </div>
-            </article>
-          </section>
-
-          <div class="dashboard-sections">
-            <section class="dashboard-panel">
-              <div class="dashboard-panel-header">
-                <h3><i data-lucide="clock"></i> Entrées récentes</h3>
-                <button type="button" class="btn btn-ghost btn-sm" id="btn-dash-view-all">Voir tout</button>
-              </div>
-              <div id="dash-recent-list" class="dash-recent-list"></div>
-              <div id="dash-recent-empty" class="dash-recent-empty hidden">
-                <i data-lucide="vault"></i>
-                <p>Aucune entrée pour le moment</p>
-                <button type="button" class="btn btn-primary btn-sm" id="btn-dash-add-empty">
-                  <i data-lucide="plus"></i>
-                  Ajouter un mot de passe
-                </button>
-              </div>
-            </section>
-
-            <section class="dashboard-security">
-              <div class="dashboard-security-icon">
-                <i data-lucide="shield-check"></i>
-              </div>
-              <div>
-                <h3>Coffre chiffré de bout en bout</h3>
-                <p>Vos données sont protégées par Argon2id, AES-256-GCM et des clés X25519. Seul votre mot de passe maître peut déverrouiller le coffre.</p>
-              </div>
-            </section>
           </div>
         </div>
 
@@ -306,7 +252,7 @@
             </div>
             <h3>Aucun mot de passe</h3>
             <p>Commencez par ajouter votre première entrée sécurisée</p>
-            <button class="btn btn-primary" onclick="document.getElementById('btn-add').click()">
+            <button class="btn btn-primary" onclick="document.getElementById('fab-add').click()">
               <i data-lucide="plus"></i>
               Ajouter un mot de passe
             </button>
@@ -522,7 +468,6 @@
           <div id="detail-avatar" class="entry-avatar lg"></div>
           <div class="modal-header-text">
             <h2 id="detail-title"></h2>
-            <span id="detail-badge" class="badge"></span>
           </div>
           <button id="btn-close-detail" class="btn-close"><i data-lucide="x"></i></button>
         </div>
@@ -559,6 +504,12 @@
             <label>Notes</label>
             <div id="detail-notes" class="detail-notes-text"></div>
           </div>
+          <div class="detail-footer">
+            <button type="button" id="btn-delete-detail" class="btn btn-danger-outline">
+              <i data-lucide="trash-2"></i>
+              Supprimer l'entrée
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -578,8 +529,8 @@
             <input type="text" id="entry-title" required placeholder="Netflix, Gmail, Banque...">
           </div>
           <div class="form-group">
-            <label for="entry-username">Identifiant</label>
-            <input type="text" id="entry-username" required placeholder="email ou nom d'utilisateur">
+            <label for="entry-username">Identifiant <span class="optional">(optionnel)</span></label>
+            <input type="text" id="entry-username" placeholder="email ou nom d'utilisateur">
           </div>
           <div class="form-group">
             <label for="entry-password">Mot de passe</label>
@@ -594,7 +545,7 @@
           </div>
           <div class="form-group">
             <label for="entry-url">URL <span class="optional">(optionnel)</span></label>
-            <input type="url" id="entry-url" placeholder="https://...">
+            <input type="text" id="entry-url" placeholder="exemple.com ou https://...">
           </div>
           <div class="form-group">
             <label for="entry-notes">Notes <span class="optional">(optionnel)</span></label>
@@ -619,11 +570,24 @@
         </div>
         <div class="modal-body">
           <p id="confirm-message" class="confirm-text"></p>
+          <div class="confirm-name-block">
+            <label for="confirm-name-input" class="confirm-name-label">
+              Saisissez <strong id="confirm-name-expected"></strong> pour confirmer
+            </label>
+            <input
+              type="text"
+              id="confirm-name-input"
+              class="confirm-name-input"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Nom de l'entrée"
+            >
+          </div>
           <div class="confirm-actions">
             <button id="btn-confirm-cancel" class="btn btn-secondary">Annuler</button>
-            <button id="btn-confirm-ok" class="btn btn-danger-solid">
+            <button id="btn-confirm-ok" class="btn btn-danger-solid" disabled>
               <i data-lucide="trash-2"></i>
-              Supprimer
+              Supprimer définitivement
             </button>
           </div>
         </div>

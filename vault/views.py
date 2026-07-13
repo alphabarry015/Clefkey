@@ -1,3 +1,5 @@
+"""Vues HTTP du coffre-fort (auth, entrées chiffrées, favicons, PWA)."""
+
 import json
 
 from django.conf import settings
@@ -8,6 +10,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 from .auth import b64_decode, b64_encode, create_access_token
 from .crypto.password_gen import generate_password
 from .decorators import api_error, require_auth
+from .favicon import fetch_site_favicon, normalize_page_url
 from .models import VaultEntry, VaultUser
 
 
@@ -246,41 +249,42 @@ def get_salt(request):
     return JsonResponse({"salt": b64_encode(user.salt)})
 
 
-@require_auth
-@require_GET
-def list_entries(request):
-    entries = VaultEntry.objects.filter(owner=request.vault_user)
-    return JsonResponse([_entry_response(e) for e in entries], safe=False)
+def _get_owned_entry(request, entry_id) -> VaultEntry | None:
+    """Retourne une entrée uniquement si elle appartient à l'utilisateur connecté."""
+    return VaultEntry.objects.filter(id=entry_id, owner=request.vault_user).first()
 
 
 @csrf_exempt
 @require_auth
-@require_http_methods(["POST"])
-def create_entry(request):
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return api_error("Corps JSON invalide", 400)
+def vault_entries(request):
+    """Liste (GET) ou crée (POST) des entrées chiffrées du coffre."""
+    if request.method == "GET":
+        entries = VaultEntry.objects.filter(owner=request.vault_user)
+        return JsonResponse([_entry_response(e) for e in entries], safe=False)
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return api_error("Corps JSON invalide", 400)
 
-    encrypted = data.get("encrypted_data")
-    if not encrypted:
-        return api_error("encrypted_data requis", 400)
+        encrypted = data.get("encrypted_data")
+        if not encrypted:
+            return api_error("encrypted_data requis", 400)
 
-    entry = VaultEntry.objects.create(
-        owner=request.vault_user,
-        encrypted_data=b64_decode(encrypted),
-    )
-    return JsonResponse(_entry_response(entry), status=201)
+        entry = VaultEntry.objects.create(
+            owner=request.vault_user,
+            encrypted_data=b64_decode(encrypted),
+        )
+        return JsonResponse(_entry_response(entry), status=201)
+    return api_error("Méthode non autorisée", 405)
 
 
 @require_auth
 @require_GET
 def get_entry(request, entry_id):
-    entry = VaultEntry.objects.filter(id=entry_id).first()
+    entry = _get_owned_entry(request, entry_id)
     if not entry:
         return api_error("Entrée introuvable", 404)
-    if entry.owner_id != request.vault_user.id:
-        return api_error("Accès refusé", 403)
     return JsonResponse(_entry_response(entry))
 
 
@@ -288,11 +292,9 @@ def get_entry(request, entry_id):
 @require_auth
 @require_http_methods(["PUT"])
 def update_entry(request, entry_id):
-    entry = VaultEntry.objects.filter(id=entry_id).first()
+    entry = _get_owned_entry(request, entry_id)
     if not entry:
         return api_error("Entrée introuvable", 404)
-    if entry.owner_id != request.vault_user.id:
-        return api_error("Modification interdite", 403)
 
     try:
         data = json.loads(request.body)
@@ -311,16 +313,15 @@ def update_entry(request, entry_id):
 @csrf_exempt
 @require_auth
 def entry_detail(request, entry_id):
+    """Détail (GET), mise à jour (PUT) ou suppression (DELETE) d'une entrée."""
     if request.method == "GET":
         return get_entry(request, entry_id)
     if request.method == "PUT":
         return update_entry(request, entry_id)
     if request.method == "DELETE":
-        entry = VaultEntry.objects.filter(id=entry_id).first()
+        entry = _get_owned_entry(request, entry_id)
         if not entry:
             return api_error("Entrée introuvable", 404)
-        if entry.owner_id != request.vault_user.id:
-            return api_error("Suppression interdite", 403)
         entry.delete()
         return HttpResponse(status=204)
     return api_error("Méthode non autorisée", 405)
@@ -337,3 +338,22 @@ def generate_password_view(request):
     length = int(data.get("length", 20))
     length = max(12, min(64, length))
     return JsonResponse({"password": generate_password(length)})
+
+
+@require_GET
+def site_favicon(request):
+    """Proxy local du favicon public d'un site (usage identique à un navigateur)."""
+    page_url = request.GET.get("url", "").strip()
+    normalized = normalize_page_url(page_url)
+    if not normalized:
+        return HttpResponse(status=400)
+
+    result = fetch_site_favicon(normalized)
+    if not result:
+        return HttpResponse(status=404)
+
+    content, content_type = result
+    response = HttpResponse(content, content_type=content_type)
+    response["Cache-Control"] = "public, max-age=86400"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
