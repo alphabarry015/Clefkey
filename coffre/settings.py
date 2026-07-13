@@ -104,17 +104,32 @@ def _resolve_database_url() -> str | None:
     return database_url or None
 
 
+def _sanitize_database_url(url: str) -> str:
+    """Retire les options non supportées par psycopg (ex. pgbouncer=true de Supabase)."""
+    from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+
+    parsed = urlparse(url)
+    query = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True) if k.lower() != "pgbouncer"]
+    return urlunparse(parsed._replace(query=urlencode(query)))
+
+
 def _configure_databases() -> dict:
     database_url = _resolve_database_url()
     if database_url:
+        database_url = _sanitize_database_url(database_url)
         conn_max_age = 0 if IS_VERCEL else int(os.getenv("DB_CONN_MAX_AGE", "600"))
-        return {
-            "default": dj_database_url.parse(
-                database_url,
-                conn_max_age=conn_max_age,
-                conn_health_checks=not IS_VERCEL,
-            )
-        }
+        config = dj_database_url.parse(
+            database_url,
+            conn_max_age=conn_max_age,
+            conn_health_checks=not IS_VERCEL,
+        )
+        # Pooler transaction (port 6543) : pas de curseurs serveur ni statements préparés
+        if ":6543" in database_url or "pooler.supabase.com" in database_url:
+            config["DISABLE_SERVER_SIDE_CURSORS"] = True
+            options = dict(config.get("OPTIONS") or {})
+            options["prepare_threshold"] = None
+            config["OPTIONS"] = options
+        return {"default": config}
 
     return {
         "default": {
