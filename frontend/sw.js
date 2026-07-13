@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v38';
+const CACHE_VERSION = 'v39';
 const CACHE_STATIC = `binalph93-static-${CACHE_VERSION}`;
 
 const PRECACHE = [

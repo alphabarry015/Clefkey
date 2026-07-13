@@ -12,6 +12,7 @@ from .crypto.password_gen import generate_password
 from .decorators import api_error, require_auth
 from .favicon import fetch_site_favicon, normalize_page_url
 from .models import VaultEntry, VaultUser
+from .ratelimit import rate_limit
 
 
 def _profile_payload(user: VaultUser, entries_count: int | None = None) -> dict:
@@ -113,6 +114,7 @@ def health(request):
 
 @csrf_exempt
 @require_http_methods(["POST"])
+@rate_limit("auth-register", limit=5, window_seconds=60)
 def register(request):
     try:
         data = json.loads(request.body)
@@ -157,6 +159,7 @@ def register(request):
 
 @csrf_exempt
 @require_http_methods(["POST"])
+@rate_limit("auth-login", limit=10, window_seconds=60)
 def login(request):
     try:
         data = json.loads(request.body)
@@ -237,6 +240,7 @@ def _update_profile(request):
 
 
 @require_GET
+@rate_limit("auth-salt", limit=20, window_seconds=60)
 def get_salt(request):
     email = request.GET.get("email", "").strip().lower()
     if not email:
@@ -329,6 +333,8 @@ def entry_detail(request, entry_id):
 
 @csrf_exempt
 @require_http_methods(["POST"])
+@require_auth
+@rate_limit("vault-generate-password", limit=30, window_seconds=60)
 def generate_password_view(request):
     try:
         data = json.loads(request.body) if request.body else {}
@@ -341,6 +347,7 @@ def generate_password_view(request):
 
 
 @require_GET
+@rate_limit("vault-favicon", limit=60, window_seconds=60)
 def site_favicon(request):
     """Proxy local du favicon public d'un site (usage identique à un navigateur)."""
     page_url = request.GET.get("url", "").strip()

@@ -10,19 +10,24 @@
 
 | Domaine | Mesure |
 |---------|--------|
-| Transport | HTTPS en production (Vercel) |
+| Transport | HTTPS en production (Vercel) + HSTS |
 | Auth session | JWT Bearer à durée limitée |
 | Entrées | Chiffrement client (AES-GCM via WebCrypto) |
-| Favicons | Proxy avec filtrage anti-SSRF (pas d’IP privées) |
+| Mot de passe maître | Min. 12 car., maj/min/chiffre/spécial (inscription) |
+| Rate limiting | Login, register, salt, favicon, generate-password |
+| Generate-password | Authentifié (JWT) |
+| Headers | CSP, X-Frame-Options DENY, nosniff, Referrer-Policy |
+| Favicons | Proxy avec filtrage anti-SSRF (pas d’IP privée) |
 | Secrets | `.env` / `.env.local` dans `.gitignore` |
 | Host | `ALLOWED_HOSTS` + détection Vercel (`.vercel.app`) |
 
 ## Limites / responsabilités
 
 - La force du coffre dépend du **mot de passe maître** (longueur, unicité).
-- XSS dans le frontend pourrait cibler des données déjà déchiffrées en session : garder les deps à jour, éviter HTML non échappé (le code utilise déjà un échappement pour l’UI).
+- XSS dans le frontend pourrait cibler des données déjà déchiffrées en session : CSP + échappement HTML réduisent le risque.
 - JWT et `SECRET_KEY` : une fuite de `SECRET_KEY` permet de forger des tokens (pas de déchiffrer le coffre sans le maître).
-- Mode démo localhost : ne contient pas de vrais secrets, mais ne l’activez pas en production (`?dev=1`).
+- Rate limit en mémoire : efficace par instance Vercel, pas un WAF global.
+- Mode démo localhost : ne contient pas de vrais secrets ; ne pas forcer `?dev=1` en production.
 
 ## Bonnes pratiques opérateur
 

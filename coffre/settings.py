@@ -62,6 +62,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "vault.middleware.SecurityHeadersMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
 

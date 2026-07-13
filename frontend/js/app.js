@@ -329,14 +329,35 @@ async function copyText(text, btn) {
 
 // ── Password strength ────────────────────────────────────
 
+const MASTER_PASSWORD_MIN_LENGTH = 12;
+
 function checkStrength(password) {
   let score = 0;
-  if (password.length >= 8) score++;
-  if (password.length >= 12) score++;
+  if (password.length >= MASTER_PASSWORD_MIN_LENGTH) score++;
+  if (password.length >= 16) score++;
   if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
   if (/\d/.test(password)) score++;
   if (/[^a-zA-Z0-9]/.test(password)) score++;
   return score;
+}
+
+function validateMasterPassword(password) {
+  if (!password || password.length < MASTER_PASSWORD_MIN_LENGTH) {
+    return `Minimum ${MASTER_PASSWORD_MIN_LENGTH} caractères`;
+  }
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) {
+    return 'Ajoutez des majuscules et des minuscules';
+  }
+  if (!/\d/.test(password)) {
+    return 'Ajoutez au moins un chiffre';
+  }
+  if (!/[^a-zA-Z0-9]/.test(password)) {
+    return 'Ajoutez au moins un caractère spécial';
+  }
+  if (checkStrength(password) < 4) {
+    return 'Mot de passe maître trop faible';
+  }
+  return null;
 }
 
 $('#register-password').addEventListener('input', (e) => {
@@ -542,7 +563,8 @@ $('#form-register').addEventListener('submit', async (e) => {
   const master = $('#register-password').value;
   const confirm = $('#register-password-confirm').value;
   if (master !== confirm) { toast('Les mots de passe ne correspondent pas', 'error'); return; }
-  if (master.length < 8) { toast('Minimum 8 caractères', 'error'); return; }
+  const masterError = validateMasterPassword(master);
+  if (masterError) { toast(masterError, 'error'); return; }
   if (!$('#register-first-name').value.trim()) { toast('Le prénom est requis', 'error'); return; }
   if (!$('#register-last-name').value.trim()) { toast('Le nom est requis', 'error'); return; }
 

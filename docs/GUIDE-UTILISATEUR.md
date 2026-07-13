@@ -17,7 +17,7 @@ Page d’accueil avec :
 Renseignez :
 - prénom, nom (deuxième prénom optionnel)
 - email
-- mot de passe maître (min. 8 caractères) + confirmation
+- mot de passe maître (**min. 12 caractères**, majuscules, minuscules, chiffre et caractère spécial) + confirmation
 
 Le mot de passe maître **n’est pas envoyé** au serveur : le navigateur en dérive des clés, puis envoie uniquement des données déjà chiffrées.
 
