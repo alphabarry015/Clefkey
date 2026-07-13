@@ -10,12 +10,49 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR / ".env.local", override=True)
+
+def _is_vercel_runtime() -> bool:
+    """Détecte Vercel via plusieurs variables (VERCEL n'est pas toujours à \"1\")."""
+    if os.getenv("VERCEL", "").strip() in ("1", "true", "yes"):
+        return True
+    return bool(
+        os.getenv("VERCEL_ENV", "").strip()
+        or os.getenv("VERCEL_URL", "").strip()
+        or os.getenv("VERCEL_BRANCH_URL", "").strip()
+    )
+
+
+IS_VERCEL = _is_vercel_runtime()
+
+
+def _default_allowed_hosts() -> list[str]:
+    hosts: list[str] = []
+
+    if IS_VERCEL:
+        hosts.extend([".vercel.app", ".now.sh"])
+        for key in ("VERCEL_URL", "VERCEL_BRANCH_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
+            value = os.getenv(key, "").strip()
+            if value:
+                hosts.append(value)
+
+    hosts.extend(["127.0.0.1", "localhost"])
+
+    extra = os.getenv("ALLOWED_HOSTS", "")
+    if extra:
+        hosts.extend(host.strip() for host in extra.split(",") if host.strip())
+
+    return list(dict.fromkeys(hosts))
+
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-production")
 
-DEBUG = os.getenv("DEBUG", "true").lower() in ("1", "true", "yes")
+DEBUG = os.getenv("DEBUG", "false" if IS_VERCEL else "true").lower() in ("1", "true", "yes")
 
-ALLOWED_HOSTS = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if host.strip()]
+ALLOWED_HOSTS = _default_allowed_hosts()
+
+if IS_VERCEL:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
@@ -64,11 +101,12 @@ def _resolve_database_url() -> str | None:
 def _configure_databases() -> dict:
     database_url = _resolve_database_url()
     if database_url:
+        conn_max_age = 0 if IS_VERCEL else int(os.getenv("DB_CONN_MAX_AGE", "600"))
         return {
             "default": dj_database_url.parse(
                 database_url,
-                conn_max_age=int(os.getenv("DB_CONN_MAX_AGE", "600")),
-                conn_health_checks=True,
+                conn_max_age=conn_max_age,
+                conn_health_checks=not IS_VERCEL,
             )
         }
 

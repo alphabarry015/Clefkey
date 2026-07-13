@@ -12,7 +12,7 @@ except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "pillow"], stdout=subprocess.DEVNULL)
     from PIL import Image, ImageDraw
 
-ACCENT = (108, 92, 231)
+ACCENT = (37, 99, 235)
 WHITE = (255, 255, 255)
 OUT_DIR = Path(__file__).resolve().parent.parent / "frontend" / "icons"
 

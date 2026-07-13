@@ -1,0 +1,11 @@
+[project]
+name = "coffre-fort"
+version = "1.0.0"
+requires-python = ">=3.12"
+description = "Gestionnaire de mots de passe chiffré de bout en bout"
+
+[tool.vercel]
+entrypoint = "coffre.wsgi:application"
+
+[tool.vercel.scripts]
+build = "python scripts/generate_pwa_icons.py && python manage.py migrate --noinput"

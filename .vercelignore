@@ -1,0 +1,12 @@
+backend/
+cli/
+vault.db
+*.sqlite3
+.venv/
+venv/
+.env
+.env.local
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/

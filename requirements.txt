@@ -7,3 +7,4 @@ argon2-cffi>=23.1.0
 python-jose[cryptography]>=3.3.0
 httpx>=0.27.0
 pyperclip>=1.8.0
+pillow>=10.0.0

@@ -93,3 +93,54 @@ backend/         # ⚠️ Ancienne API FastAPI — non utilisée, conservée à 
 ## PWA
 
 Service worker `frontend/sw.js` — incrémenter `CACHE_VERSION` après modification des assets statiques.
+
+## Déploiement Vercel
+
+Le projet est prêt pour Vercel (Django zero-config + PostgreSQL Supabase obligatoire en production).
+
+### Prérequis
+
+1. Projet [Supabase](https://supabase.com) avec `DATABASE_URL` (pooler, port **6543**) et `DIRECT_DATABASE_URL` (direct, port **5432**)
+2. Compte [Vercel](https://vercel.com) connecté au dépôt GitHub
+
+### Variables d'environnement Vercel
+
+| Variable | Valeur |
+|----------|--------|
+| `SECRET_KEY` | Clé secrète Django (générer une valeur aléatoire) |
+| `DEBUG` | `false` |
+| `DATABASE_URL` | Pooler Supabase (runtime) |
+| `DIRECT_DATABASE_URL` | Connexion directe Supabase (migrations au build) |
+| `ALLOWED_HOSTS` | Domaine personnalisé (optionnel) |
+
+> Sur Vercel, SQLite n'est pas utilisable. `DATABASE_URL` est **obligatoire**.
+
+### Déployer
+
+**Via le dashboard** : importer le repo GitHub sur [vercel.com/new](https://vercel.com/new). Vercel détecte `manage.py` et `coffre/wsgi.py` automatiquement.
+
+**Via la CLI** :
+
+```bash
+npm i -g vercel
+vercel login
+vercel link
+vercel env pull .env.local
+vercel deploy --prod
+```
+
+Le build exécute automatiquement la génération des icônes PWA et `python manage.py migrate`.
+
+### Fichiers de configuration
+
+| Fichier | Rôle |
+|---------|------|
+| `vercel.json` | Build, durée max des fonctions, en-têtes PWA |
+| `pyproject.toml` | Entrypoint WSGI et script de build |
+| `.vercelignore` | Exclut `backend/`, `cli/`, SQLite du bundle |
+
+### Vérifier en production
+
+- `GET /health/` → `{"status": "ok"}`
+- Inscription / connexion avec un compte réel (le mode dev UI est désactivé hors localhost)
+
