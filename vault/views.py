@@ -50,7 +50,7 @@ def _profile_payload(user: VaultUser, entries_count: int | None = None) -> dict:
     if entries_count is None:
         entries_count = VaultEntry.objects.filter(owner=user).count()
     return {
-        "user_id": user.id,
+        "user_id": str(user.id),
         "email": user.email,
         "first_name": user.first_name,
         "middle_name": user.middle_name,
@@ -89,11 +89,11 @@ def _validate_name_field(value: str, label: str, required: bool, max_len: int = 
 
 
 def _auth_response(user: VaultUser) -> dict:
-    token = create_access_token(user.id, user.email)
+    token = create_access_token(str(user.id), user.email)
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user_id": user.id,
+        "user_id": str(user.id),
         "email": user.email,
         "first_name": user.first_name,
         "middle_name": user.middle_name,
@@ -108,8 +108,8 @@ def _auth_response(user: VaultUser) -> dict:
 
 def _entry_response(entry: VaultEntry) -> dict:
     return {
-        "id": entry.id,
-        "owner_id": entry.owner_id,
+        "id": str(entry.id),
+        "owner_id": str(entry.owner_id),
         "encrypted_data": b64_encode(entry.encrypted_data),
         "created_at": entry.created_at.isoformat(),
         "updated_at": entry.updated_at.isoformat(),

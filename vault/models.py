@@ -6,7 +6,7 @@ from django.db import models
 
 
 class VaultUser(models.Model):
-    id = models.CharField(primary_key=True, max_length=36, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, max_length=36, default=lambda: str(uuid.uuid4()), editable=False)
     email = models.EmailField(max_length=255, unique=True, db_index=True)
     first_name = models.CharField(max_length=50, default="")
     middle_name = models.CharField(max_length=50, blank=True, default="")
@@ -36,7 +36,7 @@ class VaultUser(models.Model):
 
 
 class VaultEntry(models.Model):
-    id = models.CharField(primary_key=True, max_length=36, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, max_length=36, default=lambda: str(uuid.uuid4()), editable=False)
     owner = models.ForeignKey(
         VaultUser,
         on_delete=models.CASCADE,
