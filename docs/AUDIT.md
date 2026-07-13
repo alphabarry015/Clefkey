@@ -29,7 +29,7 @@ Document vivant : mettre à jour après changements majeurs. Synthèse visuelle 
 | Haute | `SECRET_KEY` par défaut sur Vercel | `RuntimeError` si clé de dév en prod |
 | Moyenne | Blobs `encrypted_data` illimités | Cap 256 KiB décodés |
 | Moyenne | Exemple Vercel avec clé réelle | Placeholder dans `supabase/vercel.env.example` |
-| Basse | UA favicon obsolète | `BINALPH93/1.0` |
+| Basse | UA favicon obsolète | `Gestion’air/1.0` |
 | Basse | Cache favicon non borné | LRU max 256 entrées |
 
 ### Risques résiduels (acceptés ou à traiter plus tard)

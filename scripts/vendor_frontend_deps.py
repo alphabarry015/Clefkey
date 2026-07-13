@@ -33,7 +33,7 @@ export const icons = {
 
 def main() -> None:
     VENDOR.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="binalph-vendor-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="gestionair-vendor-") as tmp:
         tmp_path = Path(tmp)
         subprocess.check_call(["npm", "init", "-y"], cwd=tmp_path, stdout=subprocess.DEVNULL)
         subprocess.check_call(

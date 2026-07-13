@@ -2196,11 +2196,21 @@ body.modal-open .vault-layout {
   text-align: center;
 }
 
+.lp-brand {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 8vw, 3.75rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: #0f172a;
+  margin: 0;
+}
+
 .lp-desc {
   font-size: 0.95rem;
   line-height: 1.65;
   color: #64748b;
-  margin: 1.25rem auto 0;
+  margin: 1rem auto 1.5rem;
   text-align: center;
 }
 

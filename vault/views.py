@@ -1,4 +1,4 @@
-"""Vues HTTP de BINALPH93 (auth, entrées chiffrées, favicons, PWA)."""
+"""Vues HTTP de Gestion’air (auth, entrées chiffrées, favicons, PWA)."""
 
 import hashlib
 import hmac

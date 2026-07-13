@@ -1,5 +1,5 @@
-const CACHE_VERSION = 'v45';
-const CACHE_STATIC = `binalph93-static-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v47';
+const CACHE_STATIC = `gestionair-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
 const PRECACHE = [
@@ -52,7 +52,7 @@ self.addEventListener('activate', (event) => {
     caches.keys()
       .then((keys) => Promise.all(
         keys
-          .filter((key) => (key.startsWith('binalph93-') || key.startsWith('binalph-') || key.startsWith('coffre-fort-')) && key !== CACHE_STATIC)
+          .filter((key) => (key.startsWith('gestionair-') || key.startsWith('binalph93-') || key.startsWith('binalph-') || key.startsWith('coffre-fort-')) && key !== CACHE_STATIC)
           .map((key) => caches.delete(key)),
       ))
       .then(() => self.clients.claim()),
