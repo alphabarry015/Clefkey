@@ -108,10 +108,10 @@ const PROFILE_FIELD_CONFIG = {
   },
 };
 
-const screens = { auth: $('#screen-auth'), vault: $('#screen-vault') };
+const screens = { landing: $('#screen-landing'), auth: $('#screen-auth'), vault: $('#screen-vault') };
 
 const AVATAR_COLORS = [
-  ['#7c6aef', '#6355d8'], ['#34d399', '#10b981'], ['#60a5fa', '#3b82f6'],
+  ['#3b82f6', '#2563eb'], ['#34d399', '#10b981'], ['#60a5fa', '#3b82f6'],
   ['#f472b6', '#ec4899'], ['#fbbf24', '#f59e0b'], ['#a78bfa', '#8b5cf6'],
   ['#2dd4bf', '#14b8a6'], ['#fb923c', '#f97316'],
 ];
@@ -367,6 +367,27 @@ function showScreen(name) {
   screens[name].classList.add('active');
 }
 
+function openAuthTab(tab = 'login') {
+  $('#tab-login').classList.toggle('active', tab === 'login');
+  $('#tab-register').classList.toggle('active', tab === 'register');
+  $('#form-login').classList.toggle('hidden', tab !== 'login');
+  $('#form-register').classList.toggle('hidden', tab !== 'register');
+  showScreen('auth');
+  refreshIcons($('#screen-auth'));
+}
+
+function bindLandingNavigation() {
+  const goRegister = () => openAuthTab('register');
+  const goLogin = () => openAuthTab('login');
+
+  $('#btn-landing-start')?.addEventListener('click', goRegister);
+  $('#btn-landing-login')?.addEventListener('click', goLogin);
+  $('#btn-back-landing')?.addEventListener('click', () => {
+    showScreen('landing');
+    refreshIcons($('#screen-landing'));
+  });
+}
+
 const PAGE_TITLES = {
   dashboard: { title: 'Accueil', subtitle: 'Vos connexions en un coup d\'œil' },
   vault: { title: 'Tous les mots de passe', subtitle: 'Votre coffre complet' },
@@ -443,19 +464,8 @@ function showVault() {
 
 // ── Auth ─────────────────────────────────────────────────
 
-$('#tab-login').addEventListener('click', () => {
-  $('#tab-login').classList.add('active');
-  $('#tab-register').classList.remove('active');
-  $('#form-login').classList.remove('hidden');
-  $('#form-register').classList.add('hidden');
-});
-
-$('#tab-register').addEventListener('click', () => {
-  $('#tab-register').classList.add('active');
-  $('#tab-login').classList.remove('active');
-  $('#form-register').classList.remove('hidden');
-  $('#form-login').classList.add('hidden');
-});
+$('#tab-login').addEventListener('click', () => openAuthTab('login'));
+$('#tab-register').addEventListener('click', () => openAuthTab('register'));
 
 function clearLoginForm() {
   $('#form-login').reset();
@@ -585,7 +595,8 @@ function lockVault() {
   closeAllModals();
   clearLoginForm();
   collapseSidebar();
-  showScreen('auth');
+  showScreen('landing');
+  refreshIcons($('#screen-landing'));
   toast('Coffre verrouillé', 'info');
 }
 
@@ -1165,7 +1176,9 @@ $$('.modal-overlay').forEach(overlay => {
   });
 });
 
-showScreen('auth');
+showScreen('landing');
 clearLoginForm();
+bindLandingNavigation();
 initIcons();
 initProfileFieldEdits();
+refreshIcons($('#screen-landing'));

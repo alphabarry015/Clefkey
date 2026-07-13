@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Gestionnaire de mots de passe chiffré de bout en bout">
-  <meta name="theme-color" content="#6c5ce7">
+  <meta name="theme-color" content="#2563eb">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -20,29 +20,70 @@
 </head>
 <body>
 
+  <!-- ── Landing ───────────────────────────────────── -->
+  <div id="screen-landing" class="screen active">
+    <div class="lp">
+      <header class="lp-header">
+        <a href="/" class="lp-header-brand">
+          <i data-lucide="shield-check"></i>
+          <span>Coffre-Fort</span>
+        </a>
+      </header>
+
+      <section class="lp-hero">
+        <div class="lp-hero-bottom">
+          <div class="lp-actions">
+            <button type="button" id="btn-landing-start" class="lp-btn lp-btn-primary">Créer un compte</button>
+            <button type="button" id="btn-landing-login" class="lp-btn lp-btn-secondary">Se connecter</button>
+          </div>
+          <p class="lp-desc">
+            Gestionnaire de mots de passe chiffré de bout en bout.
+            Vos identifiants restent sur votre appareil — personne d'autre ne peut les lire.
+          </p>
+        </div>
+      </section>
+    </div>
+  </div>
+
   <!-- ── Écran Auth ─────────────────────────────────── -->
-  <div id="screen-auth" class="screen active">
+  <div id="screen-auth" class="screen">
     <div class="auth-bg">
       <div class="auth-orb auth-orb-1"></div>
       <div class="auth-orb auth-orb-2"></div>
       <div class="auth-orb auth-orb-3"></div>
     </div>
     <div class="auth-container">
+      <button type="button" id="btn-back-landing" class="btn-back-landing">
+        <i data-lucide="arrow-left"></i> Retour
+      </button>
       <div class="auth-card">
-        <div class="auth-logo">
-          <div class="logo-shield">
-            <i data-lucide="shield-check"></i>
+        <div class="auth-card-side">
+          <div class="auth-logo">
+            <div class="logo-shield">
+              <i data-lucide="shield-check"></i>
+            </div>
+            <h1>Coffre-Fort</h1>
+            <p class="subtitle">Vos mots de passe, chiffrés et sécurisés</p>
           </div>
-          <h1>Coffre-Fort</h1>
-          <p class="subtitle">Vos mots de passe, chiffrés et sécurisés</p>
+          <div class="auth-security">
+            <div class="security-item">
+              <i data-lucide="shield"></i>
+              <span>Argon2id + AES-256-GCM</span>
+            </div>
+            <div class="security-item">
+              <i data-lucide="key-round"></i>
+              <span>Zero-knowledge — jamais envoyé au serveur</span>
+            </div>
+          </div>
         </div>
 
-        <div class="auth-tabs">
-          <button id="tab-login" class="tab active">Connexion</button>
-          <button id="tab-register" class="tab">Inscription</button>
-        </div>
+        <div class="auth-card-main">
+          <div class="auth-tabs">
+            <button id="tab-login" class="tab active">Connexion</button>
+            <button id="tab-register" class="tab">Inscription</button>
+          </div>
 
-        <form id="form-login" class="auth-form" autocomplete="off" novalidate>
+          <form id="form-login" class="auth-form" autocomplete="off" novalidate>
           <div class="form-group">
             <label for="login-email">Email</label>
             <div class="input-wrap">
@@ -119,16 +160,6 @@
             <i data-lucide="user-plus"></i>
           </button>
         </form>
-
-        <div class="auth-security">
-          <div class="security-item">
-            <i data-lucide="shield"></i>
-            <span>Argon2id + AES-256-GCM</span>
-          </div>
-          <div class="security-item">
-            <i data-lucide="key-round"></i>
-            <span>Zero-knowledge — jamais envoyé au serveur</span>
-          </div>
         </div>
       </div>
     </div>
