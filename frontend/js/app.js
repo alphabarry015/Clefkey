@@ -218,7 +218,6 @@ function dashTileIconMarkup(entry) {
         alt=""
         decoding="async"
         data-site-url="${esc(siteUrl)}"
-        onerror="window.onFaviconError(this)"
       >
       <span class="dash-tile-letter dash-tile-letter-fallback">${letter}</span>
     </span>`;
@@ -245,7 +244,7 @@ function entryAvatarMarkup(entry) {
   }
   return `
     <div class="entry-avatar entry-icon entry-icon-branded">
-      <img class="entry-favicon" src="${esc(faviconUrl)}" alt="" width="24" height="24" decoding="async" data-site-url="${esc(siteUrl)}" onerror="window.onFaviconError(this)">
+      <img class="entry-favicon" src="${esc(faviconUrl)}" alt="" width="24" height="24" decoding="async" data-site-url="${esc(siteUrl)}">
       <span class="entry-letter">${letter}</span>
     </div>`;
 }
@@ -263,7 +262,7 @@ function setEntryAvatar(el, entry) {
   }
   el.classList.add('entry-icon');
   el.innerHTML = `
-    <img class="entry-favicon" src="${esc(faviconUrl)}" alt="" width="28" height="28" decoding="async" data-site-url="${esc(normalizeEntryUrl(entry.url))}" onerror="window.onFaviconError(this)">
+    <img class="entry-favicon" src="${esc(faviconUrl)}" alt="" width="28" height="28" decoding="async" data-site-url="${esc(normalizeEntryUrl(entry.url))}">
     <span class="entry-letter">${letter}</span>`;
   setupFaviconImages(el);
 }
@@ -666,12 +665,11 @@ function renderDashboard() {
 
   if (entries.length === 0 && state.entries.length === 0) {
     grid.innerHTML = `
-      <button type="button" class="dash-tile dash-tile-add" id="dash-tile-add-only">
+      <button type="button" class="dash-tile dash-tile-add" data-action="add-entry">
         <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
         <span class="dash-tile-name">Nouvelle entrée</span>
       </button>`;
     empty.classList.add('hidden');
-    $('#dash-tile-add-only')?.addEventListener('click', openAddModal);
     refreshIcons(grid);
     return;
   }
@@ -686,11 +684,11 @@ function renderDashboard() {
   empty.classList.add('hidden');
   empty.querySelector('p').textContent = 'Aucun mot de passe pour le moment';
   grid.innerHTML = entries.map((e, i) => `
-      <button type="button" class="${dashTileClassName(e)}" style="${dashTileStyle(e, i)}" onclick="window.showEntry('${e.id}')">
+      <button type="button" class="${dashTileClassName(e)}" style="${dashTileStyle(e, i)}" data-entry-id="${esc(e.id)}">
         ${dashTileIconMarkup(e)}
         <span class="dash-tile-name">${esc(e.title)}</span>
       </button>`).join('') + `
-    <button type="button" class="dash-tile dash-tile-add" onclick="document.getElementById('btn-dash-add').click()">
+    <button type="button" class="dash-tile dash-tile-add" data-action="add-entry">
       <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
       <span class="dash-tile-name">Nouvelle entrée</span>
     </button>`;
@@ -899,17 +897,17 @@ function renderEntries() {
   }
 
   container.innerHTML = list.map((e, i) => `
-    <div class="entry-card" data-id="${e.id}" style="animation-delay:${i * 0.04}s" onclick="window.showEntry('${e.id}')">
+    <div class="entry-card" data-entry-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s">
       ${entryAvatarMarkup(e)}
       <div class="entry-info">
         <div class="entry-title">${esc(e.title)}</div>
         <div class="entry-username">${esc(e.username)}</div>
       </div>
-      <div class="entry-actions" onclick="event.stopPropagation()">
-        <button class="btn-icon" title="Copier" onclick="window.copyPassword('${e.id}')">
+      <div class="entry-actions">
+        <button type="button" class="btn-icon" title="Copier" data-action="copy" data-entry-id="${esc(e.id)}">
           <i data-lucide="copy"></i>
         </button>
-        <button class="btn-icon btn-danger" title="Supprimer" onclick="window.deleteEntry('${e.id}')">
+        <button type="button" class="btn-icon btn-danger" title="Supprimer" data-action="delete" data-entry-id="${esc(e.id)}">
           <i data-lucide="trash-2"></i>
         </button>
       </div>
@@ -929,6 +927,30 @@ $$('.nav-item').forEach(btn => {
 
 $('#btn-dash-add').addEventListener('click', openAddModal);
 $('#btn-dash-add-empty').addEventListener('click', openAddModal);
+$('#btn-vault-add-empty')?.addEventListener('click', openAddModal);
+
+$('#dash-tiles-grid').addEventListener('click', (e) => {
+  const addTile = e.target.closest('[data-action="add-entry"]');
+  if (addTile) {
+    openAddModal();
+    return;
+  }
+  const tile = e.target.closest('.dash-tile[data-entry-id]');
+  if (tile) window.showEntry(tile.dataset.entryId);
+});
+
+$('#entries-list').addEventListener('click', (e) => {
+  const actionBtn = e.target.closest('[data-action="copy"], [data-action="delete"]');
+  if (actionBtn) {
+    e.stopPropagation();
+    const id = actionBtn.dataset.entryId;
+    if (actionBtn.dataset.action === 'copy') window.copyPassword(id);
+    else if (actionBtn.dataset.action === 'delete') window.deleteEntry(id);
+    return;
+  }
+  const card = e.target.closest('.entry-card[data-entry-id]');
+  if (card) window.showEntry(card.dataset.entryId);
+});
 
 $$('.dash-tab').forEach(tab => {
   tab.addEventListener('click', () => {
