@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v46';
+const CACHE_VERSION = 'v47';
 const CACHE_STATIC = `gestionair-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
