@@ -89,11 +89,17 @@ def _migration_command_running() -> bool:
 
 
 def _resolve_database_url() -> str | None:
-    """Supabase : pooler (DATABASE_URL) pour l'app, direct (DIRECT_DATABASE_URL) pour les migrations."""
+    """Supabase : pooler (DATABASE_URL) pour l'app, direct pour les migrations locales.
+
+    Sur Vercel, la connexion directe (IPv6 port 5432) est souvent inaccessible :
+    on utilise le pooler même pour migrate si besoin.
+    """
     database_url = os.getenv("DATABASE_URL", "").strip()
     direct_url = os.getenv("DIRECT_DATABASE_URL", "").strip()
 
     if _migration_command_running():
+        if IS_VERCEL:
+            return database_url or direct_url or None
         return direct_url or database_url or None
     return database_url or None
 

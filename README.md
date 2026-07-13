@@ -129,7 +129,13 @@ vercel env pull .env.local
 vercel deploy --prod
 ```
 
-Le build exécute automatiquement la génération des icônes PWA et `python manage.py migrate`.
+Le build génère les icônes PWA. Les migrations se font **en local** (la connexion directe Supabase est souvent inaccessible depuis les builders Vercel / IPv6) :
+
+```bash
+python manage.py migrate
+```
+
+Ou exécutez `supabase/schema.sql` dans le SQL Editor Supabase.
 
 ### Fichiers de configuration
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "python scripts/generate_pwa_icons.py && python manage.py migrate --noinput",
+  "buildCommand": "python scripts/generate_pwa_icons.py",
   "installCommand": "pip install -r requirements.txt",
   "functions": {
     "coffre/wsgi.py": {

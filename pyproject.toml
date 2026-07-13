@@ -8,4 +8,4 @@ description = "Gestionnaire de mots de passe chiffré de bout en bout"
 entrypoint = "coffre.wsgi:application"
 
 [tool.vercel.scripts]
-build = "python scripts/generate_pwa_icons.py && python manage.py migrate --noinput"
+build = "python scripts/generate_pwa_icons.py"
