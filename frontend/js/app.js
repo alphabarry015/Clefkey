@@ -1,5 +1,5 @@
 /**
- * Application principale — Coffre-Fort
+ * Application principale — BINALPH93
  *
  * Écrans : auth → dashboard / liste / profil
  * Mode dev : localhost + champs vides → données mock en mémoire

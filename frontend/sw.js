@@ -1,5 +1,5 @@
-const CACHE_VERSION = 'v36';
-const CACHE_STATIC = `coffre-fort-static-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v38';
+const CACHE_STATIC = `binalph93-static-${CACHE_VERSION}`;
 
 const PRECACHE = [
   '/',
@@ -38,7 +38,7 @@ self.addEventListener('activate', (event) => {
     caches.keys()
       .then((keys) => Promise.all(
         keys
-          .filter((key) => key.startsWith('coffre-fort-') && key !== CACHE_STATIC)
+          .filter((key) => (key.startsWith('binalph93-') || key.startsWith('binalph-') || key.startsWith('coffre-fort-')) && key !== CACHE_STATIC)
           .map((key) => caches.delete(key)),
       ))
       .then(() => self.clients.claim()),

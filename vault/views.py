@@ -1,4 +1,4 @@
-"""Vues HTTP du coffre-fort (auth, entrées chiffrées, favicons, PWA)."""
+"""Vues HTTP de BINALPH93 (auth, entrées chiffrées, favicons, PWA)."""
 
 import json
 

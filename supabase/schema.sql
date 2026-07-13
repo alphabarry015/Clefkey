@@ -1,5 +1,5 @@
 -- =============================================================================
--- Coffre Fort — Schéma PostgreSQL (Supabase)
+-- BINALPH93 — Schéma PostgreSQL (Supabase)
 -- =============================================================================
 -- Où exécuter : Supabase Dashboard → SQL Editor → New query → Run
 --
