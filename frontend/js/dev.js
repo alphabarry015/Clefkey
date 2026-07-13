@@ -1,0 +1,59 @@
+/** Mode développement — accès direct au design sans connexion réelle */
+
+const urlParams = new URLSearchParams(window.location.search);
+const devParam = urlParams.get('dev');
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+export const DEV_MODE = devParam === '0' ? false : (devParam === '1' || isLocal);
+
+export const MOCK_ENTRIES = [
+  {
+    id: 'dev-1',
+    title: 'Netflix',
+    username: 'couple@email.com',
+    password: 'Kx9#mP2$vLq8@nR4wT',
+    url: 'https://netflix.com',
+    notes: 'Compte familial',
+  },
+  {
+    id: 'dev-2',
+    title: 'Gmail',
+    username: 'pierre@email.com',
+    password: 'MonSuperMdp2024!',
+    url: 'https://gmail.com',
+    notes: '',
+  },
+  {
+    id: 'dev-3',
+    title: 'Banque Populaire',
+    username: '12345678901',
+    password: 'Secur3B@nque#99',
+    url: 'https://banque.fr',
+    notes: 'Code carte : 4521',
+  },
+];
+
+export function enterDevMode(state) {
+  state.devMode = true;
+  state.token = 'dev-token';
+  state.user = {
+    id: 'dev-user',
+    email: 'pierre@dev.local',
+    first_name: 'Pierre',
+    middle_name: 'Jean',
+    last_name: 'Dupont',
+    display_name: 'Pierre Jean Dupont',
+  };
+  state.vaultKey = null;
+  state.privateKey = null;
+  state.publicKey = null;
+  state.entries = MOCK_ENTRIES.map(e => ({ ...e }));
+}
+
+export function isDevAction() {
+  return { blocked: true, message: 'Connectez-vous pour utiliser cette action' };
+}
+
+export function shouldUseDevBypass(email, master) {
+  return DEV_MODE && !email && !master;
+}

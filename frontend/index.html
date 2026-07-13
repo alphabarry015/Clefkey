@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Gestionnaire de mots de passe chiffré de bout en bout">
+  <meta name="theme-color" content="#6c5ce7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Coffre-Fort">
+  <title>Coffre-Fort</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ── Écran Auth ─────────────────────────────────── -->
+  <div id="screen-auth" class="screen active">
+    <div class="auth-bg">
+      <div class="auth-orb auth-orb-1"></div>
+      <div class="auth-orb auth-orb-2"></div>
+      <div class="auth-orb auth-orb-3"></div>
+    </div>
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <div class="logo-shield">
+            <i data-lucide="shield-check"></i>
+          </div>
+          <h1>Coffre-Fort</h1>
+          <p class="subtitle">Vos mots de passe, chiffrés et sécurisés</p>
+        </div>
+
+        <div class="auth-tabs">
+          <button id="tab-login" class="tab active">Connexion</button>
+          <button id="tab-register" class="tab">Inscription</button>
+        </div>
+
+        <form id="form-login" class="auth-form" autocomplete="off" novalidate>
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="mail"></i></span>
+              <input type="text" id="login-email" placeholder="vous@email.com" autocomplete="off" spellcheck="false">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Mot de passe maître</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input type="password" id="login-password" placeholder="••••••••" autocomplete="off">
+              <button type="button" class="btn-eye" data-target="login-password" aria-label="Afficher">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+          <button type="submit" id="btn-login" class="btn btn-primary btn-full">
+            <span>Se connecter</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+        </form>
+
+        <form id="form-register" class="auth-form hidden" autocomplete="off">
+          <div class="form-group">
+            <label for="register-first-name">Prénom</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="user"></i></span>
+              <input type="text" id="register-first-name" required placeholder="Pierre" maxlength="50">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="register-middle-name">Deuxième prénom <span class="optional">(optionnel)</span></label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="user"></i></span>
+              <input type="text" id="register-middle-name" placeholder="Jean" maxlength="50">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="register-last-name">Nom</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="user"></i></span>
+              <input type="text" id="register-last-name" required placeholder="Dupont" maxlength="50">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="register-email">Email</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="mail"></i></span>
+              <input type="email" id="register-email" required placeholder="vous@email.com" autocomplete="username">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="register-password">Mot de passe maître</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input type="password" id="register-password" required placeholder="Min. 8 caractères" autocomplete="new-password">
+              <button type="button" class="btn-eye" data-target="register-password" aria-label="Afficher">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+            <div class="strength-bar"><div id="strength-fill" class="strength-fill"></div></div>
+            <div id="strength-label" class="strength-label"></div>
+          </div>
+          <div class="form-group">
+            <label for="register-password-confirm">Confirmer</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input type="password" id="register-password-confirm" required placeholder="••••••••" autocomplete="new-password">
+            </div>
+          </div>
+          <button type="submit" id="btn-register" class="btn btn-primary btn-full">
+            <span>Créer mon compte</span>
+            <i data-lucide="user-plus"></i>
+          </button>
+        </form>
+
+        <div class="auth-security">
+          <div class="security-item">
+            <i data-lucide="shield"></i>
+            <span>Argon2id + AES-256-GCM</span>
+          </div>
+          <div class="security-item">
+            <i data-lucide="key-round"></i>
+            <span>Zero-knowledge — jamais envoyé au serveur</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Écran Coffre ───────────────────────────────── -->
+  <div id="screen-vault" class="screen sidebar-expanded">
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">
+          <i data-lucide="shield-check"></i>
+        </div>
+        <div class="sidebar-brand-text">
+          <div class="sidebar-title">Coffre-Fort</div>
+          <div class="sidebar-subtitle">Gestionnaire sécurisé</div>
+        </div>
+      </div>
+
+      <button id="btn-add-sidebar" class="sidebar-add-btn" title="Nouvelle entrée">
+        <i data-lucide="plus"></i>
+        <span class="sidebar-text">Nouvelle entrée</span>
+      </button>
+
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Navigation</div>
+        <button class="nav-item active" data-page="dashboard" title="Dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span class="sidebar-text">Dashboard</span>
+        </button>
+        <button class="nav-item" data-page="vault" title="Tous les mots de passe">
+          <i data-lucide="key-square"></i>
+          <span class="sidebar-text">Tous les mots de passe</span>
+          <span class="nav-badge" id="nav-count-all">0</span>
+        </button>
+        <button class="nav-item" data-page="profile" title="Mon profil">
+          <i data-lucide="user"></i>
+          <span class="sidebar-text">Mon profil</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button type="button" id="btn-profile-sidebar" class="sidebar-user" title="Mon profil">
+          <div id="user-avatar" class="user-avatar" title=""></div>
+          <div class="sidebar-user-info sidebar-text">
+            <div id="user-name" class="user-name"></div>
+            <div id="user-email" class="user-email"></div>
+          </div>
+        </button>
+        <button id="btn-lock" class="sidebar-lock-btn" title="Verrouiller le coffre">
+          <i data-lucide="log-out"></i>
+          <span class="sidebar-text">Verrouiller</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="vault-layout">
+      <header class="vault-topbar">
+        <button id="btn-menu" class="btn-menu" aria-label="Menu">
+          <i data-lucide="menu"></i>
+        </button>
+        <div class="topbar-title">
+          <h1 id="page-title">Dashboard</h1>
+          <p id="page-subtitle" class="topbar-subtitle"></p>
+        </div>
+        <div class="topbar-total" id="topbar-total">
+          <i data-lucide="layers"></i>
+          <span class="topbar-total-label">Total</span>
+          <strong id="entry-count">0</strong>
+        </div>
+        <div class="topbar-actions">
+        <button id="btn-add" class="btn btn-primary btn-sm">
+          <i data-lucide="plus"></i>
+          <span>Ajouter</span>
+        </button>
+        </div>
+      </header>
+
+      <main class="vault-main">
+        <div id="dashboard-view" class="dashboard-view">
+          <section class="dashboard-welcome">
+            <div class="dashboard-welcome-text">
+              <h2>Bonjour, <span id="dash-greeting-name">—</span></h2>
+              <p>Vue d'ensemble de votre coffre sécurisé</p>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-dash-add">
+              <i data-lucide="plus"></i>
+              <span>Nouvelle entrée</span>
+            </button>
+          </section>
+
+          <section class="dashboard-stats">
+            <button type="button" class="dash-stat-card dash-stat-card-btn" data-vault-filter="all" aria-label="Voir tous les mots de passe">
+              <div class="dash-stat-icon dash-stat-icon-accent">
+                <i data-lucide="key-round"></i>
+              </div>
+              <div class="dash-stat-body">
+                <span class="dash-stat-label">Mots de passe</span>
+                <strong class="dash-stat-value" id="dash-stat-total">0</strong>
+              </div>
+            </button>
+            <button type="button" class="dash-stat-card dash-stat-card-btn" data-vault-filter="url" aria-label="Voir les mots de passe avec URL">
+              <div class="dash-stat-icon dash-stat-icon-info">
+                <i data-lucide="link"></i>
+              </div>
+              <div class="dash-stat-body">
+                <span class="dash-stat-label">Avec URL</span>
+                <strong class="dash-stat-value" id="dash-stat-urls">0</strong>
+              </div>
+            </button>
+            <article class="dash-stat-card">
+              <div class="dash-stat-icon dash-stat-icon-success">
+                <i data-lucide="sticky-note"></i>
+              </div>
+              <div class="dash-stat-body">
+                <span class="dash-stat-label">Avec notes</span>
+                <strong class="dash-stat-value" id="dash-stat-notes">0</strong>
+              </div>
+            </article>
+            <article class="dash-stat-card">
+              <div class="dash-stat-icon dash-stat-icon-warning">
+                <i data-lucide="shield-alert"></i>
+              </div>
+              <div class="dash-stat-body">
+                <span class="dash-stat-label">À renforcer</span>
+                <strong class="dash-stat-value" id="dash-stat-weak">0</strong>
+              </div>
+            </article>
+          </section>
+
+          <div class="dashboard-sections">
+            <section class="dashboard-panel">
+              <div class="dashboard-panel-header">
+                <h3><i data-lucide="clock"></i> Entrées récentes</h3>
+                <button type="button" class="btn btn-ghost btn-sm" id="btn-dash-view-all">Voir tout</button>
+              </div>
+              <div id="dash-recent-list" class="dash-recent-list"></div>
+              <div id="dash-recent-empty" class="dash-recent-empty hidden">
+                <i data-lucide="vault"></i>
+                <p>Aucune entrée pour le moment</p>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-dash-add-empty">
+                  <i data-lucide="plus"></i>
+                  Ajouter un mot de passe
+                </button>
+              </div>
+            </section>
+
+            <section class="dashboard-security">
+              <div class="dashboard-security-icon">
+                <i data-lucide="shield-check"></i>
+              </div>
+              <div>
+                <h3>Coffre chiffré de bout en bout</h3>
+                <p>Vos données sont protégées par Argon2id, AES-256-GCM et des clés X25519. Seul votre mot de passe maître peut déverrouiller le coffre.</p>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div id="vault-view" class="vault-view hidden">
+        <div class="vault-toolbar">
+          <div class="search-box">
+            <span class="search-icon"><i data-lucide="search"></i></span>
+            <input type="text" id="search-input" placeholder="Rechercher un site, identifiant...  (Ctrl+K)">
+            <button id="btn-clear-search" class="btn-clear hidden" aria-label="Effacer"><i data-lucide="x"></i></button>
+          </div>
+        </div>
+
+        <div class="vault-content">
+          <div id="entries-list" class="entries-grid"></div>
+          <div id="entries-empty" class="entries-empty hidden">
+            <div class="empty-illustration">
+              <i data-lucide="key-square"></i>
+            </div>
+            <h3>Aucun mot de passe</h3>
+            <p>Commencez par ajouter votre première entrée sécurisée</p>
+            <button class="btn btn-primary" onclick="document.getElementById('btn-add').click()">
+              <i data-lucide="plus"></i>
+              Ajouter un mot de passe
+            </button>
+          </div>
+          <div id="entries-no-results" class="entries-empty hidden">
+            <div class="empty-illustration empty-illustration-sm">
+              <i data-lucide="search-x"></i>
+            </div>
+            <h3>Aucun résultat</h3>
+            <p>Essayez un autre terme de recherche</p>
+          </div>
+        </div>
+        </div>
+
+        <div id="profile-view" class="profile-view hidden">
+          <section class="profile-banner">
+            <div class="profile-banner-decor" aria-hidden="true">
+              <div class="profile-orb profile-orb-1"></div>
+              <div class="profile-orb profile-orb-2"></div>
+            </div>
+            <div class="profile-banner-inner">
+              <div id="profile-avatar" class="profile-avatar"></div>
+              <h2 id="profile-display-name">—</h2>
+              <p id="profile-email" class="profile-email-line">—</p>
+              <div id="profile-status" class="profile-status">
+                <span class="profile-status-dot"></span>
+                <span id="profile-status-label">Coffre actif</span>
+              </div>
+              <div class="profile-banner-chips">
+                <div class="profile-chip">
+                  <i data-lucide="calendar"></i>
+                  <span id="profile-member-since">—</span>
+                </div>
+                <div class="profile-chip">
+                  <i data-lucide="key-round"></i>
+                  <span><strong id="profile-chip-entries">0</strong> entrée(s)</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="profile-content">
+              <section class="profile-card">
+                <div class="profile-card-header">
+                  <h3><i data-lucide="id-card"></i> Compte</h3>
+                </div>
+                <ul class="profile-fields">
+                  <li class="profile-field profile-field-editable" data-field="first_name">
+                    <div class="profile-field-icon"><i data-lucide="user"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Prénom</span>
+                        <div class="profile-field-value-row">
+                          <span class="profile-field-value" id="profile-detail-first-name">—</span>
+                          <div class="profile-field-actions">
+                            <button type="button" class="profile-field-edit" title="Modifier le prénom" aria-label="Modifier le prénom">
+                              <i data-lucide="pencil"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="profile-field-form hidden">
+                        <label class="profile-field-label" for="inline-edit-first-name">Prénom</label>
+                        <input type="text" id="inline-edit-first-name" class="profile-field-input" maxlength="50" placeholder="Votre prénom">
+                        <div class="profile-field-form-actions">
+                          <button type="button" class="btn btn-primary btn-sm profile-field-save">Enregistrer</button>
+                          <button type="button" class="btn btn-ghost btn-sm profile-field-cancel">Annuler</button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="profile-field profile-field-editable" data-field="middle_name">
+                    <div class="profile-field-icon"><i data-lucide="user-round"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Deuxième prénom <span class="optional">(optionnel)</span></span>
+                        <div class="profile-field-value-row">
+                          <span class="profile-field-value profile-field-value-muted" id="profile-detail-middle-name">—</span>
+                          <div class="profile-field-actions">
+                            <button type="button" class="profile-field-edit" title="Modifier le deuxième prénom" aria-label="Modifier le deuxième prénom">
+                              <i data-lucide="pencil"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="profile-field-form hidden">
+                        <label class="profile-field-label" for="inline-edit-middle-name">Deuxième prénom <span class="optional">(optionnel)</span></label>
+                        <input type="text" id="inline-edit-middle-name" class="profile-field-input" maxlength="50" placeholder="Deuxième prénom">
+                        <div class="profile-field-form-actions">
+                          <button type="button" class="btn btn-primary btn-sm profile-field-save">Enregistrer</button>
+                          <button type="button" class="btn btn-ghost btn-sm profile-field-cancel">Annuler</button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="profile-field profile-field-editable" data-field="last_name">
+                    <div class="profile-field-icon"><i data-lucide="users"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Nom</span>
+                        <div class="profile-field-value-row">
+                          <span class="profile-field-value" id="profile-detail-last-name">—</span>
+                          <div class="profile-field-actions">
+                            <button type="button" class="profile-field-edit" title="Modifier le nom" aria-label="Modifier le nom">
+                              <i data-lucide="pencil"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="profile-field-form hidden">
+                        <label class="profile-field-label" for="inline-edit-last-name">Nom</label>
+                        <input type="text" id="inline-edit-last-name" class="profile-field-input" maxlength="50" placeholder="Votre nom">
+                        <div class="profile-field-form-actions">
+                          <button type="button" class="btn btn-primary btn-sm profile-field-save">Enregistrer</button>
+                          <button type="button" class="btn btn-ghost btn-sm profile-field-cancel">Annuler</button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="profile-field profile-field-editable" data-field="email">
+                    <div class="profile-field-icon"><i data-lucide="mail"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Email</span>
+                        <div class="profile-field-value-row">
+                          <span class="profile-field-value" id="profile-detail-email">—</span>
+                          <div class="profile-field-actions">
+                            <button type="button" class="profile-field-edit" title="Modifier l'email" aria-label="Modifier l'email">
+                              <i data-lucide="pencil"></i>
+                            </button>
+                            <button type="button" class="btn-copy-field profile-field-copy profile-field-copy-view" id="btn-copy-profile-email" title="Copier l'email">
+                              <i data-lucide="copy"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="profile-field-form hidden">
+                        <label class="profile-field-label" for="inline-edit-email">Email</label>
+                        <input type="email" id="inline-edit-email" class="profile-field-input" placeholder="vous@email.com" autocomplete="username">
+                        <div class="profile-field-form-actions">
+                          <button type="button" class="btn btn-primary btn-sm profile-field-save">Enregistrer</button>
+                          <button type="button" class="btn btn-ghost btn-sm profile-field-cancel">Annuler</button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="profile-field profile-field-readonly">
+                    <div class="profile-field-icon"><i data-lucide="fingerprint"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Identifiant</span>
+                        <div class="profile-field-value-row">
+                          <span class="profile-field-value mono" id="profile-detail-id">—</span>
+                          <div class="profile-field-actions">
+                            <button type="button" class="btn-copy-field profile-field-copy" id="btn-copy-profile-id" title="Copier l'identifiant">
+                              <i data-lucide="copy"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="profile-field profile-field-readonly">
+                    <div class="profile-field-icon"><i data-lucide="calendar-check"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Membre depuis</span>
+                        <span class="profile-field-value" id="profile-detail-created">—</span>
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+              </section>
+
+              <section class="profile-card profile-security-card">
+                <div class="profile-card-header">
+                  <h3><i data-lucide="shield-check"></i> Sécurité</h3>
+                </div>
+                <div class="profile-tags">
+                  <span class="profile-tag">Argon2id</span>
+                  <span class="profile-tag">AES-256-GCM</span>
+                  <span class="profile-tag">X25519</span>
+                  <span class="profile-tag profile-tag-success">Zero-knowledge</span>
+                </div>
+                <p class="profile-security-text">Vos données sont chiffrées côté client. Le serveur ne peut pas lire vos mots de passe.</p>
+              </section>
+
+              <section class="profile-card profile-lock-card">
+                <button type="button" class="profile-lock-btn" id="btn-profile-lock">
+                  <span class="profile-lock-icon"><i data-lucide="log-out"></i></span>
+                  <span class="profile-lock-text">
+                    <strong>Verrouiller le coffre</strong>
+                    <span>Fermer la session et protéger vos données</span>
+                  </span>
+                  <i data-lucide="chevron-right" class="profile-shortcut-arrow"></i>
+                </button>
+              </section>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <button id="fab-add" class="fab" title="Ajouter">
+      <i data-lucide="plus"></i>
+    </button>
+  </div>
+
+  <!-- ── Modal Détail ───────────────────────────────── -->
+  <div id="modal-detail" class="modal">
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div id="detail-avatar" class="entry-avatar lg"></div>
+          <div class="modal-header-text">
+            <h2 id="detail-title"></h2>
+            <span id="detail-badge" class="badge"></span>
+          </div>
+          <button id="btn-close-detail" class="btn-close"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-field">
+            <label>Identifiant</label>
+            <div class="copyable-field">
+              <span id="detail-username"></span>
+              <button class="btn-copy-field" data-copy="detail-username" title="Copier">
+                <i data-lucide="copy"></i>
+              </button>
+            </div>
+          </div>
+          <div class="detail-field">
+            <label>Mot de passe</label>
+            <div class="copyable-field">
+              <span id="detail-password" class="mono">••••••••••••</span>
+              <button id="btn-toggle-pwd" class="btn-copy-field" title="Afficher">
+                <i data-lucide="eye"></i>
+              </button>
+              <button id="btn-copy-detail" class="btn-copy-field" title="Copier">
+                <i data-lucide="copy"></i>
+              </button>
+            </div>
+          </div>
+          <div class="detail-field" id="detail-url-field">
+            <label>URL</label>
+            <div class="copyable-field">
+              <a id="detail-url" href="#" target="_blank" rel="noopener"></a>
+              <i data-lucide="external-link" class="field-link-icon"></i>
+            </div>
+          </div>
+          <div class="detail-field" id="detail-notes-field">
+            <label>Notes</label>
+            <div id="detail-notes" class="detail-notes-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Ajouter ──────────────────────────────── -->
+  <div id="modal-add" class="modal">
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Nouvelle entrée</h2>
+          <button id="btn-close-add" class="btn-close"><i data-lucide="x"></i></button>
+        </div>
+        <form id="form-entry" class="modal-body">
+          <div class="form-group">
+            <label for="entry-title">Titre</label>
+            <input type="text" id="entry-title" required placeholder="Netflix, Gmail, Banque...">
+          </div>
+          <div class="form-group">
+            <label for="entry-username">Identifiant</label>
+            <input type="text" id="entry-username" required placeholder="email ou nom d'utilisateur">
+          </div>
+          <div class="form-group">
+            <label for="entry-password">Mot de passe</label>
+            <div class="password-input-row">
+              <input type="text" id="entry-password" required placeholder="Mot de passe">
+              <button type="button" id="btn-generate" class="btn btn-secondary">
+                <i data-lucide="dices"></i>
+                Générer
+              </button>
+            </div>
+            <div id="entry-generated" class="generated-preview hidden"></div>
+          </div>
+          <div class="form-group">
+            <label for="entry-url">URL <span class="optional">(optionnel)</span></label>
+            <input type="url" id="entry-url" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label for="entry-notes">Notes <span class="optional">(optionnel)</span></label>
+            <textarea id="entry-notes" rows="2" placeholder="Informations supplémentaires"></textarea>
+          </div>
+          <button type="submit" id="btn-save-entry" class="btn btn-primary btn-full">
+            <i data-lucide="save"></i>
+            Enregistrer
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Confirmation ─────────────────────────── -->
+  <div id="modal-confirm" class="modal">
+    <div class="modal-overlay">
+      <div class="modal-content modal-sm">
+        <div class="modal-header">
+          <h2 id="confirm-title">Confirmer</h2>
+          <button id="btn-close-confirm" class="btn-close"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <p id="confirm-message" class="confirm-text"></p>
+          <div class="confirm-actions">
+            <button id="btn-confirm-cancel" class="btn btn-secondary">Annuler</button>
+            <button id="btn-confirm-ok" class="btn btn-danger-solid">
+              <i data-lucide="trash-2"></i>
+              Supprimer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toasts ─────────────────────────────────────── -->
+  <div id="toasts"></div>
+
+  <!-- ── Loading ────────────────────────────────────── -->
+  <div id="loading" class="loading-overlay hidden">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Dérivation de clé en cours...</div>
+  </div>
+
+  <script src="/js/pwa.js" defer></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
