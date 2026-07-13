@@ -3,10 +3,12 @@
  * Chargement en 2 phases via manifeste :
  *  1. listes prioritaires (rapide) → validation possible
  *  2. reste en arrière-plan → enrichit le Set
- * Le maître n'est jamais envoyé au serveur pour ce check.
+ * Timeout pour ne pas bloquer l'inscription si /data/ est lent.
  */
 
 const MANIFEST_URL = '/data/common-passwords-manifest.json';
+const FETCH_TIMEOUT_MS = 12000;
+const PRIORITY_BUDGET_MS = 15000;
 
 let commonSet = null;
 let loadPromise = null;
@@ -25,27 +27,40 @@ function addLinesToSet(text, set) {
   }
 }
 
+function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { cache: 'force-cache', signal: ctrl.signal })
+    .finally(() => clearTimeout(timer));
+}
+
 async function fetchTexts(paths) {
   const responses = await Promise.all(
-    paths.map((rel) => fetch(`/data/${rel}`, { cache: 'force-cache' })),
+    paths.map((rel) => fetchWithTimeout(`/data/${rel}`)),
   );
-  const failed = responses.find((r) => !r.ok);
-  if (failed) {
+  const ok = responses.filter((r) => r.ok);
+  if (!ok.length) {
     throw new Error('Impossible de charger la liste des mots de passe courants');
   }
-  return Promise.all(responses.map((r) => r.text()));
+  return Promise.all(ok.map((r) => r.text()));
 }
 
 function startBackgroundLoad(restPaths, set) {
   if (backgroundStarted || !restPaths.length) return;
   backgroundStarted = true;
-  fetchTexts(restPaths)
-    .then((texts) => {
-      for (const text of texts) addLinesToSet(text, set);
-    })
-    .catch(() => {
-      // Les listes prioritaires suffisent déjà pour bloquer l'essentiel.
-    });
+  // Par lots pour ne pas saturer le réseau / Vercel
+  const chunkSize = 4;
+  (async () => {
+    for (let i = 0; i < restPaths.length; i += chunkSize) {
+      const chunk = restPaths.slice(i, i + chunkSize);
+      try {
+        const texts = await fetchTexts(chunk);
+        for (const text of texts) addLinesToSet(text, set);
+      } catch {
+        // ignore lot en échec
+      }
+    }
+  })();
 }
 
 /**
@@ -57,7 +72,7 @@ export async function loadCommonPasswords() {
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
-    const manifestResp = await fetch(MANIFEST_URL, { cache: 'force-cache' });
+    const manifestResp = await fetchWithTimeout(MANIFEST_URL);
     if (!manifestResp.ok) {
       throw new Error('Impossible de charger le manifeste des mots de passe courants');
     }
@@ -69,10 +84,14 @@ export async function loadCommonPasswords() {
 
     const priority = Array.isArray(manifest.priority) && manifest.priority.length
       ? manifest.priority.filter((p) => allPaths.includes(p))
-      : allPaths.slice(0, Math.min(8, allPaths.length));
+      : allPaths.slice(0, Math.min(5, allPaths.length));
     const rest = allPaths.filter((p) => !priority.includes(p));
 
-    const texts = await fetchTexts(priority);
+    const budget = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Délai dépassé pour les listes de mots de passe')), PRIORITY_BUDGET_MS);
+    });
+
+    const texts = await Promise.race([fetchTexts(priority), budget]);
     const set = new Set();
     for (const text of texts) addLinesToSet(text, set);
     commonSet = set;

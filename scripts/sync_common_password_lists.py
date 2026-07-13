@@ -183,18 +183,16 @@ def write_manifest() -> None:
             continue
         files.extend(f"{folder}/{p.name}" for p in sorted(d.glob("*.txt")))
 
-    # Chargées en premier côté navigateur (validation rapide à l'inscription).
+    # Listes légères en premier (validation inscription rapide sur Vercel).
     priority_candidates = [
         NCSC,
         "common-credentials/500-worst-passwords.txt",
-        "common-credentials/Pwdb_top-100000.txt",
+        "common-credentials/top-passwords-shortlist.txt",
         "common-credentials/corporate_passwords.txt",
-        "common-credentials/seasons.txt",
-        "common-credentials/months.txt",
         "language-specific/French-common-password-list-top-20000.txt",
+        "language-specific/French_Pwdb_common-password-list-top-150.txt",
         "keyboard-walks/Keyboard-Combinations.txt",
         "default-credentials/default-passwords.txt",
-        "default-credentials/cirt-net_collection.txt",
     ]
     priority = [p for p in priority_candidates if p in files]
 

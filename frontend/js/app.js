@@ -117,6 +117,40 @@ const PROFILE_FIELD_CONFIG = {
 
 const screens = { landing: $('#screen-landing'), auth: $('#screen-auth'), vault: $('#screen-vault') };
 
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+function openAuthTab(tab = 'login') {
+  $('#tab-login').classList.toggle('active', tab === 'login');
+  $('#tab-register').classList.toggle('active', tab === 'register');
+  $('#form-login').classList.toggle('hidden', tab !== 'login');
+  $('#form-register').classList.toggle('hidden', tab !== 'register');
+  if (tab === 'register') prefetchCommonPasswords();
+  showScreen('auth');
+  refreshIcons($('#screen-auth'));
+}
+
+function bindLandingNavigation() {
+  const goRegister = () => openAuthTab('register');
+  const goLogin = () => openAuthTab('login');
+
+  $('#btn-landing-start')?.addEventListener('click', goRegister);
+  $('#btn-landing-login')?.addEventListener('click', goLogin);
+  $('#btn-back-landing')?.addEventListener('click', () => {
+    showScreen('landing');
+    refreshIcons($('#screen-landing'));
+  });
+  $('#tab-login')?.addEventListener('click', () => openAuthTab('login'));
+  $('#tab-register')?.addEventListener('click', () => openAuthTab('register'));
+}
+
+// Navigation landing tout de suite (avant les imports lourds / listeners coffre).
+bindLandingNavigation();
+showScreen('landing');
+
+
 const AVATAR_COLORS = [
   ['#3b82f6', '#2563eb'], ['#34d399', '#10b981'], ['#60a5fa', '#3b82f6'],
   ['#f472b6', '#ec4899'], ['#fbbf24', '#f59e0b'], ['#a78bfa', '#8b5cf6'],
@@ -359,33 +393,6 @@ $('#register-password').addEventListener('input', (e) => {
 
 // ── Navigation ─────────────────────────────────────────
 
-function showScreen(name) {
-  Object.values(screens).forEach(s => s.classList.remove('active'));
-  screens[name].classList.add('active');
-}
-
-function openAuthTab(tab = 'login') {
-  $('#tab-login').classList.toggle('active', tab === 'login');
-  $('#tab-register').classList.toggle('active', tab === 'register');
-  $('#form-login').classList.toggle('hidden', tab !== 'login');
-  $('#form-register').classList.toggle('hidden', tab !== 'register');
-  if (tab === 'register') prefetchCommonPasswords();
-  showScreen('auth');
-  refreshIcons($('#screen-auth'));
-}
-
-function bindLandingNavigation() {
-  const goRegister = () => openAuthTab('register');
-  const goLogin = () => openAuthTab('login');
-
-  $('#btn-landing-start')?.addEventListener('click', goRegister);
-  $('#btn-landing-login')?.addEventListener('click', goLogin);
-  $('#btn-back-landing')?.addEventListener('click', () => {
-    showScreen('landing');
-    refreshIcons($('#screen-landing'));
-  });
-}
-
 const PAGE_TITLES = {
   dashboard: { title: 'Accueil', subtitle: 'Vos connexions en un coup d\'œil' },
   vault: { title: 'Tous les mots de passe', subtitle: 'Votre coffre complet' },
@@ -461,9 +468,6 @@ function showVault() {
 }
 
 // ── Auth ─────────────────────────────────────────────────
-
-$('#tab-login').addEventListener('click', () => openAuthTab('login'));
-$('#tab-register').addEventListener('click', () => openAuthTab('register'));
 
 function clearLoginForm() {
   $('#form-login').reset();
@@ -541,14 +545,18 @@ $('#form-register').addEventListener('submit', async (e) => {
   const master = $('#register-password').value;
   const confirm = $('#register-password-confirm').value;
   if (master !== confirm) { toast('Les mots de passe ne correspondent pas', 'error'); return; }
-  const masterError = await validateMasterPassword(master);
-  if (masterError) { toast(masterError, 'error'); return; }
   if (!$('#register-first-name').value.trim()) { toast('Le prénom est requis', 'error'); return; }
   if (!$('#register-last-name').value.trim()) { toast('Le nom est requis', 'error'); return; }
 
   btn.disabled = true;
-  showLoading('Création du coffre chiffré...');
+  showLoading('Vérification du mot de passe...');
   try {
+    const masterError = await validateMasterPassword(master);
+    if (masterError) {
+      toast(masterError, 'error');
+      return;
+    }
+    showLoading('Création du coffre chiffré...');
     const prep = await prepareRegistration(master);
     const data = await api.register({
       email: $('#register-email').value.trim(),
@@ -1182,7 +1190,6 @@ $$('.modal-overlay').forEach(overlay => {
 
 showScreen('landing');
 clearLoginForm();
-bindLandingNavigation();
 initIcons();
 initProfileFieldEdits();
 refreshIcons($('#screen-landing'));

@@ -1,6 +1,7 @@
-const CACHE_VERSION = 'v44';
+const CACHE_VERSION = 'v45';
 const CACHE_STATIC = `binalph93-static-${CACHE_VERSION}`;
 
+// Assets légers uniquement — pas les listes /data/ (trop volumineuses).
 const PRECACHE = [
   '/',
   '/css/style.css',
@@ -20,9 +21,6 @@ const PRECACHE = [
   '/manifest.webmanifest',
   '/icons/icon.svg',
   '/icons/icon-mark.svg',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/icon-512-maskable.png',
 ];
 
 const API_PREFIXES = ['/auth/', '/vault/', '/health/'];
@@ -31,10 +29,20 @@ function isApiRequest(pathname) {
   return API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+/** Ne pas mettre en cache les listes de mots de passe (Go de données). */
+function isHeavyDataRequest(pathname) {
+  return pathname.startsWith('/data/');
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_STATIC)
-      .then((cache) => cache.addAll(PRECACHE))
+      .then(async (cache) => {
+        // addAll échoue entièrement si une URL manque — on tolère les 404.
+        await Promise.all(
+          PRECACHE.map((url) => cache.add(url).catch(() => undefined)),
+        );
+      })
       .then(() => self.skipWaiting()),
   );
 });
@@ -66,6 +74,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Listes SecLists : toujours réseau (évite de saturer le Cache API).
+  if (isHeavyDataRequest(url.pathname)) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   event.respondWith(
     caches.match(request).then((cached) => {
       const networkFetch = fetch(request).then((response) => {
@@ -74,7 +88,7 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE_STATIC).then((cache) => cache.put(request, clone));
         return response;
       });
-      if (url.pathname.startsWith('/js/') || url.pathname.startsWith('/css/')) {
+      if (url.pathname.startsWith('/js/') || url.pathname.startsWith('/css/') || url.pathname.startsWith('/vendor/')) {
         return networkFetch.catch(() => cached);
       }
       if (cached) return cached;
