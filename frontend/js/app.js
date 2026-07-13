@@ -1,5 +1,5 @@
 /**
- * Application principale — BINALPH93
+ * Application principale — Gestion’air
  *
  * Écrans : auth → dashboard / liste / profil
  * Mode dev : localhost + champs vides → données mock en mémoire

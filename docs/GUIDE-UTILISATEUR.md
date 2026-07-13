@@ -1,15 +1,15 @@
-# Guide utilisateur — BINALPH93
+# Guide utilisateur — Gestion’air
 
-## À quoi sert BINALPH93 ?
+## À quoi sert Gestion’air ?
 
-BINALPH93 stocke vos identifiants (sites, emails, mots de passe, notes) de façon chiffrée. Seul **votre mot de passe maître** permet de les lire, dans votre navigateur.
+Gestion’air stocke vos identifiants (sites, emails, mots de passe, notes) de façon chiffrée. Seul **votre mot de passe maître** permet de les lire, dans votre navigateur.
 
 ## Écrans principaux
 
 ### 1. Landing
 
 Page d’accueil avec :
-- le nom **BINALPH93**
+- le nom **Gestion’air**
 - **Créer un compte** / **Se connecter**
 
 ### 2. Inscription
@@ -54,4 +54,4 @@ Liste complète, recherche (raccourci **Ctrl+K**), ouverture du détail.
 
 ## PWA
 
-BINALPH93 peut s’installer comme application (manifest + service worker). Après une mise à jour du site, un rechargement peut être nécessaire pour vider l’ancien cache.
+Gestion’air peut s’installer comme application (manifest + service worker). Après une mise à jour du site, un rechargement peut être nécessaire pour vider l’ancien cache.

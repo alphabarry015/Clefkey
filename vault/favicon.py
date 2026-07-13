@@ -11,7 +11,7 @@ from urllib.parse import quote, urljoin, urlparse
 
 import httpx
 
-USER_AGENT = "BINALPH93/1.0 (+favicon; usage personnel)"
+USER_AGENT = "Gestion’air/1.0 (+favicon; usage personnel)"
 TIMEOUT = 6.0
 MAX_ICON_BYTES = 512_000
 MAX_HTML_BYTES = 200_000

@@ -1,4 +1,4 @@
-# BINALPH93 — Gestionnaire de mots de passe
+# Gestion’air — Gestionnaire de mots de passe
 
 Application web **zero-knowledge** : le serveur ne stocke que des blobs chiffrés. Le déchiffrement se fait dans le navigateur avec la clé maître de l'utilisateur.
 

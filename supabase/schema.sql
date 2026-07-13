@@ -1,5 +1,5 @@
 -- =============================================================================
--- BINALPH93 — Schéma PostgreSQL (Supabase)
+-- Gestion’air — Schéma PostgreSQL (Supabase)
 -- =============================================================================
 -- Où exécuter : Supabase Dashboard → SQL Editor → New query → Run
 --

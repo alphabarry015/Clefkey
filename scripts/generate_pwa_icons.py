@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Génère les icônes PNG pour la PWA BINALPH93."""
+"""Génère les icônes PNG pour la PWA Gestion’air."""
 
 from pathlib import Path
 

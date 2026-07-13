@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Gestionnaire de Mots de Passe",
+    title="Gestion’air",
     description="Coffre-fort personnel chiffré",
     version="0.1.0",
     lifespan=lifespan,
