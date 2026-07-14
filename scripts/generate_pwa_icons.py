@@ -90,6 +90,12 @@ def main() -> None:
     draw_icon(192).save(OUT_DIR / "icon-192.png", "PNG")
     draw_icon(512).save(OUT_DIR / "icon-512.png", "PNG")
     draw_icon(512, padding_ratio=0.18).save(OUT_DIR / "icon-512-maskable.png", "PNG")
+    # Favicon multi-tailles pour les navigateurs qui demandent /favicon.ico
+    draw_icon(48).save(
+        OUT_DIR / "favicon.ico",
+        format="ICO",
+        sizes=[(16, 16), (32, 32), (48, 48)],
+    )
     print(f"Icônes générées dans {OUT_DIR}")
 
 

@@ -6,6 +6,7 @@ from vault import views
 
 urlpatterns = [
     path("", views.index, name="index"),
+    path("favicon.ico", views.favicon, name="favicon"),
     path("health/", views.health, name="health"),
     path("manifest.webmanifest", views.manifest, name="manifest"),
     path("sw.js", views.service_worker, name="service-worker"),

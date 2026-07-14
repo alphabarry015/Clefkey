@@ -169,6 +169,14 @@ def index(request):
 
 
 @require_GET
+def favicon(request):
+    favicon_path = settings.BASE_DIR / "frontend" / "icons" / "favicon.ico"
+    response = FileResponse(favicon_path.open("rb"), content_type="image/x-icon")
+    response["Cache-Control"] = "public, max-age=86400"
+    return response
+
+
+@require_GET
 def manifest(request):
     manifest_path = settings.BASE_DIR / "frontend" / "manifest.webmanifest"
     response = FileResponse(manifest_path.open("rb"), content_type="application/manifest+json")
