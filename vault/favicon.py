@@ -11,7 +11,7 @@ from urllib.parse import quote, urljoin, urlparse
 
 import httpx
 
-USER_AGENT = "Gestion’air/1.0 (+favicon; usage personnel)"
+USER_AGENT = "Gardefort/1.0 (+favicon; usage personnel)"
 TIMEOUT = 6.0
 MAX_ICON_BYTES = 512_000
 MAX_HTML_BYTES = 200_000
@@ -264,17 +264,64 @@ def _image_quality_score(content: bytes, content_type: str) -> int:
     return min(len(content), 4096)
 
 
+MAX_REDIRECTS = 3
+
+
+def _safe_request_url(url: str) -> str | None:
+    """Valide schéma + hostname (résolution DNS anti-SSRF) avant chaque requête."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        return None
+    if not is_safe_hostname(parsed.hostname):
+        return None
+    return url
+
+
+def _fetch_bytes(
+    client: httpx.Client,
+    url: str,
+    *,
+    max_bytes: int,
+) -> tuple[bytes, str] | None:
+    """
+    GET sans follow_redirects aveugle : chaque hop est revalidé (anti-SSRF).
+    Retourne (body tronqué, content-type) ou None.
+    """
+    current = _safe_request_url(url)
+    if not current:
+        return None
+
+    for _ in range(MAX_REDIRECTS + 1):
+        try:
+            resp = client.get(current)
+        except httpx.HTTPError:
+            return None
+
+        if resp.status_code in {301, 302, 303, 307, 308}:
+            location = (resp.headers.get("location") or "").strip()
+            if not location:
+                return None
+            nxt = urljoin(current, location)
+            current = _safe_request_url(nxt)
+            if not current:
+                return None
+            continue
+
+        if resp.status_code != 200:
+            return None
+
+        body = resp.content[:max_bytes]
+        content_type = resp.headers.get("content-type", "application/octet-stream")
+        return body, content_type
+
+    return None
+
+
 def _fetch_url(client: httpx.Client, url: str) -> tuple[bytes, str] | None:
-    if not is_safe_hostname(urlparse(url).hostname or ""):
+    result = _fetch_bytes(client, url, max_bytes=MAX_ICON_BYTES)
+    if result is None:
         return None
-    try:
-        resp = client.get(url)
-    except httpx.HTTPError:
-        return None
-    if resp.status_code != 200:
-        return None
-    body = resp.content[:MAX_ICON_BYTES]
-    content_type = resp.headers.get("content-type", "image/x-icon")
+    body, content_type = result
     if _is_image_response(content_type, body):
         return body, content_type.split(";")[0].strip() or "image/x-icon"
     return None
@@ -295,15 +342,15 @@ def fetch_site_favicon(page_url: str) -> tuple[bytes, str] | None:
     try:
         with httpx.Client(
             timeout=TIMEOUT,
-            follow_redirects=True,
+            follow_redirects=False,
             headers=headers,
         ) as client:
             try:
-                page_resp = client.get(normalized)
-                if page_resp.status_code == 200:
-                    content_type = page_resp.headers.get("content-type", "")
+                page = _fetch_bytes(client, normalized, max_bytes=MAX_HTML_BYTES)
+                if page is not None:
+                    body, content_type = page
                     if "text/html" in content_type:
-                        html = page_resp.text[:MAX_HTML_BYTES]
+                        html = body.decode("utf-8", errors="replace")[:MAX_HTML_BYTES]
                         candidates = _discover_icon_candidates(normalized, html) + candidates
             except httpx.HTTPError:
                 pass

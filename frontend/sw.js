@@ -1,5 +1,5 @@
-const CACHE_VERSION = 'v47';
-const CACHE_STATIC = `gestionair-static-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v60';
+const CACHE_STATIC = `gardefort-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
 const PRECACHE = [
@@ -8,6 +8,9 @@ const PRECACHE = [
   '/js/app.js',
   '/js/api.js',
   '/js/crypto.js',
+  '/js/argon2-worker.js',
+  '/js/compat.js',
+  '/js/session.js',
   '/js/dev.js',
   '/js/favicon.js',
   '/js/icons.js',
@@ -15,6 +18,8 @@ const PRECACHE = [
   '/js/common-passwords.js',
   '/js/master-password.js',
   '/js/auth-secrets.js',
+  '/js/recovery-export.js',
+  '/js/auth-screens.js',
   '/vendor/hash-wasm.esm.min.js',
   '/vendor/noble-ed25519.bundle.js',
   '/vendor/lucide.bundle.js',
@@ -52,7 +57,12 @@ self.addEventListener('activate', (event) => {
     caches.keys()
       .then((keys) => Promise.all(
         keys
-          .filter((key) => (key.startsWith('gestionair-') || key.startsWith('binalph93-') || key.startsWith('binalph-') || key.startsWith('coffre-fort-')) && key !== CACHE_STATIC)
+          .filter((key) => (
+            key.startsWith('gardefort-')
+            || key.startsWith('binalph93-')
+            || key.startsWith('binalph-')
+            || key.startsWith('coffre-fort-')
+          ) && key !== CACHE_STATIC)
           .map((key) => caches.delete(key)),
       ))
       .then(() => self.clients.claim()),

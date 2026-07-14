@@ -1,15 +1,15 @@
-# Guide utilisateur — Gestion’air
+# Guide utilisateur — Gardefort
 
-## À quoi sert Gestion’air ?
+## À quoi sert Gardefort ?
 
-Gestion’air stocke vos identifiants (sites, emails, mots de passe, notes) de façon chiffrée. Seul **votre mot de passe maître** permet de les lire, dans votre navigateur.
+Gardefort stocke vos identifiants (sites, emails, mots de passe, notes) de façon chiffrée. Seul **votre mot de passe maître** permet de les lire, dans votre navigateur.
 
 ## Écrans principaux
 
 ### 1. Landing
 
 Page d’accueil avec :
-- le nom **Gestion’air**
+- le nom **Gardefort**
 - **Créer un compte** / **Se connecter**
 
 ### 2. Inscription
@@ -31,9 +31,9 @@ Sur `localhost` uniquement : laisser les champs **vides** charge un mode démo (
 
 ### 4. Dashboard
 
-Tuiles des entrées (populaires, récents, A à Z), recherche, ajout rapide.
+Tuiles des clés (populaires, récents, A à Z), recherche, ajout rapide.
 
-### 5. Tous les mots de passe
+### 5. Toutes les clés
 
 Liste complète, recherche (raccourci **Ctrl+K**), ouverture du détail.
 
@@ -47,11 +47,11 @@ Liste complète, recherche (raccourci **Ctrl+K**), ouverture du détail.
 
 | Action | Comment |
 |--------|---------|
-| Ajouter une entrée | Bouton **+** / Nouvelle entrée |
+| Ajouter une clé | Bouton **+** / Nouvelle clé |
 | Copier un mot de passe | Icône copier sur une carte ou dans le détail |
 | Supprimer | Demande de confirmation en retapant le titre |
 | Verrouiller | Sidebar ou profil → session fermée |
 
 ## PWA
 
-Gestion’air peut s’installer comme application (manifest + service worker). Après une mise à jour du site, un rechargement peut être nécessaire pour vider l’ancien cache.
+Gardefort peut s’installer comme application (manifest + service worker). Après une mise à jour du site, un rechargement peut être nécessaire pour vider l’ancien cache.

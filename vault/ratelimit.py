@@ -1,10 +1,10 @@
-"""Limitation de débit (mémoire locale, ou Upstash Redis si configuré).
+"""Limitation de débit (Upstash Redis en prod, mémoire en local).
 
-Variables optionnelles :
+Variables :
   UPSTASH_REDIS_REST_URL
   UPSTASH_REDIS_REST_TOKEN
-
-Sans Upstash : fenêtre glissante en mémoire (par instance Vercel).
+  RATE_LIMIT_REQUIRE_UPSTASH=1  (forcé automatiquement sur Vercel)
+  RATE_LIMIT_ALLOW_MEMORY=1     (échapper temporairement sur Vercel — déconseillé)
 """
 
 from __future__ import annotations
@@ -22,10 +22,38 @@ _lock = threading.Lock()
 _buckets: dict[str, deque[float]] = defaultdict(deque)
 
 
+def _is_vercel_runtime() -> bool:
+    if os.getenv("VERCEL", "").strip() in ("1", "true", "yes"):
+        return True
+    return bool(
+        os.getenv("VERCEL_ENV", "").strip()
+        or os.getenv("VERCEL_URL", "").strip()
+        or os.getenv("VERCEL_BRANCH_URL", "").strip()
+    )
+
+
+def require_upstash() -> bool:
+    if os.getenv("RATE_LIMIT_ALLOW_MEMORY", "").strip().lower() in ("1", "true", "yes"):
+        return False
+    flagged = os.getenv("RATE_LIMIT_REQUIRE_UPSTASH", "").strip().lower() in ("1", "true", "yes")
+    return flagged or _is_vercel_runtime()
+
+
 def client_ip(request) -> str:
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    """IP client. Sur Vercel : en-têtes de confiance ; ne pas prendre le 1er XFF (spoofable)."""
+    for header in ("HTTP_X_REAL_IP", "HTTP_X_VERCEL_FORWARDED_FOR"):
+        value = (request.META.get(header) or "").strip()
+        if value:
+            return value.split(",")[0].strip()
+
+    forwarded = (request.META.get("HTTP_X_FORWARDED_FOR") or "").strip()
     if forwarded:
-        return forwarded.split(",")[0].strip()
+        parts = [part.strip() for part in forwarded.split(",") if part.strip()]
+        if parts:
+            # Derrière un proxy de confiance (Vercel), l'IP edge est à droite.
+            if _is_vercel_runtime():
+                return parts[-1]
+            return parts[0]
     return request.META.get("REMOTE_ADDR") or "unknown"
 
 
@@ -46,11 +74,17 @@ def _memory_limited(key: str, limit: int, window_seconds: float) -> bool:
 
 
 def _upstash_configured() -> bool:
-    return bool(os.getenv("UPSTASH_REDIS_REST_URL", "").strip() and os.getenv("UPSTASH_REDIS_REST_TOKEN", "").strip())
+    return bool(
+        os.getenv("UPSTASH_REDIS_REST_URL", "").strip()
+        and os.getenv("UPSTASH_REDIS_REST_TOKEN", "").strip()
+    )
 
 
-def _upstash_limited(key: str, limit: int, window_seconds: int) -> bool:
-    """Incrément atomique + TTL via l'API REST Upstash. Fail-open mémoire si erreur."""
+def _upstash_limited(key: str, limit: int, window_seconds: int) -> bool | None:
+    """
+    Incrément atomique + TTL via l'API REST Upstash.
+    Retourne True/False si OK, None si erreur réseau / réponse invalide.
+    """
     import json
     import urllib.error
     import urllib.request
@@ -73,7 +107,7 @@ def _upstash_limited(key: str, limit: int, window_seconds: int) -> bool:
         with urllib.request.urlopen(req, timeout=2.0) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
         if not isinstance(payload, list) or not payload:
-            return _memory_limited(key, limit, float(window_seconds))
+            return None
         count = int(payload[0].get("result") or 0)
         if count == 1:
             expire_body = json.dumps([["EXPIRE", redis_key, int(window_seconds)]]).encode("utf-8")
@@ -88,13 +122,25 @@ def _upstash_limited(key: str, limit: int, window_seconds: int) -> bool:
             )
             urllib.request.urlopen(expire_req, timeout=2.0).read()
         return count > limit
-    except (urllib.error.URLError, TimeoutError, ValueError, TypeError, json.JSONDecodeError, IndexError):
-        return _memory_limited(key, limit, float(window_seconds))
+    except (urllib.error.URLError, TimeoutError, ValueError, TypeError, json.JSONDecodeError, IndexError, KeyError):
+        return None
 
 
 def is_rate_limited(key: str, limit: int, window_seconds: float) -> bool:
+    must_upstash = require_upstash()
+    if must_upstash and not _upstash_configured():
+        # Prod mal configurée : refuser plutôt que d'ouvrir la vanne.
+        return True
+
     if _upstash_configured():
-        return _upstash_limited(key, limit, int(window_seconds))
+        result = _upstash_limited(key, limit, int(window_seconds))
+        if result is not None:
+            return result
+        # Fail-closed si Upstash est obligatoire ; sinon repli mémoire local.
+        if must_upstash:
+            return True
+        return _memory_limited(key, limit, window_seconds)
+
     return _memory_limited(key, limit, window_seconds)
 
 
@@ -106,10 +152,10 @@ def rate_limit(scope: str, *, limit: int, window_seconds: int = 60):
         def wrapper(request, *args, **kwargs):
             key = f"{scope}:{client_ip(request)}"
             if is_rate_limited(key, limit, float(window_seconds)):
-                return JsonResponse(
-                    {"detail": "Trop de tentatives. Réessayez plus tard."},
-                    status=429,
-                )
+                detail = "Trop de tentatives. Réessayez plus tard."
+                if require_upstash() and not _upstash_configured():
+                    detail = "Service temporairement indisponible (rate limit)."
+                return JsonResponse({"detail": detail}, status=429)
             return view_func(request, *args, **kwargs)
 
         return wrapper

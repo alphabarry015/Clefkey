@@ -1,6 +1,6 @@
 {
-  "name": "Gestion’air",
-  "short_name": "Gestion’air",
+  "name": "Gardefort",
+  "short_name": "Gardefort",
   "description": "Gestionnaire de mots de passe chiffré de bout en bout",
   "start_url": "/",
   "scope": "/",

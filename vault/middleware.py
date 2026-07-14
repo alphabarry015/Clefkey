@@ -31,7 +31,7 @@ class SecurityHeadersMiddleware:
         response.setdefault("X-Content-Type-Options", "nosniff")
         response.setdefault("X-Frame-Options", "DENY")
         response.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-        response.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        response.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), clipboard-write=(self)")
         response.setdefault("Cross-Origin-Opener-Policy", "same-origin")
         if request.is_secure() or request.META.get("HTTP_X_FORWARDED_PROTO") == "https":
             response.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")

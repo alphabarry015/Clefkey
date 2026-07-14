@@ -1,4 +1,4 @@
-# Déploiement — Gestion’air
+# Déploiement — Gardefort
 
 ## Développement local
 
@@ -23,8 +23,9 @@ Sans `DATABASE_URL` → SQLite (`vault.db`).
 | `DATABASE_URL` | Oui (prod) | Pooler Supabase port **6543** |
 | `DIRECT_DATABASE_URL` | Recommandé | Direct `db.…:5432` pour migrations locales |
 | `ALLOWED_HOSTS` | Non sur Vercel | Domaine custom optionnel (`.vercel.app` auto) |
-| `UPSTASH_REDIS_REST_URL` | Non | Rate limit partagé (Upstash) |
-| `UPSTASH_REDIS_REST_TOKEN` | Non | Token REST Upstash |
+| `UPSTASH_REDIS_REST_URL` | **Oui (Vercel)** | Rate limit partagé (Upstash) — obligatoire en prod |
+| `UPSTASH_REDIS_REST_TOKEN` | **Oui (Vercel)** | Token REST Upstash |
+| `RATE_LIMIT_ALLOW_MEMORY` | Non | Contournement déconseillé si Upstash absent |
 
 ### Format URLs Supabase
 

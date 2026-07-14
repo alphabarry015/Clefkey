@@ -1,4 +1,4 @@
-# Architecture — Gestion’air
+# Architecture — Gardefort
 
 ## Vue d’ensemble
 

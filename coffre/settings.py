@@ -56,7 +56,22 @@ if IS_VERCEL and SECRET_KEY == _DEFAULT_DEV_SECRET:
         "SECRET_KEY doit être défini sur Vercel (ne pas utiliser la valeur de développement)."
     )
 
+# Rate limit partagé obligatoire sur Vercel (sauf contournement explicite).
+_RATE_ALLOW_MEMORY = os.getenv("RATE_LIMIT_ALLOW_MEMORY", "").strip().lower() in ("1", "true", "yes")
+_UPSTASH_OK = bool(
+    os.getenv("UPSTASH_REDIS_REST_URL", "").strip()
+    and os.getenv("UPSTASH_REDIS_REST_TOKEN", "").strip()
+)
+if IS_VERCEL and not _UPSTASH_OK and not _RATE_ALLOW_MEMORY:
+    raise RuntimeError(
+        "UPSTASH_REDIS_REST_URL et UPSTASH_REDIS_REST_TOKEN sont requis sur Vercel "
+        "(rate limit global). Contournement temporaire déconseillé : RATE_LIMIT_ALLOW_MEMORY=1."
+    )
+
 ALLOWED_HOSTS = _default_allowed_hosts()
+
+# True sur Vercel : Upstash obligatoire, fail-closed (voir vault.ratelimit).
+RATE_LIMIT_REQUIRE_UPSTASH = IS_VERCEL and not _RATE_ALLOW_MEMORY
 
 if IS_VERCEL:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

@@ -29,7 +29,7 @@ Document vivant : mettre à jour après changements majeurs. Synthèse visuelle 
 | Haute | `SECRET_KEY` par défaut sur Vercel | `RuntimeError` si clé de dév en prod |
 | Moyenne | Blobs `encrypted_data` illimités | Cap 256 KiB décodés |
 | Moyenne | Exemple Vercel avec clé réelle | Placeholder dans `supabase/vercel.env.example` |
-| Basse | UA favicon obsolète | `Gestion’air/1.0` |
+| Basse | UA favicon obsolète | `Gardefort/1.0` |
 | Basse | Cache favicon non borné | LRU max 256 entrées |
 
 ### Risques résiduels (acceptés ou à traiter plus tard)
@@ -37,7 +37,9 @@ Document vivant : mettre à jour après changements majeurs. Synthèse visuelle 
 | Sévérité | Sujet | Notes |
 |----------|-------|--------|
 | Moyenne | Énumération via `POST /auth/register` (409 email) | Difficile sans UX dégradée ; rate limit partiel |
-| Moyenne | Rate limit mémoire sans Upstash | Contournable multi-instance Vercel → configurer Upstash |
+| — | Rate limit mémoire sans Upstash | **Corrigé 2026-07-14** : Upstash obligatoire sur Vercel, fail-closed |
+| Haute | key_proof brut en DB | **Corrigé 2026-07-14** : HMAC(SECRET_KEY) au stockage |
+| Haute | Favicon redirects SSRF | **Corrigé 2026-07-14** : follow manuel + revalidation chaque hop |
 | Moyenne | `X-Forwarded-For` pour l’IP | OK derrière Vercel ; ne pas exposer l’app sans proxy de confiance |
 | Basse | XSS si `esc()` oublié dans un futur template | CSP + discipline `esc()` ; revue PR |
 | Basse | Pas de refresh token / révocation JWT | TTL 60 min ; acceptable pour ce modèle |
@@ -62,7 +64,15 @@ Document vivant : mettre à jour après changements majeurs. Synthèse visuelle 
 | `toB64` spread | Risque stack overflow gros blobs | Encodage par chunks |
 | Liste coffre | Pas de pagination | OK pour usage perso ; à prévoir si > quelques milliers d’entrées |
 | Favicon | Cache mémoire | Borné à 256 clés |
-| Argon2id (64 Mo) | Coût CPU inscription/login | Intentionnel (sécurité) |
+| Argon2id (64 Mo) | Coût CPU inscription/login | Worker `argon2-worker.js` (fallback thread UI) |
+
+## Tests / CI (2026-07-14)
+
+| Sujet | Statut |
+|-------|--------|
+| Smoke crypto / auth / recovery / favicon SSRF | `vault/tests/` |
+| GitHub Actions | `.github/workflows/ci.yml` |
+| Découpage UI auth | `frontend/js/auth-screens.js` |
 
 ---
 

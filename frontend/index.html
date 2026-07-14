@@ -8,8 +8,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Gestion’air">
-  <title>Gestion’air</title>
+  <meta name="apple-mobile-web-app-title" content="Gardefort">
+  <title>Gardefort</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png">
@@ -26,21 +26,20 @@
       <header class="lp-header">
         <a href="/" class="lp-header-brand">
           <i data-lucide="shield-check"></i>
-          <span>Gestion’air</span>
+          <span>Gardefort</span>
         </a>
       </header>
 
       <section class="lp-hero">
         <div class="lp-hero-bottom">
-          <h1 class="lp-brand">Gestion’air</h1>
-          <p class="lp-desc">
-            Gestionnaire de mots de passe chiffré de bout en bout.
-            Vos identifiants restent sur votre appareil. Personne d'autre ne peut les lire.
-          </p>
           <div class="lp-actions">
             <button type="button" id="btn-landing-start" class="lp-btn lp-btn-primary">Créer un compte</button>
             <button type="button" id="btn-landing-login" class="lp-btn lp-btn-secondary">Se connecter</button>
           </div>
+          <p class="lp-desc">
+            Gestionnaire de mots de passe chiffré de bout en bout.
+            Vos identifiants restent sur votre appareil. Personne d'autre ne peut les lire.
+          </p>
         </div>
       </section>
     </div>
@@ -63,7 +62,7 @@
             <div class="logo-shield">
               <i data-lucide="shield-check"></i>
             </div>
-            <h1>Gestion’air</h1>
+            <h1>Gardefort</h1>
             <p class="subtitle">Vos mots de passe, chiffrés et sécurisés</p>
           </div>
         </div>
@@ -82,7 +81,7 @@
               <input
                 type="text"
                 id="login-email"
-                name="gestionair-login-email"
+                name="gardefort-login-email"
                 placeholder="vous@email.com"
                 autocomplete="off"
                 spellcheck="false"
@@ -100,7 +99,7 @@
               <input
                 type="password"
                 id="login-password"
-                name="gestionair-master-login"
+                name="gardefort-master-login"
                 placeholder="••••••••"
                 autocomplete="off"
                 data-lpignore="true"
@@ -113,9 +112,59 @@
               </button>
             </div>
           </div>
+          <p class="auth-forgot">
+            <button type="button" id="btn-forgot-master" class="link-btn">Mot de passe maître oublié&nbsp;?</button>
+          </p>
           <button type="submit" id="btn-login" class="btn btn-primary btn-full">
             <span>Se connecter</span>
             <i data-lucide="arrow-right"></i>
+          </button>
+        </form>
+
+        <form id="form-recovery" class="auth-form hidden" autocomplete="off" data-form-type="other">
+          <p class="shares-hint">Entrez votre email et <strong>une</strong> de vos 7 clés de récupération.</p>
+          <div class="form-group">
+            <label for="recovery-email">Email</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="mail"></i></span>
+              <input type="email" id="recovery-email" required placeholder="vous@email.com" autocomplete="off" spellcheck="false">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="recovery-code">Clé de récupération</label>
+            <textarea id="recovery-code" rows="3" required placeholder="XXXX-XXXX-XXXX-…" spellcheck="false"></textarea>
+          </div>
+          <button type="submit" id="btn-recovery-begin" class="btn btn-primary btn-full">
+            <span>Continuer</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+          <button type="button" id="btn-recovery-back" class="btn btn-secondary btn-full" style="margin-top:0.65rem">Retour à la connexion</button>
+        </form>
+
+        <form id="form-recovery-reset" class="auth-form hidden" autocomplete="off" data-form-type="other">
+          <p class="shares-hint">Choisissez un nouveau mot de passe maître. La clé utilisée sera invalidée.</p>
+          <div class="form-group">
+            <label for="recovery-new-password">Nouveau mot de passe maître</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input type="password" id="recovery-new-password" required minlength="12" autocomplete="off">
+              <button type="button" class="btn-eye" data-target="recovery-new-password" aria-label="Afficher">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+            <div class="strength-bar"><div id="recovery-strength-fill" class="strength-fill"></div></div>
+            <div id="recovery-strength-label" class="strength-label"></div>
+          </div>
+          <div class="form-group">
+            <label for="recovery-new-password-confirm">Confirmer</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input type="password" id="recovery-new-password-confirm" required minlength="12" autocomplete="off">
+            </div>
+          </div>
+          <button type="submit" id="btn-recovery-complete" class="btn btn-primary btn-full">
+            <span>Réinitialiser le coffre</span>
+            <i data-lucide="key-round"></i>
           </button>
         </form>
 
@@ -124,21 +173,21 @@
             <label for="register-first-name">Prénom</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="user"></i></span>
-              <input type="text" id="register-first-name" name="gestionair-first-name" required placeholder="Pierre" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
+              <input type="text" id="register-first-name" name="gardefort-first-name" required placeholder="Pierre" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
             </div>
           </div>
           <div class="form-group">
             <label for="register-middle-name">Deuxième prénom <span class="optional">(optionnel)</span></label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="user"></i></span>
-              <input type="text" id="register-middle-name" name="gestionair-middle-name" placeholder="Jean" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
+              <input type="text" id="register-middle-name" name="gardefort-middle-name" placeholder="Jean" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
             </div>
           </div>
           <div class="form-group">
             <label for="register-last-name">Nom</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="user"></i></span>
-              <input type="text" id="register-last-name" name="gestionair-last-name" required placeholder="Dupont" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
+              <input type="text" id="register-last-name" name="gardefort-last-name" required placeholder="Dupont" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
             </div>
           </div>
           <div class="form-group">
@@ -148,7 +197,7 @@
               <input
                 type="email"
                 id="register-email"
-                name="gestionair-register-email"
+                name="gardefort-register-email"
                 required
                 placeholder="vous@email.com"
                 autocomplete="off"
@@ -159,14 +208,14 @@
               >
             </div>
           </div>
-          <div class="form-group">
+          <div class="form-group form-group--span">
             <label for="register-password">Mot de passe maître</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
               <input
                 type="password"
                 id="register-password"
-                name="gestionair-master-register"
+                name="gardefort-master-register"
                 required
                 placeholder="Min. 12 caractères"
                 autocomplete="off"
@@ -182,14 +231,14 @@
             <div class="strength-bar"><div id="strength-fill" class="strength-fill"></div></div>
             <div id="strength-label" class="strength-label"></div>
           </div>
-          <div class="form-group">
+          <div class="form-group form-group--span">
             <label for="register-password-confirm">Confirmer</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
               <input
                 type="password"
                 id="register-password-confirm"
-                name="gestionair-master-confirm"
+                name="gardefort-master-confirm"
                 required
                 placeholder="••••••••"
                 autocomplete="off"
@@ -220,14 +269,14 @@
           <i data-lucide="shield-check"></i>
         </div>
         <div class="sidebar-brand-text">
-          <div class="sidebar-title">Gestion’air</div>
+          <div class="sidebar-title">Gardefort</div>
           <div class="sidebar-subtitle">Gestionnaire sécurisé</div>
         </div>
       </div>
 
-      <button id="btn-add-sidebar" class="sidebar-add-btn" title="Nouvelle entrée">
+      <button id="btn-add-sidebar" class="sidebar-add-btn" title="Nouvelle clé">
         <i data-lucide="plus"></i>
-        <span class="sidebar-text">Nouvelle entrée</span>
+        <span class="sidebar-text">Nouvelle clé</span>
       </button>
 
       <nav class="sidebar-nav">
@@ -236,14 +285,22 @@
           <i data-lucide="layout-dashboard"></i>
           <span class="sidebar-text">Dashboard</span>
         </button>
-        <button class="nav-item" data-page="vault" title="Tous les mots de passe">
+        <button class="nav-item" data-page="vault" title="Toutes les clés">
           <i data-lucide="key-square"></i>
-          <span class="sidebar-text">Tous les mots de passe</span>
+          <span class="sidebar-text">Toutes les clés</span>
           <span class="nav-badge" id="nav-count-all">0</span>
         </button>
-        <button class="nav-item" data-page="profile" title="Mon profil">
-          <i data-lucide="user"></i>
-          <span class="sidebar-text">Mon profil</span>
+
+        <div class="sidebar-section-label">Partage</div>
+        <button class="nav-item nav-item-sub" data-page="shares-received" title="Partages reçus">
+          <i data-lucide="mail"></i>
+          <span class="sidebar-text">Reçu</span>
+          <span class="nav-badge" id="nav-count-received">0</span>
+        </button>
+        <button class="nav-item nav-item-sub" data-page="shares-sent" title="Partages envoyés">
+          <i data-lucide="users"></i>
+          <span class="sidebar-text">Envoyé</span>
+          <span class="nav-badge" id="nav-count-sent">0</span>
         </button>
       </nav>
 
@@ -294,7 +351,7 @@
             </button>
           </div>
 
-          <div class="dash-tabs" role="tablist" aria-label="Trier les entrées">
+          <div class="dash-tabs" role="tablist" aria-label="Trier les clés">
             <button type="button" class="dash-tab active" data-dash-tab="popular" role="tab">Populaires</button>
             <button type="button" class="dash-tab" data-dash-tab="recent" role="tab">Récents</button>
             <button type="button" class="dash-tab" data-dash-tab="az" role="tab">A à Z</button>
@@ -303,10 +360,10 @@
           <div id="dash-tiles-grid" class="dash-tiles-grid"></div>
           <div id="dash-tiles-empty" class="dash-tiles-empty hidden">
             <i data-lucide="key-round"></i>
-            <p>Aucun mot de passe pour le moment</p>
+            <p>Aucune clé pour le moment</p>
             <button type="button" class="btn btn-primary btn-sm" id="btn-dash-add-empty">
               <i data-lucide="plus"></i>
-              Ajouter une entrée
+              Ajouter une clé
             </button>
           </div>
         </div>
@@ -326,11 +383,11 @@
             <div class="empty-illustration">
               <i data-lucide="key-square"></i>
             </div>
-            <h3>Aucun mot de passe</h3>
-            <p>Commencez par ajouter votre première entrée sécurisée</p>
-            <button class="btn btn-primary" onclick="document.getElementById('fab-add').click()">
+            <h3>Aucune clé</h3>
+            <p>Commencez par ajouter votre première clé sécurisée</p>
+            <button type="button" class="btn btn-primary" id="btn-entries-empty-add">
               <i data-lucide="plus"></i>
-              Ajouter un mot de passe
+              Ajouter une clé
             </button>
           </div>
           <div id="entries-no-results" class="entries-empty hidden">
@@ -341,6 +398,34 @@
             <p>Essayez un autre terme de recherche</p>
           </div>
         </div>
+        </div>
+
+        <div id="shares-received-view" class="shares-view hidden">
+          <div class="shares-toolbar">
+            <p class="shares-hint">Clés que d’autres utilisateurs vous ont envoyées.</p>
+          </div>
+          <div id="shares-received-list" class="entries-grid"></div>
+          <div id="shares-received-empty" class="entries-empty hidden">
+            <div class="empty-illustration empty-illustration-sm">
+              <i data-lucide="mail"></i>
+            </div>
+            <h3>Aucun partage reçu</h3>
+            <p>Quand quelqu’un partage une clé avec vous, elle apparaît ici.</p>
+          </div>
+        </div>
+
+        <div id="shares-sent-view" class="shares-view hidden">
+          <div class="shares-toolbar">
+            <p class="shares-hint">Clés que vous avez partagées. Vous pouvez révoquer l’accès à tout moment.</p>
+          </div>
+          <div id="shares-sent-list" class="entries-grid"></div>
+          <div id="shares-sent-empty" class="entries-empty hidden">
+            <div class="empty-illustration empty-illustration-sm">
+              <i data-lucide="users"></i>
+            </div>
+            <h3>Aucun partage envoyé</h3>
+            <p>Ouvrez une clé de votre coffre et utilisez « Partager ».</p>
+          </div>
         </div>
 
         <div id="profile-view" class="profile-view hidden">
@@ -364,7 +449,7 @@
                 </div>
                 <div class="profile-chip">
                   <i data-lucide="key-round"></i>
-                  <span><strong id="profile-chip-entries">0</strong> entrée(s)</span>
+                  <span><strong id="profile-chip-entries">0</strong> clé(s)</span>
                 </div>
               </div>
             </div>
@@ -580,13 +665,49 @@
             <label>Notes</label>
             <div id="detail-notes" class="detail-notes-text"></div>
           </div>
-          <div class="detail-footer">
+          <div class="detail-field hidden" id="detail-share-note-field">
+            <label>Message du partage</label>
+            <div id="detail-share-note" class="detail-notes-text"></div>
+          </div>
+          <div class="detail-footer detail-footer-actions">
+            <button type="button" id="btn-share-detail" class="btn btn-secondary">
+              <i data-lucide="user-plus"></i>
+              Partager
+            </button>
             <button type="button" id="btn-delete-detail" class="btn btn-danger-outline">
               <i data-lucide="trash-2"></i>
-              Supprimer l'entrée
+              Supprimer
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Partager ─────────────────────────────── -->
+  <div id="modal-share" class="modal">
+    <div class="modal-overlay">
+      <div class="modal-content modal-content-sm">
+        <div class="modal-header">
+          <h2>Partager la clé</h2>
+          <button type="button" id="btn-close-share" class="btn-close"><i data-lucide="x"></i></button>
+        </div>
+        <form id="form-share" class="modal-body">
+          <p class="shares-hint" id="share-entry-title">…</p>
+          <div class="form-group">
+            <label for="share-email">Email du destinataire</label>
+            <input type="email" id="share-email" required placeholder="personne@exemple.com" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="share-note">Note <span class="optional">(optionnel)</span></label>
+            <textarea id="share-note" rows="3" maxlength="500" placeholder="Ex. : compte du foyer, à ne pas modifier…"></textarea>
+          </div>
+          <p class="shares-hint">Le destinataire doit avoir un compte Gardefort. Seule une copie chiffrée pour lui est envoyée.</p>
+          <button type="submit" id="btn-share-submit" class="btn btn-primary btn-full">
+            <span>Envoyer le partage</span>
+            <i data-lucide="user-plus"></i>
+          </button>
+        </form>
       </div>
     </div>
   </div>
@@ -596,7 +717,7 @@
     <div class="modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Nouvelle entrée</h2>
+          <h2>Nouvelle clé</h2>
           <button id="btn-close-add" class="btn-close"><i data-lucide="x"></i></button>
         </div>
         <form id="form-entry" class="modal-body">
@@ -636,6 +757,51 @@
     </div>
   </div>
 
+  <!-- ── Modal clés de récupération ─────────────────── -->
+  <div id="modal-recovery-keys" class="modal">
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="recovery-keys-title">Vos 7 clés de récupération</h2>
+          <button type="button" id="btn-close-recovery-keys" class="btn-close hidden" aria-hidden="true"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <p class="shares-hint recovery-keys-warning">
+            Sauvegardez ces clés <strong>maintenant</strong> (papier, coffre, USB).
+            Elles ne seront plus réaffichées. Gardefort ne peut pas les récupérer pour vous.
+            Une seule suffit pour réinitialiser le mot de passe maître.
+          </p>
+          <ol id="recovery-keys-list" class="recovery-keys-list"></ol>
+          <div class="recovery-keys-actions">
+            <button type="button" id="btn-copy-recovery-keys" class="btn btn-secondary">
+              <i data-lucide="copy"></i>
+              Copier
+            </button>
+            <button type="button" id="btn-download-recovery-png" class="btn btn-secondary">
+              <i data-lucide="image"></i>
+              PNG
+            </button>
+            <button type="button" id="btn-download-recovery-pdf" class="btn btn-secondary">
+              <i data-lucide="file-text"></i>
+              PDF
+            </button>
+            <button type="button" id="btn-download-recovery-keys" class="btn btn-secondary">
+              <i data-lucide="file"></i>
+              TXT
+            </button>
+          </div>
+          <label class="recovery-confirm-label">
+            <input type="checkbox" id="recovery-keys-confirm">
+            <span>J’ai sauvegardé mes 7 clés de récupération hors ligne</span>
+          </label>
+          <button type="button" id="btn-recovery-keys-continue" class="btn btn-primary btn-full" disabled>
+            Continuer vers le coffre
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Modal Confirmation ─────────────────────────── -->
   <div id="modal-confirm" class="modal">
     <div class="modal-overlay">
@@ -656,7 +822,7 @@
               class="confirm-name-input"
               autocomplete="off"
               spellcheck="false"
-              placeholder="Nom de l'entrée"
+              placeholder="Nom de la clé"
             >
           </div>
           <div class="confirm-actions">
@@ -674,12 +840,26 @@
   <!-- ── Toasts ─────────────────────────────────────── -->
   <div id="toasts"></div>
 
+  <div id="compat-banner" class="compat-banner hidden" role="alert">
+    <p id="compat-banner-text"></p>
+    <p class="compat-banner-hint">Utilisez la dernière version de Chrome, Firefox, Edge ou Safari 16+, en HTTPS.</p>
+  </div>
+
   <!-- ── Loading ────────────────────────────────────── -->
   <div id="loading" class="loading-overlay hidden">
     <div class="spinner"></div>
     <div class="loading-text" id="loading-text">Dérivation de clé en cours...</div>
   </div>
 
+  <script nomodule>
+    (function () {
+      var el = document.getElementById('compat-banner');
+      var text = document.getElementById('compat-banner-text');
+      if (!el || !text) return;
+      text.textContent = 'Ce navigateur ne prend pas en charge les modules JavaScript modernes requis par Gardefort.';
+      el.classList.remove('hidden');
+    })();
+  </script>
   <script src="/js/pwa.js" defer></script>
   <script type="module" src="/js/app.js"></script>
 </body>

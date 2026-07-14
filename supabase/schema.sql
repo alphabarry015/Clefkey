@@ -1,5 +1,5 @@
 -- =============================================================================
--- Gestion’air — Schéma PostgreSQL (Supabase)
+-- Gardefort — Schéma PostgreSQL (Supabase)
 -- =============================================================================
 -- Où exécuter : Supabase Dashboard → SQL Editor → New query → Run
 --
@@ -42,8 +42,43 @@ CREATE TABLE IF NOT EXISTS vault_entries (
 CREATE INDEX IF NOT EXISTS vault_entries_owner_id_idx ON vault_entries (owner_id);
 CREATE INDEX IF NOT EXISTS vault_entries_updated_at_idx ON vault_entries (updated_at DESC);
 
+CREATE TABLE IF NOT EXISTS vault_shares (
+    id             VARCHAR(36) PRIMARY KEY,
+    entry_id       VARCHAR(36) REFERENCES vault_entries (id) ON DELETE SET NULL,
+    sender_id      VARCHAR(36) NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    recipient_id   VARCHAR(36) NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    encrypted_data BYTEA       NOT NULL,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS vault_shares_entry_recipient_uniq
+    ON vault_shares (entry_id, recipient_id)
+    WHERE entry_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS vault_shares_sender_id_idx ON vault_shares (sender_id);
+CREATE INDEX IF NOT EXISTS vault_shares_recipient_id_idx ON vault_shares (recipient_id);
+CREATE INDEX IF NOT EXISTS vault_shares_created_at_idx ON vault_shares (created_at DESC);
+
+CREATE TABLE IF NOT EXISTS vault_recovery_keys (
+    id                   VARCHAR(36) PRIMARY KEY,
+    user_id              VARCHAR(36) NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    slot                 SMALLINT    NOT NULL CHECK (slot BETWEEN 1 AND 7),
+    verifier             BYTEA       NOT NULL UNIQUE,
+    encrypted_vault_key  BYTEA       NOT NULL,
+    -- Stocké scellé côté Django : HMAC(SECRET_KEY, SHA-256(domaine||vaultKey))
+    key_proof            BYTEA       NOT NULL,
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, slot)
+);
+
+CREATE INDEX IF NOT EXISTS vault_recovery_keys_user_id_idx ON vault_recovery_keys (user_id);
+
 COMMIT;
 
+-- Si une table existait déjà SANS ON DELETE CASCADE, exécutez aussi :
+--   supabase/fix_delete_cascade.sql
+--
 -- Vérification :
 -- SELECT table_name FROM information_schema.tables
--- WHERE table_schema = 'public' AND table_name IN ('users', 'vault_entries');
+-- WHERE table_schema = 'public'
+--   AND table_name IN ('users', 'vault_entries', 'vault_shares', 'vault_recovery_keys');

@@ -1,14 +1,84 @@
 /* Crypto côté client — compatible avec le backend Python */
 
-import { argon2id } from '/vendor/hash-wasm.esm.min.js';
-import { x25519 } from '/vendor/noble-ed25519.bundle.js';
+import { argon2id } from '../vendor/hash-wasm.esm.min.js';
+import { x25519 } from '../vendor/noble-ed25519.bundle.js';
+import { assertCryptoReady } from './compat.js';
 
 const SALT_SIZE = 16;
 const NONCE_SIZE = 12;
 const KEY_SIZE = 32;
+/** Ne pas changer : les comptes existants dépendent de ces paramètres. */
 const MEMORY_COST = 65536;
 const TIME_COST = 3;
 const PARALLELISM = 4;
+
+let _argon2Worker = null;
+let _argon2WorkerFailed = false;
+let _argon2ReqId = 0;
+
+function getArgon2Worker() {
+  if (_argon2WorkerFailed || typeof Worker === 'undefined') return null;
+  if (_argon2Worker) return _argon2Worker;
+  try {
+    _argon2Worker = new Worker(new URL('./argon2-worker.js', import.meta.url), { type: 'module' });
+    _argon2Worker.onerror = () => {
+      _argon2WorkerFailed = true;
+      try { _argon2Worker.terminate(); } catch (_) { /* ignore */ }
+      _argon2Worker = null;
+    };
+    return _argon2Worker;
+  } catch (_) {
+    _argon2WorkerFailed = true;
+    return null;
+  }
+}
+
+function deriveKeyOnMainThread(masterPassword, salt) {
+  return argon2id({
+    password: new TextEncoder().encode(masterPassword),
+    salt,
+    parallelism: PARALLELISM,
+    iterations: TIME_COST,
+    memorySize: MEMORY_COST,
+    hashLength: KEY_SIZE,
+    outputType: 'binary',
+  }).then((hash) => new Uint8Array(hash));
+}
+
+function deriveKeyInWorker(masterPassword, salt) {
+  const worker = getArgon2Worker();
+  if (!worker) return null;
+  const id = (_argon2ReqId += 1);
+  const saltCopy = new Uint8Array(salt);
+  return new Promise((resolve, reject) => {
+    const onMessage = (event) => {
+      if (!event.data || event.data.id !== id) return;
+      worker.removeEventListener('message', onMessage);
+      if (event.data.ok) {
+        resolve(new Uint8Array(event.data.hash));
+      } else {
+        reject(new Error(event.data.error || 'Échec Argon2'));
+      }
+    };
+    worker.addEventListener('message', onMessage);
+    worker.postMessage({
+      id,
+      password: masterPassword,
+      salt: saltCopy.buffer,
+      parallelism: PARALLELISM,
+      iterations: TIME_COST,
+      memorySize: MEMORY_COST,
+      hashLength: KEY_SIZE,
+    }, [saltCopy.buffer]);
+  });
+}
+
+/** Nombre de clés de récupération générées à l'inscription. */
+export const RECOVERY_KEY_COUNT = 7;
+const RECOVERY_SECRET_SIZE = 32;
+const RECOVERY_WRAP_DOMAIN = 'gardefort-recovery-wrap-v1';
+const RECOVERY_VERIFY_DOMAIN = 'gardefort-recovery-verify-v1';
+const RECOVERY_PROOF_DOMAIN = 'gardefort-recovery-proof-v1';
 
 // ── Utilitaires ──────────────────────────────────────────
 
@@ -41,20 +111,35 @@ function concat(...arrays) {
 // ── Dérivation de clé (Argon2id) ───────────────────────
 
 export function generateSalt() {
+  assertCryptoReady();
   return crypto.getRandomValues(new Uint8Array(SALT_SIZE));
 }
 
 export async function deriveKey(masterPassword, salt) {
-  const hash = await argon2id({
-    password: new TextEncoder().encode(masterPassword),
-    salt,
-    parallelism: PARALLELISM,
-    iterations: TIME_COST,
-    memorySize: MEMORY_COST,
-    hashLength: KEY_SIZE,
-    outputType: 'binary',
-  });
-  return new Uint8Array(hash);
+  assertCryptoReady();
+  try {
+    const viaWorker = deriveKeyInWorker(masterPassword, salt);
+    if (viaWorker) {
+      try {
+        return await viaWorker;
+      } catch (_) {
+        // Fallback thread principal si le worker échoue (CSP, navigateur).
+        _argon2WorkerFailed = true;
+        try { _argon2Worker?.terminate(); } catch (_) { /* ignore */ }
+        _argon2Worker = null;
+        return await deriveKeyOnMainThread(masterPassword, salt);
+      }
+    }
+    return await deriveKeyOnMainThread(masterPassword, salt);
+  } catch (err) {
+    const msg = err && err.message ? String(err.message) : '';
+    if (/memory|out of memory|Array buffer|Wasm|WebAssembly/i.test(msg)) {
+      throw new Error(
+        'Dérivation de clé interrompue (mémoire insuffisante). Fermez des onglets, réessayez, ou utilisez Chrome / Firefox / Edge à jour.',
+      );
+    }
+    throw new Error(msg || 'Échec de la dérivation Argon2. Navigateur non supporté ou trop ancien (Safari 16+ recommandé).');
+  }
 }
 
 export async function createAuthVerifier(derivedKey) {
@@ -66,6 +151,7 @@ export async function createAuthVerifier(derivedKey) {
 // ── AES-256-GCM ──────────────────────────────────────────
 
 async function importAesKey(rawKey) {
+  assertCryptoReady();
   return crypto.subtle.importKey('raw', toBuffer(rawKey), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
 }
 
@@ -118,6 +204,34 @@ export async function decryptPrivateKey(encrypted, vaultKey) {
   return decryptBytes(encrypted, vaultKey);
 }
 
+async function deriveSharedAesKey(privateKey, publicKey) {
+  const shared = x25519.getSharedSecret(privateKey, publicKey);
+  const digest = await crypto.subtle.digest('SHA-256', toBuffer(new Uint8Array(shared)));
+  return new Uint8Array(digest);
+}
+
+/** Chiffre un objet JSON pour la clé publique X25519 du destinataire (ECDH éphémère). */
+export async function encryptForRecipient(data, recipientPublicKey) {
+  assertCryptoReady();
+  const ephemeral = generateKeypair();
+  const aesKey = await deriveSharedAesKey(ephemeral.privateKey, recipientPublicKey);
+  const encrypted = await encryptBytes(new TextEncoder().encode(JSON.stringify(data)), aesKey);
+  return concat(ephemeral.publicKey, encrypted);
+}
+
+/** Déchiffre un blob produit par encryptForRecipient. */
+export async function decryptFromSender(blob, privateKey) {
+  assertCryptoReady();
+  if (!blob || blob.length < 32 + NONCE_SIZE + 16) {
+    throw new Error('Partage invalide');
+  }
+  const ephemeralPublicKey = blob.slice(0, 32);
+  const encrypted = blob.slice(32);
+  const aesKey = await deriveSharedAesKey(privateKey, ephemeralPublicKey);
+  const plaintext = await decryptBytes(encrypted, aesKey);
+  return JSON.parse(new TextDecoder().decode(plaintext));
+}
+
 // ── Générateur de mots de passe ──────────────────────────
 
 export function generatePassword(length = 20) {
@@ -125,6 +239,86 @@ export function generatePassword(length = 20) {
   const arr = new Uint8Array(length);
   crypto.getRandomValues(arr);
   return Array.from(arr, b => chars[b % chars.length]).join('');
+}
+
+// ── Récupération (7 clés haute entropie) ─────────────────
+
+function generateRecoverySecret() {
+  assertCryptoReady();
+  return crypto.getRandomValues(new Uint8Array(RECOVERY_SECRET_SIZE));
+}
+
+/** Affichage humain : HEX groupé (256 bits d'entropie). */
+export function formatRecoveryCode(secret) {
+  const hex = Array.from(secret, (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  return hex.match(/.{1,4}/g).join('-');
+}
+
+export function parseRecoveryCode(code) {
+  const hex = String(code || '').replace(/[^0-9a-fA-F]/g, '');
+  if (hex.length !== RECOVERY_SECRET_SIZE * 2) {
+    throw new Error('Clé de récupération invalide (format attendu : 64 hexadécimaux)');
+  }
+  const out = new Uint8Array(RECOVERY_SECRET_SIZE);
+  for (let i = 0; i < RECOVERY_SECRET_SIZE; i += 1) {
+    out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return out;
+}
+
+async function hashDomain(domain, secret) {
+  const data = concat(new TextEncoder().encode(domain), secret);
+  return new Uint8Array(await crypto.subtle.digest('SHA-256', toBuffer(data)));
+}
+
+async function recoveryWrappingKey(secret) {
+  return hashDomain(RECOVERY_WRAP_DOMAIN, secret);
+}
+
+export async function recoveryVerifierFromSecret(secret) {
+  return hashDomain(RECOVERY_VERIFY_DOMAIN, secret);
+}
+
+export async function recoveryVerifierFromCode(code) {
+  return recoveryVerifierFromSecret(parseRecoveryCode(code));
+}
+
+export async function recoveryKeyProofFromVaultKey(vaultKey) {
+  return hashDomain(RECOVERY_PROOF_DOMAIN, vaultKey);
+}
+
+export async function createRecoveryPackages(vaultKey) {
+  const codes = [];
+  const packages = [];
+  const keyProof = await recoveryKeyProofFromVaultKey(vaultKey);
+  const keyProofB64 = toB64(keyProof);
+  for (let i = 0; i < RECOVERY_KEY_COUNT; i += 1) {
+    const secret = generateRecoverySecret();
+    const wrapKey = await recoveryWrappingKey(secret);
+    const encrypted = await encryptBytes(vaultKey, wrapKey);
+    const verifier = await recoveryVerifierFromSecret(secret);
+    codes.push(formatRecoveryCode(secret));
+    packages.push({
+      verifier: toB64(verifier),
+      encrypted_vault_key: toB64(encrypted),
+      key_proof: keyProofB64,
+    });
+  }
+  return { codes, packages };
+}
+
+export async function unwrapVaultKeyWithRecoveryCode(code, encryptedVaultKeyRecovery) {
+  const secret = parseRecoveryCode(code);
+  const wrapKey = await recoveryWrappingKey(secret);
+  return decryptBytes(encryptedVaultKeyRecovery, wrapKey);
+}
+
+/** Nouveau MDP maître après récupération (sans régénérer les clés). */
+export async function prepareMasterPasswordReset(vaultKey, newMasterPassword, salt) {
+  const derived = await deriveKey(newMasterPassword, salt);
+  const authVerifier = await createAuthVerifier(derived);
+  const encryptedVaultKey = await encryptBytes(vaultKey, derived);
+  return { authVerifier, encryptedVaultKey };
 }
 
 // ── Session crypto ───────────────────────────────────────
@@ -137,7 +331,18 @@ export async function prepareRegistration(masterPassword) {
   const { privateKey, publicKey } = generateKeypair();
   const encryptedVaultKey = await encryptBytes(vaultKey, derived);
   const encryptedPrivateKey = await encryptPrivateKey(privateKey, vaultKey);
-  return { salt, authVerifier, vaultKey, privateKey, publicKey, encryptedVaultKey, encryptedPrivateKey };
+  const recovery = await createRecoveryPackages(vaultKey);
+  return {
+    salt,
+    authVerifier,
+    vaultKey,
+    privateKey,
+    publicKey,
+    encryptedVaultKey,
+    encryptedPrivateKey,
+    recoveryCodes: recovery.codes,
+    recoveryPackages: recovery.packages,
+  };
 }
 
 export async function unlockSession(authResponse, masterPassword) {

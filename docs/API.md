@@ -1,4 +1,4 @@
-# API HTTP — Gestion’air
+# API HTTP — Gardefort
 
 Base URL : origine du site (`https://…vercel.app` ou `http://127.0.0.1:8000`).
 

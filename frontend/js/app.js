@@ -1,5 +1,5 @@
 /**
- * Application principale — Gestion’air
+ * Application principale — Gardefort
  *
  * Écrans : auth → dashboard / liste / profil
  * Mode dev : localhost + champs vides → données mock en mémoire
@@ -9,6 +9,13 @@
 import {
   toB64, fromB64, prepareRegistration, unlockSession, prepareLogin,
   encryptData, decryptData, generatePassword,
+  encryptForRecipient, decryptFromSender,
+  RECOVERY_KEY_COUNT,
+  recoveryVerifierFromCode,
+  recoveryKeyProofFromVaultKey,
+  unwrapVaultKeyWithRecoveryCode,
+  prepareMasterPasswordReset,
+  decryptPrivateKey,
 } from './crypto.js';
 import { api } from './api.js';
 import { initIcons, refreshIcons, setLucideIcon } from './icons.js';
@@ -25,6 +32,22 @@ import {
   checkStrength,
   validateMasterPassword,
 } from './master-password.js';
+import {
+  saveSession,
+  loadSessionIfFresh,
+  clearStoredSession,
+  startIdleWatch,
+  stopIdleWatch,
+  IDLE_TIMEOUT_MS,
+} from './session.js';
+import { showCompatBannerIfNeeded, copyToClipboard } from './compat.js';
+import {
+  recoveryCodesAsText,
+  downloadRecoveryKeysPng,
+  downloadRecoveryKeysPdf,
+  downloadRecoveryKeysTxt,
+} from './recovery-export.js';
+import { createAuthScreens } from './auth-screens.js';
 
 const state = {
   token: null,
@@ -33,6 +56,8 @@ const state = {
   privateKey: null,
   publicKey: null,
   entries: [],
+  sharesReceived: [],
+  sharesSent: [],
   devMode: false,
   page: 'dashboard',
   search: '',
@@ -41,6 +66,11 @@ const state = {
   confirmCallback: null,
   confirmDeleteName: null,
   detailEntryId: null,
+  shareEntryId: null,
+  /** @type {null | { email: string, verifierB64: string, vaultKey: Uint8Array, privateKey: Uint8Array, publicKey: Uint8Array, salt: Uint8Array }} */
+  recoverySession: null,
+  pendingRecoveryCodes: null,
+  afterRecoveryKeys: null,
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -114,42 +144,6 @@ const PROFILE_FIELD_CONFIG = {
     normalize: (value) => value.trim().toLowerCase(),
   },
 };
-
-const screens = { landing: $('#screen-landing'), auth: $('#screen-auth'), vault: $('#screen-vault') };
-
-function showScreen(name) {
-  Object.values(screens).forEach(s => s.classList.remove('active'));
-  screens[name].classList.add('active');
-}
-
-function openAuthTab(tab = 'login') {
-  $('#tab-login').classList.toggle('active', tab === 'login');
-  $('#tab-register').classList.toggle('active', tab === 'register');
-  $('#form-login').classList.toggle('hidden', tab !== 'login');
-  $('#form-register').classList.toggle('hidden', tab !== 'register');
-  if (tab === 'register') prefetchCommonPasswords();
-  showScreen('auth');
-  refreshIcons($('#screen-auth'));
-}
-
-function bindLandingNavigation() {
-  const goRegister = () => openAuthTab('register');
-  const goLogin = () => openAuthTab('login');
-
-  $('#btn-landing-start')?.addEventListener('click', goRegister);
-  $('#btn-landing-login')?.addEventListener('click', goLogin);
-  $('#btn-back-landing')?.addEventListener('click', () => {
-    showScreen('landing');
-    refreshIcons($('#screen-landing'));
-  });
-  $('#tab-login')?.addEventListener('click', () => openAuthTab('login'));
-  $('#tab-register')?.addEventListener('click', () => openAuthTab('register'));
-}
-
-// Navigation landing tout de suite (avant les imports lourds / listeners coffre).
-bindLandingNavigation();
-showScreen('landing');
-
 
 const AVATAR_COLORS = [
   ['#3b82f6', '#2563eb'], ['#34d399', '#10b981'], ['#60a5fa', '#3b82f6'],
@@ -302,8 +296,44 @@ function closeModal(modal) {
   syncBodyModalLock();
 }
 
+const {
+  showScreen,
+  openAuthTab,
+  showRecoveryKeysModal,
+  bindLandingNavigation,
+  bindRecoveryExportButtons,
+} = createAuthScreens({
+  $,
+  state,
+  refreshIcons,
+  prefetchCommonPasswords,
+  openModal,
+  closeModal,
+  esc,
+});
+
+// Navigation landing tôt (avant les listeners coffre).
+bindLandingNavigation();
+showScreen('landing');
+bindRecoveryExportButtons({
+  toast,
+  copyToClipboard,
+  recoveryCodesAsText,
+  downloadRecoveryKeysPng,
+  downloadRecoveryKeysPdf,
+  downloadRecoveryKeysTxt,
+});
+
+function isRecoveryKeysModalOpen() {
+  return Boolean($('#modal-recovery-keys')?.classList.contains('open'));
+}
+
 function closeAllModals() {
-  $$('.modal.open').forEach(m => m.classList.remove('open'));
+  // Ne jamais fermer le modal des 7 clés sans confirmation explicite.
+  $$('.modal.open').forEach(m => {
+    if (m.id === 'modal-recovery-keys') return;
+    m.classList.remove('open');
+  });
   syncBodyModalLock();
   resetDeleteConfirm();
   state.detailEntryId = null;
@@ -316,10 +346,10 @@ function resetDeleteConfirm() {
   state.confirmCallback = null;
 }
 
-function showDeleteConfirm(entry, onConfirm) {
-  $('#confirm-title').textContent = 'Supprimer l\'entrée';
-  $('#confirm-message').textContent =
-    'Cette action est irréversible. Toutes les informations de cette entrée seront définitivement supprimées.';
+function showDeleteConfirm(entry, onConfirm, options = {}) {
+  $('#confirm-title').textContent = options.title || 'Supprimer la clé';
+  $('#confirm-message').textContent = options.message
+    || 'Cette action est irréversible. Toutes les informations de cette clé seront définitivement supprimées.';
   $('#confirm-name-expected').textContent = entry.title;
   state.confirmDeleteName = entry.title;
   state.confirmCallback = onConfirm;
@@ -360,11 +390,16 @@ $('#btn-confirm-ok').addEventListener('click', () => {
 });
 
 async function copyText(text, btn) {
-  await navigator.clipboard.writeText(text);
+  const ok = await copyToClipboard(text);
+  if (!ok) {
+    toast('Impossible de copier — autorisez le presse-papiers ou copiez manuellement', 'error');
+    return false;
+  }
   if (btn) {
     btn.classList.add('copied');
     setTimeout(() => btn.classList.remove('copied'), 1500);
   }
+  return true;
 }
 
 // ── Password strength (UI) ───────────────────────────────
@@ -395,7 +430,9 @@ $('#register-password').addEventListener('input', (e) => {
 
 const PAGE_TITLES = {
   dashboard: { title: 'Accueil', subtitle: 'Vos connexions en un coup d\'œil' },
-  vault: { title: 'Tous les mots de passe', subtitle: 'Votre coffre complet' },
+  vault: { title: 'Toutes les clés', subtitle: 'Votre coffre complet' },
+  'shares-received': { title: 'Partage · Reçu', subtitle: 'Clés partagées avec vous' },
+  'shares-sent': { title: 'Partage · Envoyé', subtitle: 'Clés que vous avez partagées' },
   profile: { title: 'Mon profil', subtitle: 'Informations de votre compte' },
 };
 
@@ -404,8 +441,9 @@ function updatePageTitle() {
   $('#page-title').textContent = page.title;
   $('#page-subtitle').textContent = page.subtitle;
   const onProfile = state.page === 'profile';
-  $('#topbar-total').classList.toggle('hidden', onProfile);
-  $('#fab-add').classList.toggle('hidden', onProfile);
+  const onShares = state.page === 'shares-received' || state.page === 'shares-sent';
+  $('#topbar-total').classList.toggle('hidden', onProfile || onShares);
+  $('#fab-add').classList.toggle('hidden', onProfile || onShares);
 }
 
 function switchPage(page) {
@@ -415,6 +453,8 @@ function switchPage(page) {
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.page === page));
   $('#dashboard-view').classList.toggle('hidden', page !== 'dashboard');
   $('#vault-view').classList.toggle('hidden', page !== 'vault');
+  $('#shares-received-view')?.classList.toggle('hidden', page !== 'shares-received');
+  $('#shares-sent-view')?.classList.toggle('hidden', page !== 'shares-sent');
   $('#profile-view').classList.toggle('hidden', page !== 'profile');
   updatePageTitle();
   updateEntryCounts();
@@ -422,6 +462,8 @@ function switchPage(page) {
   try {
     if (page === 'dashboard') renderDashboard();
     else if (page === 'vault') renderEntries();
+    else if (page === 'shares-received') renderSharesReceived();
+    else if (page === 'shares-sent') renderSharesSent();
     else if (page === 'profile') renderProfile();
   } catch (err) {
     console.error('Erreur affichage page:', err);
@@ -465,6 +507,11 @@ function showVault() {
   setSidebarExpanded(!isMobileLayout());
   state.page = 'dashboard';
   switchPage('dashboard');
+  if (!state.devMode) {
+    saveSession(state);
+    startIdleWatch(() => state, () => lockVault('idle'));
+    loadShares().catch((err) => console.warn('Partages:', err));
+  }
 }
 
 // ── Auth ─────────────────────────────────────────────────
@@ -526,8 +573,8 @@ $('#form-login').addEventListener('submit', async (e) => {
     try {
       await loadEntries();
     } catch (err) {
-      console.warn('Chargement des entrées partiel:', err);
-      toast('Connexion réussie, mais certaines entrées n\'ont pas pu être chargées', 'info');
+      console.warn('Chargement des clés partiel:', err);
+      toast('Connexion réussie, mais certaines clés n\'ont pas pu être chargées', 'info');
     }
     showVault();
     toast('Coffre déverrouillé', 'success');
@@ -556,10 +603,11 @@ $('#form-register').addEventListener('submit', async (e) => {
       toast(masterError, 'error');
       return;
     }
-    showLoading('Création du coffre chiffré...');
+    showLoading('Création du coffre et des clés de récupération...');
     const prep = await prepareRegistration(master);
+    const email = $('#register-email').value.trim();
     const data = await api.register({
-      email: $('#register-email').value.trim(),
+      email,
       first_name: $('#register-first-name').value.trim(),
       middle_name: $('#register-middle-name').value.trim(),
       last_name: $('#register-last-name').value.trim(),
@@ -568,6 +616,7 @@ $('#form-register').addEventListener('submit', async (e) => {
       encrypted_vault_key: toB64(prep.encryptedVaultKey),
       public_key: toB64(prep.publicKey),
       encrypted_private_key: toB64(prep.encryptedPrivateKey),
+      recovery_keys: prep.recoveryPackages,
     });
     state.token = data.access_token;
     state.user = userFromProfile(data);
@@ -576,8 +625,15 @@ $('#form-register').addEventListener('submit', async (e) => {
     state.publicKey = prep.publicKey;
     state.entries = [];
     clearAuthSecrets();
-    showVault();
-    toast('Compte créé avec succès', 'success');
+    hideLoading();
+    showRecoveryKeysModal(prep.recoveryCodes, {
+      email,
+      title: `${RECOVERY_KEY_COUNT} clés de récupération`,
+      onContinue: () => {
+        showVault();
+        toast('Compte créé avec succès', 'success');
+      },
+    });
   } catch (err) {
     toast(err.message, 'error');
   } finally {
@@ -586,9 +642,135 @@ $('#form-register').addEventListener('submit', async (e) => {
   }
 });
 
-$('#btn-lock').addEventListener('click', lockVault);
+$('#btn-lock').addEventListener('click', () => lockVault('manual'));
 
-function lockVault() {
+$('#btn-forgot-master')?.addEventListener('click', () => {
+  const email = ($('#login-email')?.value || '').trim();
+  openAuthTab('recovery');
+  if ($('#recovery-email')) $('#recovery-email').value = email;
+  if ($('#recovery-code')) $('#recovery-code').value = '';
+  setTimeout(() => $('#recovery-code')?.focus(), 50);
+});
+
+$('#btn-recovery-back')?.addEventListener('click', () => openAuthTab('login'));
+
+$('#form-recovery')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = ($('#recovery-email')?.value || '').trim().toLowerCase();
+  const code = ($('#recovery-code')?.value || '').trim();
+  if (!email || !code) {
+    toast('Email et clé de récupération requis', 'error');
+    return;
+  }
+  const btn = $('#btn-recovery-begin');
+  btn.disabled = true;
+  showLoading('Vérification de la clé de récupération...');
+  try {
+    const verifier = await recoveryVerifierFromCode(code);
+    const verifierB64 = toB64(verifier);
+    const data = await api.recoveryBegin(email, verifierB64);
+    const vaultKey = await unwrapVaultKeyWithRecoveryCode(
+      code,
+      fromB64(data.encrypted_vault_key_recovery),
+    );
+    const privateKey = await decryptPrivateKey(fromB64(data.encrypted_private_key), vaultKey);
+    state.recoverySession = {
+      email: data.email,
+      verifierB64,
+      vaultKey,
+      privateKey,
+      publicKey: fromB64(data.public_key),
+      salt: fromB64(data.salt),
+    };
+    openAuthTab('recovery-reset');
+    toast('Clé acceptée. Elle sera invalidée après la réinitialisation.', 'info');
+  } catch (err) {
+    toast(err.message || 'Récupération impossible', 'error');
+  } finally {
+    hideLoading();
+    btn.disabled = false;
+  }
+});
+
+$('#recovery-new-password')?.addEventListener('input', (e) => {
+  const score = checkStrength(e.target.value);
+  const fill = $('#recovery-strength-fill');
+  const label = $('#recovery-strength-label');
+  if (!fill || !label) return;
+  const levels = [
+    { w: '0%', c: 'transparent', t: '' },
+    { w: '20%', c: 'var(--error)', t: 'Très faible' },
+    { w: '40%', c: 'var(--warning)', t: 'Faible' },
+    { w: '60%', c: 'var(--info)', t: 'Moyen' },
+    { w: '80%', c: 'var(--success)', t: 'Fort' },
+    { w: '100%', c: 'var(--success)', t: 'Très fort' },
+  ];
+  const lvl = levels[score];
+  fill.style.width = lvl.w;
+  fill.style.background = lvl.c;
+  label.textContent = lvl.t;
+  label.style.color = lvl.c || 'var(--text-muted)';
+});
+
+$('#form-recovery-reset')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const session = state.recoverySession;
+  if (!session) {
+    openAuthTab('recovery');
+    return;
+  }
+  const master = $('#recovery-new-password')?.value || '';
+  const confirm = $('#recovery-new-password-confirm')?.value || '';
+  if (master !== confirm) {
+    toast('Les mots de passe ne correspondent pas', 'error');
+    return;
+  }
+  const btn = $('#btn-recovery-complete');
+  btn.disabled = true;
+  showLoading('Vérification du nouveau mot de passe...');
+  try {
+    const masterError = await validateMasterPassword(master);
+    if (masterError) {
+      toast(masterError, 'error');
+      return;
+    }
+    showLoading('Réchiffrement du coffre...');
+    const prep = await prepareMasterPasswordReset(session.vaultKey, master, session.salt);
+    const keyProof = await recoveryKeyProofFromVaultKey(session.vaultKey);
+    const data = await api.recoveryComplete({
+      email: session.email,
+      verifier: session.verifierB64,
+      key_proof: toB64(keyProof),
+      auth_verifier: toB64(prep.authVerifier),
+      encrypted_vault_key: toB64(prep.encryptedVaultKey),
+    });
+    state.token = data.access_token;
+    state.user = userFromProfile(data);
+    state.vaultKey = session.vaultKey;
+    state.privateKey = session.privateKey;
+    state.publicKey = session.publicKey;
+    state.entries = [];
+    state.recoverySession = null;
+    clearAuthSecrets();
+    $('#form-recovery-reset')?.reset();
+    try {
+      await loadEntries();
+    } catch (err) {
+      console.warn(err);
+    }
+    showVault();
+    toast('Mot de passe réinitialisé. La clé utilisée est maintenant invalide.', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    hideLoading();
+    btn.disabled = false;
+  }
+});
+
+function lockVault(reason = 'manual') {
+  stopIdleWatch();
+  clearStoredSession();
   Object.assign(state, {
     token: null,
     user: null,
@@ -596,23 +778,40 @@ function lockVault() {
     privateKey: null,
     publicKey: null,
     entries: [],
+    sharesReceived: [],
+    sharesSent: [],
+    shareEntryId: null,
+    detailEntryId: null,
+    recoverySession: null,
+    pendingRecoveryCodes: null,
+    afterRecoveryKeys: null,
     devMode: false,
     page: 'dashboard',
     search: '',
     dashTab: 'popular',
     dashSearch: '',
   });
+  // Force-close même le modal des 7 clés si le coffre se verrouille.
+  $('#modal-recovery-keys')?.classList.remove('open');
   closeAllModals();
   clearAuthSecrets();
   clearLoginForm();
   $('#form-register')?.reset();
+  $('#form-recovery')?.reset();
+  $('#form-recovery-reset')?.reset();
   collapseSidebar();
   showScreen('landing');
   refreshIcons($('#screen-landing'));
-  toast('Coffre verrouillé', 'info');
+  const minutes = Math.round(IDLE_TIMEOUT_MS / 60000);
+  toast(
+    reason === 'idle'
+      ? `Coffre verrouillé après ${minutes} min d'inactivité`
+      : 'Coffre verrouillé',
+    'info',
+  );
 }
 
-// ── Entrées ──────────────────────────────────────────────
+// ── Clés ─────────────────────────────────────────────────
 
 async function loadEntries() {
   if (state.devMode) return;
@@ -624,7 +823,7 @@ async function loadEntries() {
       const data = await decryptData(encrypted, state.vaultKey);
       state.entries.push(prepareEntry({ ...data, ...e }));
     } catch (err) {
-      console.warn('Entrée ignorée (déchiffrement impossible):', e.id, err);
+      console.warn('Clé ignorée (déchiffrement impossible):', e.id, err);
     }
   }
 }
@@ -636,13 +835,220 @@ function getFilteredEntries() {
 function refreshCurrentView() {
   if (state.page === 'dashboard') renderDashboard();
   else if (state.page === 'vault') renderEntries();
+  else if (state.page === 'shares-received') renderSharesReceived();
+  else if (state.page === 'shares-sent') renderSharesSent();
   else if (state.page === 'profile') renderProfile();
 }
 
 function updateEntryCounts() {
   $('#entry-count').textContent = state.entries.length;
   $('#nav-count-all').textContent = state.entries.length;
+  const recv = $('#nav-count-received');
+  const sent = $('#nav-count-sent');
+  if (recv) recv.textContent = state.sharesReceived.length;
+  if (sent) sent.textContent = state.sharesSent.length;
 }
+
+async function loadShares() {
+  if (state.devMode || !state.token || !state.privateKey) {
+    state.sharesReceived = [];
+    state.sharesSent = [];
+    updateEntryCounts();
+    return;
+  }
+  const [rawReceived, rawSent] = await Promise.all([
+    api.getSharesReceived(state.token),
+    api.getSharesSent(state.token),
+  ]);
+
+  state.sharesReceived = [];
+  for (const s of rawReceived) {
+    try {
+      const data = await decryptFromSender(fromB64(s.encrypted_data), state.privateKey);
+      state.sharesReceived.push({
+        ...prepareEntry(data),
+        id: s.id,
+        shareId: s.id,
+        isShare: true,
+        share_note: (data.share_note || '').trim(),
+        sender_email: s.sender_email,
+        sender_display_name: s.sender_display_name,
+        created_at: s.created_at,
+      });
+    } catch (err) {
+      console.warn('Partage reçu ignoré:', s.id, err);
+    }
+  }
+
+  state.sharesSent = rawSent.map((s) => {
+    const entry = state.entries.find((e) => e.id === s.entry_id);
+    return {
+      id: s.id,
+      shareId: s.id,
+      entry_id: s.entry_id,
+      title: entry?.title || 'Clé partagée',
+      username: entry?.username || s.recipient_email,
+      url: entry?.url || '',
+      password: entry?.password || '',
+      recipient_email: s.recipient_email,
+      recipient_display_name: s.recipient_display_name,
+      created_at: s.created_at,
+      isShare: true,
+      isSent: true,
+    };
+  });
+
+  updateEntryCounts();
+  if (state.page === 'shares-received' || state.page === 'shares-sent') {
+    refreshCurrentView();
+  }
+}
+
+function renderSharesReceived() {
+  const list = $('#shares-received-list');
+  const empty = $('#shares-received-empty');
+  if (!list || !empty) return;
+  updateEntryCounts();
+  if (state.sharesReceived.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  list.innerHTML = state.sharesReceived.map((e, i) => `
+    <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-share-received">
+      ${entryAvatarMarkup(e)}
+      <div class="entry-info">
+        <div class="entry-title">${esc(e.title)}</div>
+        <div class="entry-username">De ${esc(e.sender_display_name || e.sender_email)}${e.share_note ? ` · ${esc(e.share_note.length > 60 ? `${e.share_note.slice(0, 60)}…` : e.share_note)}` : ''}</div>
+      </div>
+      <div class="entry-actions">
+        <button type="button" class="btn-icon" title="Copier" data-action="copy-share-received" data-id="${esc(e.id)}">
+          <i data-lucide="copy"></i>
+        </button>
+        <button type="button" class="btn-icon btn-danger" title="Retirer" data-action="delete-share" data-id="${esc(e.id)}">
+          <i data-lucide="trash-2"></i>
+        </button>
+      </div>
+    </div>`).join('');
+  refreshIcons(list);
+  setupFaviconImages(list);
+}
+
+function renderSharesSent() {
+  const list = $('#shares-sent-list');
+  const empty = $('#shares-sent-empty');
+  if (!list || !empty) return;
+  updateEntryCounts();
+  if (state.sharesSent.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  list.innerHTML = state.sharesSent.map((e, i) => `
+    <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-share-sent">
+      ${entryAvatarMarkup(e)}
+      <div class="entry-info">
+        <div class="entry-title">${esc(e.title)}</div>
+        <div class="entry-username">À ${esc(e.recipient_display_name || e.recipient_email)}</div>
+      </div>
+      <div class="entry-actions">
+        <button type="button" class="btn-icon btn-danger" title="Révoquer" data-action="delete-share" data-id="${esc(e.id)}">
+          <i data-lucide="trash-2"></i>
+        </button>
+      </div>
+    </div>`).join('');
+  refreshIcons(list);
+  setupFaviconImages(list);
+}
+
+function openShareModal(entryId) {
+  const entry = state.entries.find((x) => x.id === entryId);
+  if (!entry) return;
+  if (state.devMode) {
+    toast('Le partage n’est pas disponible en mode développement', 'info');
+    return;
+  }
+  state.shareEntryId = entryId;
+  $('#share-entry-title').textContent = `Partager « ${entry.title} »`;
+  $('#share-email').value = '';
+  if ($('#share-note')) $('#share-note').value = '';
+  openModal($('#modal-share'));
+  refreshIcons($('#modal-share'));
+  setTimeout(() => $('#share-email')?.focus(), 50);
+}
+
+window.showShareReceived = function(id) {
+  const e = state.sharesReceived.find((x) => x.id === id);
+  if (!e) return;
+  state.detailEntryId = null;
+  setEntryAvatar($('#detail-avatar'), e);
+  $('#detail-title').textContent = e.title;
+  $('#detail-username').textContent = e.username || EMPTY_VALUE;
+  $('#detail-password').textContent = '••••••••••••';
+  $('#detail-password').dataset.real = e.password || '';
+  $('#detail-password').dataset.visible = 'false';
+  const urlField = $('#detail-url-field');
+  if (e.url) {
+    urlField.classList.remove('hidden');
+    const link = $('#detail-url');
+    link.href = e.url.startsWith('http') ? e.url : `https://${e.url}`;
+    link.textContent = e.url;
+  } else {
+    urlField.classList.add('hidden');
+  }
+  const notesField = $('#detail-notes-field');
+  if (e.notes) {
+    notesField.classList.remove('hidden');
+    $('#detail-notes').textContent = e.notes;
+  } else {
+    notesField.classList.add('hidden');
+  }
+  const shareNoteField = $('#detail-share-note-field');
+  if (e.share_note) {
+    shareNoteField?.classList.remove('hidden');
+    $('#detail-share-note').textContent = e.share_note;
+  } else {
+    shareNoteField?.classList.add('hidden');
+  }
+  $('#btn-share-detail')?.classList.add('hidden');
+  $('#btn-delete-detail')?.classList.add('hidden');
+  openModal($('#modal-detail'));
+  refreshIcons($('#modal-detail'));
+};
+
+window.showShareSent = function(id) {
+  const s = state.sharesSent.find((x) => x.id === id);
+  if (!s) return;
+  if (s.entry_id && state.entries.some((e) => e.id === s.entry_id)) {
+    window.showEntry(s.entry_id);
+    return;
+  }
+  toast(`Partagé avec ${s.recipient_display_name || s.recipient_email}`, 'info');
+};
+
+window.deleteShare = function(id) {
+  const received = state.sharesReceived.find((x) => x.id === id);
+  const sent = state.sharesSent.find((x) => x.id === id);
+  const label = received?.title || sent?.title || 'ce partage';
+  showDeleteConfirm(
+    { title: label },
+    async () => {
+      try {
+        await api.deleteShare(state.token, id);
+        await loadShares();
+        toast('Partage retiré', 'info');
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    },
+    {
+      title: 'Retirer le partage',
+      message: 'Le destinataire n’aura plus accès à cette copie. Votre clé d’origine reste intacte.',
+    },
+  );
+};
 
 function getDashboardEntries() {
   const list = filterEntriesByQuery(state.entries, state.dashSearch);
@@ -668,7 +1074,7 @@ function renderDashboard() {
     grid.innerHTML = `
       <button type="button" class="dash-tile dash-tile-add" id="dash-tile-add-only">
         <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
-        <span class="dash-tile-name">Nouvelle entrée</span>
+        <span class="dash-tile-name">Nouvelle clé</span>
       </button>`;
     empty.classList.add('hidden');
     $('#dash-tile-add-only')?.addEventListener('click', openAddModal);
@@ -684,15 +1090,15 @@ function renderDashboard() {
   }
 
   empty.classList.add('hidden');
-  empty.querySelector('p').textContent = 'Aucun mot de passe pour le moment';
+  empty.querySelector('p').textContent = 'Aucune clé pour le moment';
   grid.innerHTML = entries.map((e, i) => `
-      <button type="button" class="${dashTileClassName(e)}" style="${dashTileStyle(e, i)}" onclick="window.showEntry('${e.id}')">
+      <button type="button" class="${dashTileClassName(e)}" style="${dashTileStyle(e, i)}" data-action="show-entry" data-id="${esc(e.id)}">
         ${dashTileIconMarkup(e)}
         <span class="dash-tile-name">${esc(e.title)}</span>
       </button>`).join('') + `
-    <button type="button" class="dash-tile dash-tile-add" onclick="document.getElementById('btn-dash-add').click()">
+    <button type="button" class="dash-tile dash-tile-add" data-action="add-entry">
       <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
-      <span class="dash-tile-name">Nouvelle entrée</span>
+      <span class="dash-tile-name">Nouvelle clé</span>
     </button>`;
 
   refreshIcons(grid);
@@ -847,6 +1253,7 @@ async function saveProfileField(field) {
     if (profile.access_token) state.token = profile.access_token;
     state.user = userFromProfile(profile);
     applyUserToUI(state.user);
+    saveSession(state);
     $('#profile-detail-created').textContent = formatProfileDate(profile.created_at);
     $('#profile-member-since').textContent = formatMemberSince(profile.created_at);
     $('#profile-chip-entries').textContent = profile.entries_count;
@@ -899,17 +1306,17 @@ function renderEntries() {
   }
 
   container.innerHTML = list.map((e, i) => `
-    <div class="entry-card" data-id="${e.id}" style="animation-delay:${i * 0.04}s" onclick="window.showEntry('${e.id}')">
+    <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-entry">
       ${entryAvatarMarkup(e)}
       <div class="entry-info">
         <div class="entry-title">${esc(e.title)}</div>
         <div class="entry-username">${esc(e.username)}</div>
       </div>
-      <div class="entry-actions" onclick="event.stopPropagation()">
-        <button class="btn-icon" title="Copier" onclick="window.copyPassword('${e.id}')">
+      <div class="entry-actions">
+        <button type="button" class="btn-icon" title="Copier" data-action="copy-password" data-id="${esc(e.id)}">
           <i data-lucide="copy"></i>
         </button>
-        <button class="btn-icon btn-danger" title="Supprimer" onclick="window.deleteEntry('${e.id}')">
+        <button type="button" class="btn-icon btn-danger" title="Supprimer" data-action="delete-entry" data-id="${esc(e.id)}">
           <i data-lucide="trash-2"></i>
         </button>
       </div>
@@ -917,6 +1324,74 @@ function renderEntries() {
   refreshIcons(container);
   setupFaviconImages(container);
 }
+
+function resolveEventElement(event) {
+  const t = event.target;
+  if (t instanceof Element) return t;
+  if (t && t.parentElement) return t.parentElement;
+  if (typeof event.composedPath === 'function') {
+    for (const node of event.composedPath()) {
+      if (node instanceof Element) return node;
+    }
+  }
+  return null;
+}
+
+function handleEntryClick(event) {
+  const target = resolveEventElement(event);
+  if (!target) return;
+
+  const root = target.closest('#dash-tiles-grid, #entries-list, #shares-received-list, #shares-sent-list');
+  if (!root) return;
+
+  const actionEl = target.closest('[data-action]');
+  if (!actionEl || !root.contains(actionEl)) return;
+
+  const action = actionEl.dataset.action;
+  const id = actionEl.dataset.id
+    || actionEl.closest('[data-id]')?.dataset.id;
+
+  if (action === 'show-entry' && id) {
+    window.showEntry(id);
+    return;
+  }
+  if (action === 'show-share-received' && id) {
+    window.showShareReceived(id);
+    return;
+  }
+  if (action === 'show-share-sent' && id) {
+    window.showShareSent(id);
+    return;
+  }
+  if (action === 'copy-password' && id) {
+    event.stopPropagation();
+    window.copyPassword(id);
+    return;
+  }
+  if (action === 'copy-share-received' && id) {
+    event.stopPropagation();
+    const e = state.sharesReceived.find((x) => x.id === id);
+    if (e?.password) copyToClipboard(e.password).then((ok) => {
+      toast(ok ? `"${e.title}" copié` : 'Impossible de copier', ok ? 'success' : 'error');
+    });
+    return;
+  }
+  if (action === 'delete-entry' && id) {
+    event.stopPropagation();
+    window.deleteEntry(id);
+    return;
+  }
+  if (action === 'delete-share' && id) {
+    event.stopPropagation();
+    window.deleteShare(id);
+    return;
+  }
+  if (action === 'add-entry') {
+    openAddModal();
+  }
+}
+
+document.addEventListener('click', handleEntryClick);
 
 $$('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -929,6 +1404,7 @@ $$('.nav-item').forEach(btn => {
 
 $('#btn-dash-add').addEventListener('click', openAddModal);
 $('#btn-dash-add-empty').addEventListener('click', openAddModal);
+$('#btn-entries-empty-add')?.addEventListener('click', openAddModal);
 
 $$('.dash-tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -958,19 +1434,19 @@ $('#btn-profile-sidebar').addEventListener('click', () => {
   if (window.innerWidth <= 900) collapseSidebar();
 });
 
-$('#btn-profile-lock').addEventListener('click', lockVault);
+$('#btn-profile-lock').addEventListener('click', () => lockVault('manual'));
 
 $('#btn-copy-profile-email').addEventListener('click', async () => {
   const email = $('#profile-detail-email').textContent;
   if (!email || email === EMPTY_VALUE) return;
-  await copyText(email, $('#btn-copy-profile-email'));
+  if (!(await copyText(email, $('#btn-copy-profile-email')))) return;
   toast('Email copié', 'success');
 });
 
 $('#btn-copy-profile-id').addEventListener('click', async () => {
   const id = $('#profile-detail-id').dataset.full;
   if (!id) return;
-  await copyText(id, $('#btn-copy-profile-id'));
+  if (!(await copyText(id, $('#btn-copy-profile-id')))) return;
   toast('Identifiant copié', 'success');
 });
 
@@ -994,7 +1470,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ── Détail entrée ────────────────────────────────────────
+// ── Détail clé ───────────────────────────────────────────
 
 window.showEntry = function(id) {
   const e = state.entries.find(x => x.id === id);
@@ -1026,9 +1502,66 @@ window.showEntry = function(id) {
     notesField.classList.add('hidden');
   }
 
+  $('#detail-share-note-field')?.classList.add('hidden');
+  $('#btn-share-detail')?.classList.remove('hidden');
+  $('#btn-delete-detail')?.classList.remove('hidden');
   openModal($('#modal-detail'));
   refreshIcons($('#modal-detail'));
 };
+
+$('#btn-share-detail')?.addEventListener('click', () => {
+  if (!state.detailEntryId) return;
+  openShareModal(state.detailEntryId);
+});
+
+$('#btn-close-share')?.addEventListener('click', () => closeModal($('#modal-share')));
+
+$('#form-share')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const entryId = state.shareEntryId;
+  const entry = state.entries.find((x) => x.id === entryId);
+  const email = $('#share-email')?.value.trim().toLowerCase();
+  if (!entry || !email) {
+    toast('Email du destinataire requis', 'error');
+    return;
+  }
+  if (state.user?.email && email === String(state.user.email).toLowerCase()) {
+    toast('Vous ne pouvez pas partager avec vous-même', 'error');
+    return;
+  }
+
+  const btn = $('#btn-share-submit');
+  btn.disabled = true;
+  showLoading('Chiffrement du partage...');
+  try {
+    const recipient = await api.lookupUser(state.token, email);
+    const shareNote = ($('#share-note')?.value || '').trim().slice(0, 500);
+    const payload = {
+      title: entry.title,
+      username: entry.username || '',
+      password: entry.password || '',
+      url: entry.url || '',
+      notes: entry.notes || '',
+      share_note: shareNote,
+      shared_by: state.user.display_name,
+      shared_by_email: state.user.email,
+    };
+    const encrypted = await encryptForRecipient(payload, fromB64(recipient.public_key));
+    await api.createShare(state.token, {
+      entry_id: entry.id,
+      recipient_email: recipient.email,
+      encrypted_data: toB64(encrypted),
+    });
+    await loadShares();
+    closeModal($('#modal-share'));
+    toast(`Partagé avec ${recipient.display_name || recipient.email}`, 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    hideLoading();
+    btn.disabled = false;
+  }
+});
 
 $('#btn-delete-detail').addEventListener('click', () => {
   if (!state.detailEntryId) return;
@@ -1045,14 +1578,14 @@ $('#btn-toggle-pwd').addEventListener('click', () => {
 });
 
 $('#btn-copy-detail').addEventListener('click', async () => {
-  await copyText($('#detail-password').dataset.real, $('#btn-copy-detail'));
+  if (!(await copyText($('#detail-password').dataset.real, $('#btn-copy-detail')))) return;
   toast('Mot de passe copié', 'success');
 });
 
 $$('.btn-copy-field[data-copy]').forEach(btn => {
   btn.addEventListener('click', async () => {
     const text = document.getElementById(btn.dataset.copy).textContent;
-    await copyText(text, btn);
+    if (!(await copyText(text, btn))) return;
     toast('Copié', 'success');
   });
 });
@@ -1062,14 +1595,17 @@ $('#btn-close-detail').addEventListener('click', () => {
   state.detailEntryId = null;
 });
 
-window.copyPassword = function(id) {
+window.copyPassword = async function(id) {
   const e = state.entries.find(x => x.id === id);
   if (!e) return;
-  navigator.clipboard.writeText(e.password);
+  if (!(await copyToClipboard(e.password))) {
+    toast('Impossible de copier — autorisez le presse-papiers ou copiez manuellement', 'error');
+    return;
+  }
   toast(`"${e.title}" copié`, 'success');
 };
 
-// ── Ajouter entrée ───────────────────────────────────────
+// ── Ajouter clé ──────────────────────────────────────────
 
 function openAddModal() {
   $('#form-entry').reset();
@@ -1179,17 +1715,70 @@ window.deleteEntry = function(id) {
 // ── Modales ──────────────────────────────────────────────
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeAllModals();
+  if (e.key === 'Escape') {
+    if (isRecoveryKeysModalOpen()) {
+      toast('Confirmez d’abord avoir sauvegardé vos 7 clés', 'error');
+      return;
+    }
+    closeAllModals();
+  }
 });
 
 $$('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeModal(overlay.closest('.modal'));
+    if (e.target !== overlay) return;
+    const modal = overlay.closest('.modal');
+    if (modal?.id === 'modal-recovery-keys') {
+      toast('Confirmez d’abord avoir sauvegardé vos 7 clés', 'error');
+      return;
+    }
+    closeModal(modal);
   });
 });
+
+async function restoreSessionIfAny() {
+  const saved = loadSessionIfFresh();
+  if (!saved) return false;
+  showLoading('Restauration de la session...');
+  try {
+    Object.assign(state, {
+      ...saved,
+      user: normalizeUser(saved.user),
+      devMode: false,
+      entries: [],
+      sharesReceived: [],
+      sharesSent: [],
+    });
+    try {
+      await loadEntries();
+    } catch (err) {
+      console.warn('Chargement des clés partiel:', err);
+    }
+    showVault();
+    return true;
+  } catch (err) {
+    console.warn('Session non restaurable:', err);
+    clearStoredSession();
+    Object.assign(state, {
+      token: null,
+      user: null,
+      vaultKey: null,
+      privateKey: null,
+      publicKey: null,
+      entries: [],
+      sharesReceived: [],
+      sharesSent: [],
+    });
+    return false;
+  } finally {
+    hideLoading();
+  }
+}
 
 showScreen('landing');
 clearLoginForm();
 initIcons();
 initProfileFieldEdits();
 refreshIcons($('#screen-landing'));
+showCompatBannerIfNeeded();
+restoreSessionIfAny();

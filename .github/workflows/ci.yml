@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      SECRET_KEY: ci-test-secret-not-for-production
+      DEBUG: "true"
+      SQLITE_NAME: "ci_vault.sqlite3"
+      RATE_LIMIT_ALLOW_MEMORY: "1"
+      # Forcer SQLite (pas de Postgres en CI)
+      DATABASE_URL: ""
+      DIRECT_DATABASE_URL: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Django checks
+        run: python manage.py check
+
+      - name: Run tests
+        run: python manage.py test vault.tests --verbosity 2

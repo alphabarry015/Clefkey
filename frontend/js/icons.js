@@ -1,4 +1,4 @@
-import { createIcons, icons } from '/vendor/lucide.bundle.js';
+import { createIcons, icons } from '../vendor/lucide.bundle.js';
 
 const defaultAttrs = {
   'stroke-width': 1.75,

@@ -1,10 +1,12 @@
-"""Vues HTTP de Gestion’air (auth, entrées chiffrées, favicons, PWA)."""
+"""Vues HTTP de Gardefort (auth, entrées chiffrées, favicons, PWA)."""
 
 import hashlib
 import hmac
 import json
 
 from django.conf import settings
+from django.db import transaction
+from django.db.models import Q
 from django.http import FileResponse, HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
@@ -13,7 +15,7 @@ from .auth import b64_decode, b64_encode, create_access_token
 from .crypto.password_gen import generate_password
 from .decorators import api_error, require_auth
 from .favicon import fetch_site_favicon, normalize_page_url
-from .models import VaultEntry, VaultUser
+from .models import VaultEntry, VaultRecoveryKey, VaultShare, VaultUser
 from .ratelimit import rate_limit
 
 # Taille max d'un blob d'entrée (décodé) — limite DoS / stockage.
@@ -21,6 +23,28 @@ MAX_ENCRYPTED_ENTRY_BYTES = 256 * 1024
 # Sel factice 16 octets pour réponses /auth/salt sans révéler l'existence d'un compte.
 SALT_SIZE = 16
 _DUMMY_AUTH_VERIFIER = b"\x00" * 32
+RECOVERY_KEY_COUNT = VaultRecoveryKey.RECOVERY_KEY_COUNT
+# Vérificateur + blob AES-GCM (nonce 12 + tag 16 + 32 octets vaultKey) ≈ 60–120 B attendus
+MAX_RECOVERY_BLOB_BYTES = 512
+VERIFIER_SIZE = 32
+
+
+def _seal_key_proof(raw_proof: bytes) -> bytes:
+    """HMAC serveur du key_proof client — un dump DB ne suffit plus pour complete."""
+    return hmac.new(
+        settings.SECRET_KEY.encode("utf-8"),
+        raw_proof,
+        hashlib.sha256,
+    ).digest()
+
+
+def _key_proof_matches(stored: bytes, provided: bytes) -> bool:
+    """Accepte preuve scellée (nouveau) ou brute héritée (anciens comptes)."""
+    sealed = _seal_key_proof(provided)
+    if hmac.compare_digest(bytes(stored), sealed):
+        return True
+    # Compat comptes créés avant le scellement HMAC.
+    return hmac.compare_digest(bytes(stored), provided)
 
 
 def _decode_encrypted_blob(encrypted_b64: str) -> bytes | str:
@@ -116,6 +140,29 @@ def _entry_response(entry: VaultEntry) -> dict:
     }
 
 
+def _share_received_response(share: VaultShare) -> dict:
+    return {
+        "id": str(share.id),
+        "entry_id": str(share.entry_id) if share.entry_id else None,
+        "sender_id": str(share.sender_id),
+        "sender_email": share.sender.email,
+        "sender_display_name": share.sender.display_name,
+        "encrypted_data": b64_encode(share.encrypted_data),
+        "created_at": share.created_at.isoformat(),
+    }
+
+
+def _share_sent_response(share: VaultShare) -> dict:
+    return {
+        "id": str(share.id),
+        "entry_id": str(share.entry_id) if share.entry_id else None,
+        "recipient_id": str(share.recipient_id),
+        "recipient_email": share.recipient.email,
+        "recipient_display_name": share.recipient.display_name,
+        "created_at": share.created_at.isoformat(),
+    }
+
+
 def index(request):
     index_path = settings.BASE_DIR / "frontend" / "index.html"
     return FileResponse(index_path.open("rb"), content_type="text/html; charset=utf-8")
@@ -143,6 +190,53 @@ def health(request):
     return JsonResponse({"status": "ok"})
 
 
+def _parse_recovery_packages(raw) -> list[tuple[bytes, bytes, bytes]] | str:
+    """Valide exactement 7 paquets {verifier, encrypted_vault_key, key_proof}."""
+    if not isinstance(raw, list) or len(raw) != RECOVERY_KEY_COUNT:
+        return f"Exactement {RECOVERY_KEY_COUNT} clés de récupération sont requises"
+    packages: list[tuple[bytes, bytes, bytes]] = []
+    seen: set[bytes] = set()
+    first_proof: bytes | None = None
+    for item in raw:
+        if not isinstance(item, dict):
+            return "Paquet de récupération invalide"
+        try:
+            verifier = b64_decode(item.get("verifier") or "")
+            blob = b64_decode(item.get("encrypted_vault_key") or "")
+            key_proof = b64_decode(item.get("key_proof") or "")
+        except Exception:
+            return "Paquet de récupération invalide"
+        if len(verifier) != VERIFIER_SIZE:
+            return "Vérificateur de récupération invalide"
+        if len(key_proof) != VERIFIER_SIZE:
+            return "Preuve de récupération invalide"
+        if not blob or len(blob) > MAX_RECOVERY_BLOB_BYTES:
+            return "Blob de récupération invalide"
+        if verifier in seen:
+            return "Vérificateurs de récupération en double"
+        if first_proof is None:
+            first_proof = key_proof
+        elif not hmac.compare_digest(key_proof, first_proof):
+            return "Preuves de récupération incohérentes"
+        seen.add(verifier)
+        packages.append((verifier, blob, key_proof))
+    return packages
+
+
+def _save_recovery_keys(user: VaultUser, packages: list[tuple[bytes, bytes, bytes]]) -> None:
+    VaultRecoveryKey.objects.filter(user=user).delete()
+    VaultRecoveryKey.objects.bulk_create([
+        VaultRecoveryKey(
+            user=user,
+            slot=index,
+            verifier=verifier,
+            encrypted_vault_key=blob,
+            key_proof=_seal_key_proof(key_proof),
+        )
+        for index, (verifier, blob, key_proof) in enumerate(packages, start=1)
+    ])
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 @rate_limit("auth-register", limit=5, window_seconds=60)
@@ -161,6 +255,10 @@ def register(request):
     if not email or not first_name or not last_name or any(not data.get(f) for f in required):
         return api_error("Champs requis manquants", 400)
 
+    packages = _parse_recovery_packages(data.get("recovery_keys"))
+    if isinstance(packages, str):
+        return api_error(packages, 400)
+
     for value, label, required_field in (
         (first_name, "Le prénom", True),
         (middle_name, "Le deuxième prénom", False),
@@ -173,19 +271,123 @@ def register(request):
     if VaultUser.objects.filter(email=email).exists():
         return api_error("Email déjà utilisé", 409)
 
-    user = VaultUser.objects.create(
-        email=email,
-        first_name=first_name,
-        middle_name=middle_name,
-        last_name=last_name,
-        display_name="",
-        salt=b64_decode(data["salt"]),
-        auth_verifier=b64_decode(data["auth_verifier"]),
-        encrypted_vault_key=b64_decode(data["encrypted_vault_key"]),
-        public_key=b64_decode(data["public_key"]),
-        encrypted_private_key=b64_decode(data["encrypted_private_key"]),
-    )
+    try:
+        with transaction.atomic():
+            user = VaultUser.objects.create(
+                email=email,
+                first_name=first_name,
+                middle_name=middle_name,
+                last_name=last_name,
+                display_name="",
+                salt=b64_decode(data["salt"]),
+                auth_verifier=b64_decode(data["auth_verifier"]),
+                encrypted_vault_key=b64_decode(data["encrypted_vault_key"]),
+                public_key=b64_decode(data["public_key"]),
+                encrypted_private_key=b64_decode(data["encrypted_private_key"]),
+            )
+            _save_recovery_keys(user, packages)
+    except Exception:
+        return api_error("Impossible de créer le compte", 500)
+
     return JsonResponse(_auth_response(user), status=201)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@rate_limit("auth-recovery-begin", limit=8, window_seconds=300)
+def recovery_begin(request):
+    """
+    Étape 1 : le client prouve connaître une clé via son vérificateur (hash).
+    Retourne le blob de vaultKey chiffré pour cette clé + matériaux nécessaires au reset.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_error("Corps JSON invalide", 400)
+
+    email = (data.get("email") or "").strip().lower()
+    verifier_b64 = data.get("verifier")
+    if not email or not verifier_b64:
+        return api_error("Récupération impossible", 400)
+
+    try:
+        verifier = b64_decode(verifier_b64)
+    except Exception:
+        return api_error("Récupération impossible", 400)
+    if len(verifier) != VERIFIER_SIZE:
+        return api_error("Récupération impossible", 400)
+
+    user = VaultUser.objects.filter(email__iexact=email).first()
+    # Lookup par vérificateur unique ; message uniforme (anti-énumération).
+    recovery = VaultRecoveryKey.objects.filter(verifier=verifier).select_related("user").first()
+    if (
+        user is None
+        or recovery is None
+        or recovery.user_id != user.id
+    ):
+        return api_error("Récupération impossible", 400)
+
+    return JsonResponse({
+        "email": user.email,
+        "user_id": str(user.id),
+        "salt": b64_encode(user.salt),
+        "encrypted_vault_key_recovery": b64_encode(recovery.encrypted_vault_key),
+        "encrypted_private_key": b64_encode(user.encrypted_private_key),
+        "public_key": b64_encode(user.public_key),
+        "slot": recovery.slot,
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@rate_limit("auth-recovery-complete", limit=5, window_seconds=300)
+def recovery_complete(request):
+    """
+    Étape 2 : nouveau mot de passe maître (matériaux déjà dérivés côté client).
+    Invalide uniquement la clé de récupération utilisée ; les autres restent valides.
+    Exige la preuve de possession de vaultKey (key_proof) en plus du vérificateur.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_error("Corps JSON invalide", 400)
+
+    email = (data.get("email") or "").strip().lower()
+    verifier_b64 = data.get("verifier")
+    key_proof_b64 = data.get("key_proof")
+    auth_verifier_b64 = data.get("auth_verifier")
+    encrypted_vault_key_b64 = data.get("encrypted_vault_key")
+    if not email or not verifier_b64 or not key_proof_b64 or not auth_verifier_b64 or not encrypted_vault_key_b64:
+        return api_error("Champs requis manquants", 400)
+
+    try:
+        verifier = b64_decode(verifier_b64)
+        key_proof = b64_decode(key_proof_b64)
+        auth_verifier = b64_decode(auth_verifier_b64)
+        encrypted_vault_key = b64_decode(encrypted_vault_key_b64)
+    except Exception:
+        return api_error("Données invalides", 400)
+    if len(verifier) != VERIFIER_SIZE or len(key_proof) != VERIFIER_SIZE:
+        return api_error("Récupération impossible", 400)
+
+    user = VaultUser.objects.filter(email__iexact=email).first()
+    recovery = VaultRecoveryKey.objects.filter(verifier=verifier).first()
+    if (
+        user is None
+        or recovery is None
+        or recovery.user_id != user.id
+        or not _key_proof_matches(bytes(recovery.key_proof), key_proof)
+    ):
+        return api_error("Récupération impossible", 400)
+
+    with transaction.atomic():
+        user.auth_verifier = auth_verifier
+        user.encrypted_vault_key = encrypted_vault_key
+        user.save(update_fields=["auth_verifier", "encrypted_vault_key"])
+        # Une seule clé consommée — les autres restent utilisables.
+        recovery.delete()
+
+    return JsonResponse(_auth_response(user))
 
 
 @csrf_exempt
@@ -371,6 +573,110 @@ def entry_detail(request, entry_id):
         entry.delete()
         return HttpResponse(status=204)
     return api_error("Méthode non autorisée", 405)
+
+
+@require_auth
+@require_GET
+@rate_limit("auth-lookup", limit=30, window_seconds=60)
+def lookup_user(request):
+    """Clé publique d'un utilisateur (pour partage), sans secrets."""
+    email = (request.GET.get("email") or "").strip().lower()
+    if not email or "@" not in email:
+        return api_error("Email invalide", 400)
+    user = VaultUser.objects.filter(email__iexact=email).first()
+    if not user:
+        return api_error("Utilisateur introuvable", 404)
+    if user.id == request.vault_user.id:
+        return api_error("Vous ne pouvez pas partager avec vous-même", 400)
+    return JsonResponse({
+        "user_id": str(user.id),
+        "email": user.email,
+        "display_name": user.display_name,
+        "public_key": b64_encode(user.public_key),
+    })
+
+
+@csrf_exempt
+@require_auth
+@rate_limit("vault-shares", limit=40, window_seconds=60)
+def vault_shares(request):
+    """Crée un partage (POST)."""
+    if request.method != "POST":
+        return api_error("Méthode non autorisée", 405)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_error("Corps JSON invalide", 400)
+
+    entry_id = (data.get("entry_id") or "").strip()
+    recipient_email = (data.get("recipient_email") or "").strip().lower()
+    encrypted = data.get("encrypted_data")
+
+    if not entry_id or not recipient_email or not encrypted:
+        return api_error("entry_id, recipient_email et encrypted_data requis", 400)
+
+    entry = _get_owned_entry(request, entry_id)
+    if not entry:
+        return api_error("Entrée introuvable", 404)
+
+    recipient = VaultUser.objects.filter(email__iexact=recipient_email).first()
+    if not recipient:
+        return api_error("Destinataire introuvable", 404)
+    if recipient.id == request.vault_user.id:
+        return api_error("Vous ne pouvez pas partager avec vous-même", 400)
+
+    raw = _decode_encrypted_blob(encrypted)
+    if isinstance(raw, str):
+        return api_error(raw, 400)
+
+    share, created = VaultShare.objects.update_or_create(
+        entry=entry,
+        recipient=recipient,
+        defaults={
+            "sender": request.vault_user,
+            "encrypted_data": raw,
+        },
+    )
+    status = 201 if created else 200
+    return JsonResponse(_share_sent_response(share), status=status)
+
+
+@require_auth
+@require_GET
+def shares_received(request):
+    shares = (
+        VaultShare.objects
+        .filter(recipient=request.vault_user)
+        .select_related("sender")
+    )
+    return JsonResponse([_share_received_response(s) for s in shares], safe=False)
+
+
+@require_auth
+@require_GET
+def shares_sent(request):
+    shares = (
+        VaultShare.objects
+        .filter(sender=request.vault_user)
+        .select_related("recipient")
+    )
+    return JsonResponse([_share_sent_response(s) for s in shares], safe=False)
+
+
+@csrf_exempt
+@require_auth
+@require_http_methods(["DELETE"])
+def share_detail(request, share_id):
+    """Révocation (émetteur) ou suppression (destinataire)."""
+    share = VaultShare.objects.filter(
+        Q(id=share_id),
+        Q(sender=request.vault_user) | Q(recipient=request.vault_user),
+    ).first()
+    if not share:
+        return api_error("Partage introuvable", 404)
+    share.delete()
+    return HttpResponse(status=204)
 
 
 @csrf_exempt
