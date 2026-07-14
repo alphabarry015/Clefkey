@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v68';
+const CACHE_VERSION = 'v69';
 const CACHE_STATIC = `gardefort-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).

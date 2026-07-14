@@ -15,6 +15,16 @@ const PARALLELISM = 4;
 let _argon2Worker = null;
 let _argon2WorkerFailed = false;
 let _argon2ReqId = 0;
+/** Au-delà : abandonner le worker (404 / hang) et basculer sur le thread principal. */
+const ARGON2_WORKER_TIMEOUT_MS = 25000;
+
+function markArgon2WorkerFailed() {
+  _argon2WorkerFailed = true;
+  if (_argon2Worker) {
+    try { _argon2Worker.terminate(); } catch (_) { /* ignore */ }
+    _argon2Worker = null;
+  }
+}
 
 function getArgon2Worker() {
   if (_argon2WorkerFailed || typeof Worker === 'undefined') return null;
@@ -22,13 +32,11 @@ function getArgon2Worker() {
   try {
     _argon2Worker = new Worker(new URL('./argon2-worker.js', import.meta.url), { type: 'module' });
     _argon2Worker.onerror = () => {
-      _argon2WorkerFailed = true;
-      try { _argon2Worker.terminate(); } catch (_) { /* ignore */ }
-      _argon2Worker = null;
+      markArgon2WorkerFailed();
     };
     return _argon2Worker;
   } catch (_) {
-    _argon2WorkerFailed = true;
+    markArgon2WorkerFailed();
     return null;
   }
 }
@@ -51,25 +59,47 @@ function deriveKeyInWorker(masterPassword, salt) {
   const id = (_argon2ReqId += 1);
   const saltCopy = new Uint8Array(salt);
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      worker.removeEventListener('message', onMessage);
+      worker.removeEventListener('error', onError);
+      fn(value);
+    };
     const onMessage = (event) => {
       if (!event.data || event.data.id !== id) return;
-      worker.removeEventListener('message', onMessage);
       if (event.data.ok) {
-        resolve(new Uint8Array(event.data.hash));
+        finish(resolve, new Uint8Array(event.data.hash));
       } else {
-        reject(new Error(event.data.error || 'Échec Argon2'));
+        finish(reject, new Error(event.data.error || 'Échec Argon2'));
       }
     };
+    const onError = () => {
+      markArgon2WorkerFailed();
+      finish(reject, new Error('Worker Argon2 indisponible'));
+    };
+    const timer = setTimeout(() => {
+      markArgon2WorkerFailed();
+      finish(reject, new Error('Worker Argon2 timeout'));
+    }, ARGON2_WORKER_TIMEOUT_MS);
     worker.addEventListener('message', onMessage);
-    worker.postMessage({
-      id,
-      password: masterPassword,
-      salt: saltCopy.buffer,
-      parallelism: PARALLELISM,
-      iterations: TIME_COST,
-      memorySize: MEMORY_COST,
-      hashLength: KEY_SIZE,
-    }, [saltCopy.buffer]);
+    worker.addEventListener('error', onError);
+    try {
+      worker.postMessage({
+        id,
+        password: masterPassword,
+        salt: saltCopy.buffer,
+        parallelism: PARALLELISM,
+        iterations: TIME_COST,
+        memorySize: MEMORY_COST,
+        hashLength: KEY_SIZE,
+      }, [saltCopy.buffer]);
+    } catch (err) {
+      markArgon2WorkerFailed();
+      finish(reject, err instanceof Error ? err : new Error('Worker Argon2 indisponible'));
+    }
   });
 }
 
@@ -355,8 +385,23 @@ export async function unlockSession(authResponse, masterPassword) {
 }
 
 export async function prepareLogin(email, masterPassword, apiBase) {
-  const resp = await fetch(`${apiBase}/auth/salt?email=${encodeURIComponent(email)}`);
-  if (!resp.ok) throw new Error('Impossible de préparer la connexion');
+  let resp;
+  try {
+    resp = await fetch(`${apiBase}/auth/salt?email=${encodeURIComponent(email)}`);
+  } catch {
+    throw new Error('Impossible de joindre le serveur pour préparer la connexion.');
+  }
+  if (!resp.ok) {
+    let detail = '';
+    try {
+      const body = await resp.json();
+      if (body && typeof body.detail === 'string') detail = body.detail;
+    } catch { /* ignore */ }
+    if (resp.status === 429) {
+      throw new Error(detail || 'Trop de tentatives. Réessayez plus tard.');
+    }
+    throw new Error(detail || 'Impossible de préparer la connexion');
+  }
   const { salt: saltB64 } = await resp.json();
   const salt = fromB64(saltB64);
   const derived = await deriveKey(masterPassword, salt);

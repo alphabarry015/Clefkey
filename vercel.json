@@ -5,7 +5,7 @@
   "functions": {
     "coffre/wsgi.py": {
       "maxDuration": 60,
-      "excludeFiles": "{backend/**,cli/**,vault.db,**/*.sqlite3,.git/**,__pycache__/**}"
+      "excludeFiles": "{backend/**,cli/**,docs/**,canvases/**,.github/**,vault.db,**/*.sqlite3,.git/**,__pycache__/**}"
     }
   },
   "headers": [

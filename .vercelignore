@@ -10,3 +10,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .mypy_cache/
+# Docs / archives — inutiles au runtime Vercel (réduit la taille du bundle)
+docs/
+canvases/
+.github/

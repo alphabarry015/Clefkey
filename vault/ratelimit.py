@@ -93,7 +93,13 @@ def _upstash_limited(key: str, limit: int, window_seconds: int) -> bool | None:
     token = os.environ["UPSTASH_REDIS_REST_TOKEN"]
     redis_key = f"rl:{key}"
 
-    body = json.dumps([["INCR", redis_key]]).encode("utf-8")
+    # INCR + EXPIRE NX : TTL fixé au 1er hit (fenêtre fixe), ignore si déjà une expiry.
+    body = json.dumps(
+        [
+            ["INCR", redis_key],
+            ["EXPIRE", redis_key, int(window_seconds), "NX"],
+        ]
+    ).encode("utf-8")
     req = urllib.request.Request(
         f"{base}/pipeline",
         data=body,
@@ -108,19 +114,10 @@ def _upstash_limited(key: str, limit: int, window_seconds: int) -> bool | None:
             payload = json.loads(resp.read().decode("utf-8"))
         if not isinstance(payload, list) or not payload:
             return None
-        count = int(payload[0].get("result") or 0)
-        if count == 1:
-            expire_body = json.dumps([["EXPIRE", redis_key, int(window_seconds)]]).encode("utf-8")
-            expire_req = urllib.request.Request(
-                f"{base}/pipeline",
-                data=expire_body,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
-                },
-                method="POST",
-            )
-            urllib.request.urlopen(expire_req, timeout=2.0).read()
+        first = payload[0]
+        if not isinstance(first, dict) or first.get("error"):
+            return None
+        count = int(first.get("result") or 0)
         return count > limit
     except (urllib.error.URLError, TimeoutError, ValueError, TypeError, json.JSONDecodeError, IndexError, KeyError):
         return None
@@ -136,9 +133,8 @@ def is_rate_limited(key: str, limit: int, window_seconds: float) -> bool:
         result = _upstash_limited(key, limit, int(window_seconds))
         if result is not None:
             return result
-        # Fail-closed si Upstash est obligatoire ; sinon repli mémoire local.
-        if must_upstash:
-            return True
+        # Upstash joignable au démarrage mais erreur réseau ponctuelle :
+        # repli mémoire plutôt que de bloquer toutes les connexions.
         return _memory_limited(key, limit, window_seconds)
 
     return _memory_limited(key, limit, window_seconds)
