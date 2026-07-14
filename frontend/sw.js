@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v60';
+const CACHE_VERSION = 'v67';
 const CACHE_STATIC = `gardefort-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
@@ -26,6 +26,8 @@ const PRECACHE = [
   '/manifest.webmanifest',
   '/icons/icon.svg',
   '/icons/icon-mark.svg',
+  '/icons/logo-chevalier.png',
+  '/icons/icon-192.png',
 ];
 
 const API_PREFIXES = ['/auth/', '/vault/', '/health/'];

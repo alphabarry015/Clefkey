@@ -12,6 +12,7 @@
   <title>Gardefort</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="stylesheet" href="/css/style.css">
@@ -25,21 +26,26 @@
     <div class="lp">
       <header class="lp-header">
         <a href="/" class="lp-header-brand">
-          <i data-lucide="shield-check"></i>
+          <img src="/icons/logo-chevalier.png" alt="" class="brand-mark" width="28" height="28">
           <span>Gardefort</span>
         </a>
       </header>
 
       <section class="lp-hero">
         <div class="lp-hero-bottom">
+          <div class="lp-hero-brand">
+            <img src="/icons/logo-chevalier.png" alt="Gardefort" class="lp-hero-logo" width="88" height="88">
+          </div>
           <div class="lp-actions">
             <button type="button" id="btn-landing-start" class="lp-btn lp-btn-primary">Créer un compte</button>
             <button type="button" id="btn-landing-login" class="lp-btn lp-btn-secondary">Se connecter</button>
           </div>
-          <p class="lp-desc">
-            Gestionnaire de mots de passe chiffré de bout en bout.
-            Vos identifiants restent sur votre appareil. Personne d'autre ne peut les lire.
-          </p>
+          <ul class="lp-security" aria-label="Fonctionnalités de sécurité">
+            <li>Zero-knowledge</li>
+            <li>Chiffrement client AES-256-GCM</li>
+            <li>Argon2id</li>
+            <li>Identifiants sur votre appareil</li>
+          </ul>
         </div>
       </section>
     </div>
@@ -60,7 +66,7 @@
         <div class="auth-card-side">
           <div class="auth-logo">
             <div class="logo-shield">
-              <i data-lucide="shield-check"></i>
+              <img src="/icons/logo-chevalier.png" alt="" class="brand-mark" width="40" height="40">
             </div>
             <h1>Gardefort</h1>
             <p class="subtitle">Vos mots de passe, chiffrés et sécurisés</p>
@@ -266,7 +272,7 @@
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-brand">
         <div class="sidebar-logo">
-          <i data-lucide="shield-check"></i>
+          <img src="/icons/logo-chevalier.png" alt="" class="brand-mark" width="22" height="22">
         </div>
         <div class="sidebar-brand-text">
           <div class="sidebar-title">Gardefort</div>
