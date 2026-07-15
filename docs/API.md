@@ -10,11 +10,14 @@ Authentification des routes protégées :
 Authorization: Bearer <access_token>
 ```
 
+Les exemples ci-dessous sont schématiques. N’y placez jamais de jetons, mots de passe ou emails personnels réels dans le dépôt public.
+
 ## Santé & assets
 
 | Méthode | Route | Description |
 |---------|-------|-------------|
 | GET | `/` | Application (SPA HTML) |
+| GET | `/favicon.ico` | Favicon du site |
 | GET | `/health/` | `{ "status": "ok" }` |
 | GET | `/manifest.webmanifest` | Manifest PWA |
 | GET | `/sw.js` | Service worker |
@@ -29,18 +32,20 @@ Authorization: Bearer <access_token>
 | GET | `/auth/salt?email=` | Non | Salt pour dérivation client (toujours 200 si email fourni — sel factice si compte inconnu) |
 | GET | `/auth/me` | Oui | Profil |
 | PATCH | `/auth/me` | Oui | Mise à jour profil (noms, email) |
+| POST | `/auth/recovery/begin` | Non | Démarre la récupération (preuve / challenge) |
+| POST | `/auth/recovery/complete` | Non | Termine la récupération et régénère le matériel |
 
 ### POST `/auth/register` (corps typique)
 
 Champs texte : `email`, `first_name`, `middle_name`, `last_name`  
-Champs base64 : `salt`, `auth_verifier`, `encrypted_vault_key`, `public_key`, `encrypted_private_key`
+Champs base64 : `salt`, `auth_verifier`, `encrypted_vault_key`, `public_key`, `encrypted_private_key` (et champs recovery selon le flux client)
 
 Réponse **201** : `access_token`, `user_id`, `email`, noms, blobs crypto.
 
 ### POST `/auth/login`
 
 ```json
-{ "email": "…", "auth_verifier": "<base64>" }
+{ "email": "utilisateur@exemple.org", "auth_verifier": "<base64>" }
 ```
 
 ## Coffre — `/vault/`
@@ -54,8 +59,14 @@ Réponse **201** : `access_token`, `user_id`, `email`, noms, blobs crypto.
 | DELETE | `/vault/entries/<id>` | Oui | Supprimer |
 | GET | `/vault/favicon?url=` | Non* | Proxy favicon (hôtes publics) |
 | POST | `/vault/generate-password` | Oui | Génération côté serveur (le client utilise aussi WebCrypto local) |
+| POST | `/vault/shares` | Oui | Créer un partage |
+| GET | `/vault/shares/received` | Oui | Partages reçus |
+| GET | `/vault/shares/sent` | Oui | Partages envoyés |
+| GET / DELETE / … | `/vault/shares/<id>` | Oui | Détail / actions sur un partage |
 
 \* Le proxy favicon est public mais restreint (pas d’IP privées) et rate-limité.
+
+Le **type** d’entrée (`login` ou `api_key`) vit uniquement dans le JSON chiffré côté client. L’API ne le distingue pas : elle stocke un blob opaque (plafond ~256 KiB décodés).
 
 ## Rate limiting
 
@@ -69,6 +80,8 @@ Réponses **429** si trop de requêtes (par IP, fenêtre ~60 s) :
 | Favicon | 60 |
 | Generate-password | 30 |
 
+En production Vercel, le compteur est partagé via Upstash (fail-closed si mal configuré).
+
 ## Codes HTTP utiles
 
 | Code | Signification |
@@ -79,4 +92,3 @@ Réponses **429** si trop de requêtes (par IP, fenêtre ~60 s) :
 | 409 | Email déjà utilisé |
 | 429 | Trop de tentatives (rate limit) |
 | 201 | Compte / ressource créée |
-

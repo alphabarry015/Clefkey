@@ -1,8 +1,10 @@
 # Audit — sécurité, performance, maintenance
 
-Date : 2026-07-13 · Périmètre : Django (`coffre/`, `vault/`) + frontend PWA + docs.
+Date de révision : 2026-07-15 · Périmètre : Django (`coffre/`, `vault/`) + frontend PWA + docs.
 
-Document vivant : mettre à jour après changements majeurs. Synthèse visuelle : canvas IDE si disponible.
+Document vivant : mettre à jour après changements majeurs. Cartographie narrative : [CARTOGRAPHIE-COFFRE.md](./CARTOGRAPHIE-COFFRE.md).
+
+Dépôt **public** : aucun secret de production, jeton, chaîne de connexion réelle ni donnée personnelle réelle ne doit figurer dans Git. `.env` est ignoré ; les `*.example` ne portent que des placeholders.
 
 ---
 
@@ -11,96 +13,86 @@ Document vivant : mettre à jour après changements majeurs. Synthèse visuelle 
 | Domaine | Verdict |
 |---------|---------|
 | Modèle zero-knowledge | Solide (chiffrement client, blobs serveur) |
-| Auth / JWT | Correct avec durcissements récents |
-| Surface d’attaque | Limitée (SPA same-origin, CSP, rate limit) |
-| Performance inscription | Améliorée (chargement listes en 2 phases) |
-| Maintenance | `backend/` FastAPI = archive ; Django = source de vérité |
+| Auth / JWT / recovery | Correct avec durcissements (HMAC key_proof, sel factice) |
+| Surface d’attaque | Limitée (SPA same-origin, CSP, rate limit, anti-SSRF favicon) |
+| Performance login | Point faible connu : double Argon2 (prepare + unlock) |
+| Maintenance | `app.js` volumineux ; docs rattrapées ; `backend/` = archive |
 
 ---
 
 ## Sécurité
 
-### Correctifs appliqués (cette passe)
+### Correctifs déjà appliqués
 
 | Sévérité | Sujet | Action |
 |----------|-------|--------|
-| Haute | Énumération via `/auth/salt` (404) | Sel factice déterministe si email inconnu |
-| Haute | Timing login si user absent | `compare_digest` aussi sur vérifieur factice |
-| Haute | `SECRET_KEY` par défaut sur Vercel | `RuntimeError` si clé de dév en prod |
-| Moyenne | Blobs `encrypted_data` illimités | Cap 256 KiB décodés |
-| Moyenne | Exemple Vercel avec clé réelle | Placeholder dans `supabase/vercel.env.example` |
-| Basse | UA favicon obsolète | `Gardefort/1.0` |
-| Basse | Cache favicon non borné | LRU max 256 entrées |
+| Haute | Énumération `/auth/salt` | Sel factice déterministe si email inconnu |
+| Haute | Timing login user absent | `compare_digest` aussi sur vérifieur factice |
+| Haute | `SECRET_KEY` dév sur Vercel | `RuntimeError` si clé de dév en prod |
+| Haute | key_proof brut en DB | HMAC(SECRET_KEY) au stockage |
+| Haute | Favicon redirects SSRF | Follow manuel + revalidation chaque hop |
+| Moyenne | Blobs illimités (écritures courantes) | Cap 256 KiB décodés sur create/update |
+| Moyenne | Rate limit mémoire multi-instances | Upstash obligatoire sur Vercel (fail-closed) |
+| Moyenne | Exemples env avec valeurs réelles | Placeholders uniquement dans `*.example` |
+| Basse | UA / cache favicon | UA projet + LRU borné |
 
-### Risques résiduels (acceptés ou à traiter plus tard)
+### Risques résiduels (ouverts ou acceptés)
 
-| Sévérité | Sujet | Notes |
+| Priorité | Sujet | Notes |
 |----------|-------|--------|
-| Moyenne | Énumération via `POST /auth/register` (409 email) | Difficile sans UX dégradée ; rate limit partiel |
-| — | Rate limit mémoire sans Upstash | **Corrigé 2026-07-14** : Upstash obligatoire sur Vercel, fail-closed |
-| Haute | key_proof brut en DB | **Corrigé 2026-07-14** : HMAC(SECRET_KEY) au stockage |
-| Haute | Favicon redirects SSRF | **Corrigé 2026-07-14** : follow manuel + revalidation chaque hop |
-| Moyenne | `X-Forwarded-For` pour l’IP | OK derrière Vercel ; ne pas exposer l’app sans proxy de confiance |
-| Basse | XSS si `esc()` oublié dans un futur template | CSP + discipline `esc()` ; revue PR |
-| Basse | Pas de refresh token / révocation JWT | TTL 60 min ; acceptable pour ce modèle |
-| Info | Dossier `backend/` FastAPI | Non déployé ; ne pas confondre avec l’API active |
+| P1 | Tailles BinaryField à l’inscription | Salt / verifier / clés : valider tailles max côté vues register (comme les entrées) |
+| P1 | Compat legacy key_proof | Anciennes lignes non scellées : migration ou validation duale documentée |
+| P2 | Favicon public + DNS rebinding | Proxy rate-limité ; surveiller abus |
+| P2 | Énumération `POST /auth/register` (409) | Difficile sans UX dégradée ; rate limit partiel |
+| P2 | `X-Forwarded-For` | OK derrière Vercel ; ne pas exposer sans proxy de confiance |
+| Basse | Pas de refresh / révocation JWT | TTL ~60 min acceptable |
+| Basse | XSS si `esc()` oublié | CSP + revue PR |
+| Info | Dossier `backend/` FastAPI | Non déployé |
 
-### Déjà en place (points forts)
+### Points forts
 
-- Argon2id + AES-GCM + auth_verifier dérivé côté client
-- CSP `script-src 'self'`, HSTS, COOP, framing DENY
-- Vendor local (plus de CDN esm.sh)
-- Anti-SSRF favicon (pas d’IP privée / localhost)
-- Listes SecLists côté navigateur uniquement
-- Anti-autofill maître
+Argon2id + AES-GCM + auth_verifier client. CSP stricte, HSTS, framing DENY. Vendor local. Anti-SSRF favicon. SecLists côté navigateur. Anti-autofill maître. Recovery scellée. Types d’entrée (`login` / `api_key`) uniquement dans le JSON client.
 
 ---
 
 ## Performance
 
-| Sujet | Constat | Action / statut |
-|-------|---------|-----------------|
-| Listes MDP (~10 Mo, 69 fichiers) | Bloquait l’inscription | Chargement **priority** puis reste en arrière-plan |
-| `toB64` spread | Risque stack overflow gros blobs | Encodage par chunks |
-| Liste coffre | Pas de pagination | OK pour usage perso ; à prévoir si > quelques milliers d’entrées |
-| Favicon | Cache mémoire | Borné à 256 clés |
-| Argon2id (64 Mo) | Coût CPU inscription/login | Worker `argon2-worker.js` (fallback thread UI) |
+| Sujet | Constat | Statut |
+|-------|---------|--------|
+| Double Argon2 au login | `prepareLogin` puis `unlockSession` | **P0 ouvert** : mutualiser le dérivé |
+| Déchiffrement entrées | Séquentiel après GET | **P1** : paralléliser (Promise.all borné) |
+| Listes MDP (~10 Mo) | Inscription | Amélioré : priority puis arrière-plan |
+| `toB64` | Gros blobs | Encodage par chunks |
+| Liste coffre | Pas de pagination | OK usage perso |
+| Argon2id 64 Mo | CPU | Worker `argon2-worker.js` |
 
-## Tests / CI (2026-07-14)
+---
+
+## Maintenabilité
+
+| Sujet | Constat | Action |
+|-------|---------|--------|
+| `frontend/js/app.js` | ~1900 lignes | Découpage progressif (`auth-screens.js`, `recovery-input.js`, …) |
+| Docs API / guide | Retard recovery, shares, types | Mis à jour 2026-07-15 |
+| Tests JS en CI | Absents | Smoke Python OK ; tests front à prévoir |
+| Archive FastAPI | `backend/` | Ne pas étendre |
+
+---
+
+## Tests / CI
 
 | Sujet | Statut |
 |-------|--------|
 | Smoke crypto / auth / recovery / favicon SSRF | `vault/tests/` |
-| GitHub Actions | `.github/workflows/ci.yml` |
-| Découpage UI auth | `frontend/js/auth-screens.js` |
-
----
-
-## Maintenance / propreté
-
-| Sujet | Action |
-|-------|--------|
-| Source de vérité API | `vault/` + `coffre/` uniquement |
-| Archive FastAPI | `backend/` — ne plus étendre ; documenté ici et dans README |
-| Sync listes | `python scripts/sync_common_password_lists.py` |
-| Vendor JS | `python scripts/vendor_frontend_deps.py` + bump `CACHE_VERSION` |
-| Schéma SQL | Commentaire Vercel migrate corrigé (`supabase/schema.sql`) |
-| Docs | Index, SECURITE, API, ce fichier AUDIT |
-
-### Conventions utiles
-
-- Modules Python : docstring de module en tête
-- Erreurs API : `{ "detail": "…" }`
-- Secrets : jamais dans le repo (`.env`, clés d’exemple factices)
-- PWA : incrémenter `frontend/sw.js` → `CACHE_VERSION` après assets
+| GitHub Actions | `.github/workflows/ci.yml` (SECRET_KEY de CI factice) |
 
 ---
 
 ## Checklist opérateur (prod)
 
-1. `SECRET_KEY` unique et long (pas la valeur d’exemple)
+1. `SECRET_KEY` unique et long (jamais la valeur d’exemple, jamais dans Git)
 2. `DEBUG=false`
-3. `DATABASE_URL` (pooler) + migrations appliquées (local ou SQL Editor)
-4. Upstash recommandé pour le rate limit
-5. Redeploy Vercel sur le dernier `main`
-6. Ne pas committer `.env`
+3. `DATABASE_URL` (pooler) + migrations
+4. Upstash URL + token (obligatoires sur Vercel)
+5. Redeploy sur le dernier `main`
+6. Ne jamais committer `.env`, dumps DB, exports utilisateur, ni clés API réelles (y compris dans mocks ou captures d’écran)

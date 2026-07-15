@@ -2417,15 +2417,21 @@ body.modal-open .vault-layout {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f8fafc;
   padding: 1rem 1.25rem 1.25rem;
+  background:
+    radial-gradient(ellipse 70% 55% at 12% 18%, rgba(37, 99, 235, 0.14), transparent 55%),
+    radial-gradient(ellipse 65% 50% at 88% 12%, rgba(14, 165, 233, 0.12), transparent 50%),
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(37, 99, 235, 0.08), transparent 55%),
+    linear-gradient(165deg, #eef4ff 0%, #f8fafc 42%, #edf2f7 100%);
 }
 
 .lp-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.5rem;
+  gap: 0.65rem;
+  width: 100%;
+  margin: 0 auto 0.5rem;
   padding: 0;
   background: transparent;
   border: none;
@@ -2443,11 +2449,12 @@ body.modal-open .vault-layout {
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.88);
   border: 1px solid #e2e8f0;
   border-radius: 999px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
   width: fit-content;
+  backdrop-filter: blur(8px);
 }
 
 .lp-header-brand svg,
@@ -2546,18 +2553,21 @@ body.modal-open .vault-layout {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  margin: 1.35rem auto 0;
-  padding: 0.55rem 1rem;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.5rem 0.7rem 0.5rem 0.8rem;
   border-radius: 999px;
   border: 1px solid #e2e8f0;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.88);
   color: #0f172a;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   text-decoration: none;
   transition: var(--transition);
-  min-width: 9.5rem;
+  min-width: 0;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  flex-shrink: 0;
 }
 
 .lp-github:hover {
@@ -2577,13 +2587,6 @@ body.modal-open .vault-layout {
 
 .lp-github-label {
   display: inline-block;
-  min-width: 5.2rem;
-  text-align: left;
-  transition: opacity 0.25s ease;
-}
-
-.lp-github-label.is-swap {
-  opacity: 0;
 }
 
 .lp-btn {

@@ -10,10 +10,13 @@ Navigateur (frontend/)
          │
          ▼
 Django (coffre/ + vault/)  ──JWT──► PostgreSQL (Supabase)
-  ├─ Auth (register / login / me)
-  ├─ Entrées (blobs chiffrés)
-  └─ Favicon proxy
+  ├─ Auth (register / login / me / recovery)
+  ├─ Entrées (blobs chiffrés) + shares
+  ├─ Favicon proxy (anti-SSRF)
+  └─ Rate limit (Upstash en prod)
 ```
+
+Récit détaillé des concepts et flux : [CARTOGRAPHIE-COFFRE.md](./CARTOGRAPHIE-COFFRE.md).
 
 ## Stack
 
@@ -23,45 +26,51 @@ Django (coffre/ + vault/)  ──JWT──► PostgreSQL (Supabase)
 | Frontend | Vanilla JS (modules ES), CSS, PWA |
 | Base | PostgreSQL via Supabase (ou SQLite en local sans `DATABASE_URL`) |
 | Auth | JWT Bearer (Django), **pas** Supabase Auth |
+| Rate limit | Upstash Redis REST (obligatoire sur Vercel) |
 | Hébergement prod | Vercel (fonction Python) + Supabase |
 
 ## Dossiers
 
 ```
 coffre/           # Settings, URLs racine, WSGI
-vault/            # Modèles, vues API, crypto serveur (génération MDP), favicon
+vault/            # Modèles, vues API, recovery, shares, favicon
 frontend/         # index.html, css/, js/, icons/, sw.js, manifest
-supabase/         # schema.sql, exemples d’env Vercel
-scripts/          # Génération icônes PWA
+supabase/         # schema.sql, exemples d’env Vercel (placeholders)
+scripts/          # Génération icônes PWA, vendor, sync listes
 cli/              # Client CLI optionnel
 backend/          # Archive FastAPI (non utilisée)
 docs/             # Cette documentation
 ```
 
+Secrets : uniquement via variables d’environnement (fichier `.env` local gitignoré, dashboard Vercel en prod). Jamais de valeurs réelles dans les fichiers versionnés (dépôt public).
+
 ## Flux crypto (simplifié)
 
-1. **Inscription** : le client dérive un salt / clé maître (Argon2), génère une vault key + paire de clés, chiffre la vault key et la clé privée, envoie les blobs + un `auth_verifier`.
-2. **Connexion** : le serveur renvoie salt + blobs ; le client vérifie le maître localement et déchiffre.
-3. **Entrées** : titre, username, password, notes, URL sont chiffrés côté client ; la base ne stocke que `encrypted_data` (BYTEA).
+1. **Inscription** : le client dérive (Argon2id) un matériel d’auth et une clé de coffre, génère une paire de clés, chiffre la vault key et la clé privée, enregistre un chemin de recovery, envoie les blobs + un `auth_verifier`.
+2. **Connexion** : salt (éventuellement factice) → dérivation du verifier → JWT si OK → déchiffrement local de la vault key.
+3. **Entrées** : JSON clair (titre, type `login`|`api_key`, username, password, notes, URL) chiffré AES-GCM ; la base ne stocke que `encrypted_data` (BYTEA).
+4. **Recovery** : preuve scellée côté serveur (HMAC), jamais le code de récupération en clair en base.
 
 ## Tables principales
 
 | Table | Rôle |
 |-------|------|
-| `users` | Compte + matériel crypto (salt, verifier, clés chiffrées) |
+| `users` | Compte + matériel crypto (salt, verifier, clés chiffrées, recovery) |
 | `vault_entries` | Entrées du coffre (`encrypted_data`, `owner_id`) |
+| tables shares | Partages d’entrées (blobs / métadonnées non sensibles en clair) |
 
 Schéma SQL de référence : `supabase/schema.sql`.
 
 ## Frontend
 
 - UI vanilla dans `frontend/` (HTML / CSS / modules ES)
+- Modules notables : `crypto.js`, `session.js`, `auth-screens.js`, `recovery-input.js`, `app.js`, `api.js`
 - Crypto & icônes **vendored** dans `frontend/vendor/` (pas de CDN)
-- Listes SecLists (sélection) : `frontend/data/` + `js/common-passwords.js` / `js/master-password.js` (chargement 2 phases)
+- Listes SecLists (sélection) : `frontend/data/` + chargement 2 phases
 - Sync listes : `python scripts/sync_common_password_lists.py`
 - Régénération vendor : `python scripts/vendor_frontend_deps.py`
-- Archive : `backend/` (FastAPI) n’est **pas** déployé — ne pas y ajouter de features
+- Archive : `backend/` (FastAPI) n’est **pas** déployé
 
 ## Mode développement UI
 
-`frontend/js/dev.js` : sur localhost, bypass API avec des entrées mock. Inactif hors localhost (sauf `?dev=1`).
+`frontend/js/dev.js` : sur localhost, bypass API avec des entrées mock **fictives**. Inactif hors localhost (sauf `?dev=1`). Aucune clé réelle dans ces mocks.

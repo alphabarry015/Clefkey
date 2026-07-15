@@ -48,8 +48,10 @@ Puis incrémenter `CACHE_VERSION` dans `frontend/sw.js`.
 ## Bonnes pratiques opérateur
 
 1. `DEBUG=false` sur Vercel.
-2. `SECRET_KEY` longue et unique (obligatoire sur Vercel).
+2. `SECRET_KEY` longue et unique (obligatoire sur Vercel) — **jamais** dans Git (dépôt public).
 3. Mot de passe base Supabase fort ; reset si exposé.
-4. Ne jamais committer `.env`.
+4. Ne jamais committer `.env`, dumps DB, exports utilisateur, ni clés réelles (y compris dans mocks, issues ou captures).
 5. Vérifier les utilisateurs via Table Editor `users` ou `python manage.py shell` (pas via Supabase Auth).
-6. Upstash recommandé en production multi-instances.
+6. Upstash obligatoire en production multi-instances (Vercel).
+
+Cartographie : [CARTOGRAPHIE-COFFRE.md](./CARTOGRAPHIE-COFFRE.md).

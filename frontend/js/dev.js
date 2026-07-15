@@ -41,18 +41,18 @@ export const MOCK_ENTRIES = [
     type: 'api_key',
     title: 'OpenAI',
     username: 'org-demo',
-    password: 'sk-proj-demo-secret-do-not-use',
+    password: 'demo-openai-key-not-real',
     url: 'https://platform.openai.com',
-    notes: 'Scopes: chat.completions',
+    notes: 'Factice — ne jamais committer de vraie clé',
   },
   {
     id: 'dev-5',
     type: 'api_key',
     title: 'Stripe',
     username: '',
-    password: 'rk_test_demo_secret',
+    password: 'demo-stripe-key-not-real',
     url: 'https://dashboard.stripe.com',
-    notes: 'Environnement test',
+    notes: 'Factice — environnement test',
   },
 ];
 
