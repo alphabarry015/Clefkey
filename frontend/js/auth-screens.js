@@ -65,6 +65,54 @@ export function createAuthScreens({
     refreshIcons($('#modal-recovery-keys'));
   }
 
+  function bindGithubLabelAlternator() {
+    const label = $('.lp-github-label');
+    if (!label) return;
+
+    const labels = (label.dataset.labels || 'GitHub|Gardefort').split('|').map((s) => s.trim()).filter(Boolean);
+    if (labels.length < 2) return;
+
+    let index = 0;
+    let timer = null;
+
+    const tick = () => {
+      if (!screens.landing?.classList.contains('active')) return;
+      if (document.visibilityState === 'hidden') return;
+      label.classList.add('is-swap');
+      window.setTimeout(() => {
+        index = (index + 1) % labels.length;
+        label.textContent = labels[index];
+        label.classList.remove('is-swap');
+      }, 220);
+    };
+
+    const start = () => {
+      if (timer) return;
+      timer = window.setInterval(tick, 7000);
+    };
+
+    const stop = () => {
+      if (!timer) return;
+      window.clearInterval(timer);
+      timer = null;
+    };
+
+    const sync = () => {
+      if (screens.landing?.classList.contains('active') && document.visibilityState === 'visible') {
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    document.addEventListener('visibilitychange', sync);
+    const landingObserver = new MutationObserver(sync);
+    if (screens.landing) {
+      landingObserver.observe(screens.landing, { attributes: true, attributeFilter: ['class'] });
+    }
+    sync();
+  }
+
   function bindLandingNavigation() {
     const goRegister = () => openAuthTab('register');
     const goLogin = () => openAuthTab('login');
@@ -77,6 +125,7 @@ export function createAuthScreens({
     });
     $('#tab-login')?.addEventListener('click', () => openAuthTab('login'));
     $('#tab-register')?.addEventListener('click', () => openAuthTab('register'));
+    bindGithubLabelAlternator();
   }
 
   function bindRecoveryExportButtons({

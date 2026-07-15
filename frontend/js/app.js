@@ -48,6 +48,10 @@ import {
   downloadRecoveryKeysTxt,
 } from './recovery-export.js';
 import { createAuthScreens } from './auth-screens.js';
+import {
+  bindRecoveryCodeInput,
+  setRecoveryCodeValue,
+} from './recovery-input.js';
 
 const state = {
   token: null,
@@ -63,6 +67,7 @@ const state = {
   search: '',
   dashTab: 'popular',
   dashSearch: '',
+  typeFilter: 'all',
   confirmCallback: null,
   confirmDeleteName: null,
   detailEntryId: null,
@@ -184,13 +189,92 @@ function debounce(fn, delay = 250) {
   };
 }
 
+function entryType(entry) {
+  return entry?.type === 'api_key' ? 'api_key' : 'login';
+}
+
+function entryTypeLabel(type) {
+  return type === 'api_key' ? 'Clé API' : 'Connexion';
+}
+
+function entryTypeBadgeMarkup(entry) {
+  const type = entryType(entry);
+  return `<span class="entry-type-badge entry-type-badge-${type}">${esc(entryTypeLabel(type))}</span>`;
+}
+
+function applyEntryFormLabels(type = 'login') {
+  const isApi = type === 'api_key';
+  const titleLabel = $('#label-entry-title');
+  const userLabel = $('#label-entry-username');
+  const passLabel = $('#label-entry-password');
+  const urlLabel = $('#label-entry-url');
+  const notesLabel = $('#label-entry-notes');
+  if (titleLabel) titleLabel.textContent = isApi ? 'Nom' : 'Titre';
+  if (userLabel) {
+    userLabel.innerHTML = isApi
+      ? 'Client ID / Identifiant <span class="optional">(optionnel)</span>'
+      : 'Identifiant <span class="optional">(optionnel)</span>';
+  }
+  if (passLabel) passLabel.textContent = isApi ? 'Secret / API key' : 'Mot de passe';
+  if (urlLabel) {
+    urlLabel.innerHTML = isApi
+      ? 'Console / endpoint <span class="optional">(optionnel)</span>'
+      : 'URL <span class="optional">(optionnel)</span>';
+  }
+  if (notesLabel) {
+    notesLabel.innerHTML = isApi
+      ? 'Scopes / notes <span class="optional">(optionnel)</span>'
+      : 'Notes <span class="optional">(optionnel)</span>';
+  }
+  const titleInput = $('#entry-title');
+  const userInput = $('#entry-username');
+  const passInput = $('#entry-password');
+  const urlInput = $('#entry-url');
+  const notesInput = $('#entry-notes');
+  if (titleInput) titleInput.placeholder = isApi ? 'OpenAI, Stripe, AWS…' : 'Netflix, Gmail, Banque...';
+  if (userInput) userInput.placeholder = isApi ? 'client_id ou account id' : 'email ou nom d\'utilisateur';
+  if (passInput) passInput.placeholder = isApi ? 'sk-… / secret' : 'Mot de passe';
+  if (urlInput) urlInput.placeholder = isApi ? 'https://console.exemple.com' : 'exemple.com ou https://...';
+  if (notesInput) notesInput.placeholder = isApi ? 'Scopes, environnement, JSON…' : 'Informations supplémentaires';
+  $('#btn-generate')?.classList.toggle('hidden', isApi);
+}
+
+function applyDetailTypeLabels(entry) {
+  const isApi = entryType(entry) === 'api_key';
+  const badge = $('#detail-type-badge');
+  if (badge) {
+    badge.textContent = entryTypeLabel(entryType(entry));
+    badge.className = `entry-type-badge entry-type-badge-${entryType(entry)}`;
+    badge.classList.remove('hidden');
+  }
+  const userLabel = $('#detail-username-label');
+  const passLabel = $('#detail-password-label');
+  const urlLabel = $('#detail-url-label');
+  if (userLabel) userLabel.textContent = isApi ? 'Client ID / Identifiant' : 'Identifiant';
+  if (passLabel) passLabel.textContent = isApi ? 'Secret / API key' : 'Mot de passe';
+  if (urlLabel) urlLabel.textContent = isApi ? 'Console / endpoint' : 'URL';
+}
+
+function syncTypeFilterButtons() {
+  $$('.type-filter').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.typeFilter === state.typeFilter);
+  });
+}
+
 function filterEntriesByQuery(list, query) {
-  if (!query) return list;
+  let filtered = list;
+  if (state.typeFilter === 'login') {
+    filtered = filtered.filter((e) => entryType(e) === 'login');
+  } else if (state.typeFilter === 'api_key') {
+    filtered = filtered.filter((e) => entryType(e) === 'api_key');
+  }
+  if (!query) return filtered;
   const q = query.toLowerCase();
-  return list.filter(e =>
+  return filtered.filter(e =>
     e.title.toLowerCase().includes(q) ||
-    e.username.toLowerCase().includes(q) ||
-    (e.url && e.url.toLowerCase().includes(q))
+    (e.username || '').toLowerCase().includes(q) ||
+    (e.url && e.url.toLowerCase().includes(q)) ||
+    (e.notes && e.notes.toLowerCase().includes(q))
   );
 }
 
@@ -315,6 +399,7 @@ const {
 // Navigation landing tôt (avant les listeners coffre).
 bindLandingNavigation();
 showScreen('landing');
+bindRecoveryCodeInput($('#recovery-code'), { counter: $('#recovery-code-count') });
 bindRecoveryExportButtons({
   toast,
   copyToClipboard,
@@ -648,7 +733,7 @@ $('#btn-forgot-master')?.addEventListener('click', () => {
   const email = ($('#login-email')?.value || '').trim();
   openAuthTab('recovery');
   if ($('#recovery-email')) $('#recovery-email').value = email;
-  if ($('#recovery-code')) $('#recovery-code').value = '';
+  setRecoveryCodeValue($('#recovery-code'), '', $('#recovery-code-count'));
   setTimeout(() => $('#recovery-code')?.focus(), 50);
 });
 
@@ -790,6 +875,7 @@ function lockVault(reason = 'manual') {
     search: '',
     dashTab: 'popular',
     dashSearch: '',
+    typeFilter: 'all',
   });
   // Force-close même le modal des 7 clés si le coffre se verrouille.
   $('#modal-recovery-keys')?.classList.remove('open');
@@ -798,6 +884,7 @@ function lockVault(reason = 'manual') {
   clearLoginForm();
   $('#form-register')?.reset();
   $('#form-recovery')?.reset();
+  setRecoveryCodeValue($('#recovery-code'), '', $('#recovery-code-count'));
   $('#form-recovery-reset')?.reset();
   collapseSidebar();
   showScreen('landing');
@@ -984,6 +1071,7 @@ window.showShareReceived = function(id) {
   if (!e) return;
   state.detailEntryId = null;
   setEntryAvatar($('#detail-avatar'), e);
+  applyDetailTypeLabels(e);
   $('#detail-title').textContent = e.title;
   $('#detail-username').textContent = e.username || EMPTY_VALUE;
   $('#detail-password').textContent = '••••••••••••';
@@ -1062,6 +1150,7 @@ function getDashboardEntries() {
 
 function renderDashboard() {
   updateEntryCounts();
+  syncTypeFilterButtons();
   const entries = getDashboardEntries();
   const grid = $('#dash-tiles-grid');
   const empty = $('#dash-tiles-empty');
@@ -1095,6 +1184,7 @@ function renderDashboard() {
       <button type="button" class="${dashTileClassName(e)}" style="${dashTileStyle(e, i)}" data-action="show-entry" data-id="${esc(e.id)}">
         ${dashTileIconMarkup(e)}
         <span class="dash-tile-name">${esc(e.title)}</span>
+        ${entryType(e) === 'api_key' ? '<span class="dash-tile-badge">API</span>' : ''}
       </button>`).join('') + `
     <button type="button" class="dash-tile dash-tile-add" data-action="add-entry">
       <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
@@ -1289,6 +1379,7 @@ function renderEntries() {
   const noResults = $('#entries-no-results');
 
   updateEntryCounts();
+  syncTypeFilterButtons();
 
   empty.classList.add('hidden');
   noResults.classList.add('hidden');
@@ -1309,8 +1400,11 @@ function renderEntries() {
     <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-entry">
       ${entryAvatarMarkup(e)}
       <div class="entry-info">
-        <div class="entry-title">${esc(e.title)}</div>
-        <div class="entry-username">${esc(e.username)}</div>
+        <div class="entry-title-row">
+          <div class="entry-title">${esc(e.title)}</div>
+          ${entryTypeBadgeMarkup(e)}
+        </div>
+        <div class="entry-username">${esc(e.username || (entryType(e) === 'api_key' ? 'Secret API' : ''))}</div>
       </div>
       <div class="entry-actions">
         <button type="button" class="btn-icon" title="Copier" data-action="copy-password" data-id="${esc(e.id)}">
@@ -1478,10 +1572,11 @@ window.showEntry = function(id) {
 
   state.detailEntryId = id;
   setEntryAvatar($('#detail-avatar'), e);
+  applyDetailTypeLabels(e);
   $('#detail-title').textContent = e.title;
-  $('#detail-username').textContent = e.username;
+  $('#detail-username').textContent = e.username || EMPTY_VALUE;
   $('#detail-password').textContent = '••••••••••••';
-  $('#detail-password').dataset.real = e.password;
+  $('#detail-password').dataset.real = e.password || '';
   $('#detail-password').dataset.visible = 'false';
 
   const urlField = $('#detail-url-field');
@@ -1609,6 +1704,8 @@ window.copyPassword = async function(id) {
 
 function openAddModal() {
   $('#form-entry').reset();
+  if ($('#entry-type')) $('#entry-type').value = 'login';
+  applyEntryFormLabels('login');
   $('#entry-generated').classList.add('hidden');
   openModal($('#modal-add'));
   refreshIcons($('#modal-add'));
@@ -1616,6 +1713,7 @@ function openAddModal() {
 }
 
 function readEntryFormData() {
+  const type = $('#entry-type')?.value === 'api_key' ? 'api_key' : 'login';
   const title = $('#entry-title').value.trim();
   const username = $('#entry-username').value.trim();
   const password = $('#entry-password').value;
@@ -1623,17 +1721,17 @@ function readEntryFormData() {
   const notes = $('#entry-notes').value.trim();
 
   if (!title) {
-    toast('Le titre est requis', 'error');
+    toast(type === 'api_key' ? 'Le nom est requis' : 'Le titre est requis', 'error');
     $('#entry-title').focus();
     return null;
   }
   if (!password) {
-    toast('Le mot de passe est requis', 'error');
+    toast(type === 'api_key' ? 'Le secret / API key est requis' : 'Le mot de passe est requis', 'error');
     $('#entry-password').focus();
     return null;
   }
 
-  return { title, username, password, url, notes };
+  return { type, title, username, password, url, notes };
 }
 
 $('#btn-add-sidebar').addEventListener('click', () => {
@@ -1648,6 +1746,19 @@ $('#btn-generate').addEventListener('click', () => {
   $('#entry-password').value = pwd;
   $('#entry-generated').textContent = pwd;
   $('#entry-generated').classList.remove('hidden');
+});
+
+$('#entry-type')?.addEventListener('change', (e) => {
+  applyEntryFormLabels(e.target.value === 'api_key' ? 'api_key' : 'login');
+  $('#entry-generated').classList.add('hidden');
+});
+
+$$('.type-filter').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    state.typeFilter = btn.dataset.typeFilter || 'all';
+    syncTypeFilterButtons();
+    refreshCurrentView();
+  });
 });
 
 $('#form-entry').addEventListener('submit', async (e) => {

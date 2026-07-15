@@ -11,6 +11,7 @@ export const DEV_MODE = devParam === '0' ? false : (devParam === '1' || isLocal)
 export const MOCK_ENTRIES = [
   {
     id: 'dev-1',
+    type: 'login',
     title: 'Netflix',
     username: 'couple@email.com',
     password: 'Kx9#mP2$vLq8@nR4wT',
@@ -19,6 +20,7 @@ export const MOCK_ENTRIES = [
   },
   {
     id: 'dev-2',
+    type: 'login',
     title: 'Gmail',
     username: 'pierre@email.com',
     password: 'MonSuperMdp2024!',
@@ -27,11 +29,30 @@ export const MOCK_ENTRIES = [
   },
   {
     id: 'dev-3',
+    type: 'login',
     title: 'Banque Populaire',
     username: '12345678901',
     password: 'Secur3B@nque#99',
     url: 'https://www.banquepopulaire.fr',
     notes: 'Code carte : 4521',
+  },
+  {
+    id: 'dev-4',
+    type: 'api_key',
+    title: 'OpenAI',
+    username: 'org-demo',
+    password: 'sk-proj-demo-secret-do-not-use',
+    url: 'https://platform.openai.com',
+    notes: 'Scopes: chat.completions',
+  },
+  {
+    id: 'dev-5',
+    type: 'api_key',
+    title: 'Stripe',
+    username: '',
+    password: 'rk_test_demo_secret',
+    url: 'https://dashboard.stripe.com',
+    notes: 'Environnement test',
   },
 ];
 

@@ -57,4 +57,4 @@ backend/        # Archive FastAPI (non déployée — ne pas étendre)
 
 ## Licence / repo
 
-https://github.com/alphabarry015/Gestionnnaire-de-mot-de-passe
+https://github.com/alphabarry015/Gardefort

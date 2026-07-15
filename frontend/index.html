@@ -46,6 +46,19 @@
             <span>Argon2id</span>
             <span>Données sur votre appareil</span>
           </div>
+          <a
+            id="btn-landing-github"
+            class="lp-github"
+            href="https://github.com/alphabarry015/Gardefort"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Code source Gardefort sur GitHub"
+          >
+            <svg class="lp-github-icon" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18">
+              <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/>
+            </svg>
+            <span class="lp-github-label" data-labels="GitHub|Gardefort">GitHub</span>
+          </a>
         </div>
       </section>
     </div>
@@ -138,7 +151,25 @@
           </div>
           <div class="form-group">
             <label for="recovery-code">Clé de récupération</label>
-            <textarea id="recovery-code" rows="3" required placeholder="XXXX-XXXX-XXXX-…" spellcheck="false"></textarea>
+            <input
+              type="text"
+              id="recovery-code"
+              class="recovery-code-input"
+              required
+              placeholder="XXXX-XXXX-XXXX-XXXX-…"
+              spellcheck="false"
+              autocomplete="off"
+              autocapitalize="characters"
+              inputmode="text"
+              maxlength="79"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-bwignore="true"
+              data-form-type="other"
+            >
+            <div class="recovery-code-meta">
+              <span id="recovery-code-count" class="recovery-code-count">0 / 64</span>
+            </div>
           </div>
           <button type="submit" id="btn-recovery-begin" class="btn btn-primary btn-full">
             <span>Continuer</span>
@@ -362,6 +393,11 @@
             <button type="button" class="dash-tab" data-dash-tab="recent" role="tab">Récents</button>
             <button type="button" class="dash-tab" data-dash-tab="az" role="tab">A à Z</button>
           </div>
+          <div class="type-filters dash-type-filters" role="group" aria-label="Filtrer par type">
+            <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
+            <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
+            <button type="button" class="type-filter" data-type-filter="api_key">Clés API</button>
+          </div>
 
           <div id="dash-tiles-grid" class="dash-tiles-grid"></div>
           <div id="dash-tiles-empty" class="dash-tiles-empty hidden">
@@ -380,6 +416,11 @@
             <span class="search-icon"><i data-lucide="search"></i></span>
             <input type="text" id="search-input" placeholder="Rechercher un site, identifiant...  (Ctrl+K)">
             <button id="btn-clear-search" class="btn-clear hidden" aria-label="Effacer"><i data-lucide="x"></i></button>
+          </div>
+          <div class="type-filters" role="group" aria-label="Filtrer par type">
+            <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
+            <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
+            <button type="button" class="type-filter" data-type-filter="api_key">Clés API</button>
           </div>
         </div>
 
@@ -635,12 +676,13 @@
           <div id="detail-avatar" class="entry-avatar lg"></div>
           <div class="modal-header-text">
             <h2 id="detail-title"></h2>
+            <span id="detail-type-badge" class="entry-type-badge hidden"></span>
           </div>
           <button id="btn-close-detail" class="btn-close"><i data-lucide="x"></i></button>
         </div>
         <div class="modal-body">
           <div class="detail-field">
-            <label>Identifiant</label>
+            <label id="detail-username-label">Identifiant</label>
             <div class="copyable-field">
               <span id="detail-username"></span>
               <button class="btn-copy-field" data-copy="detail-username" title="Copier">
@@ -649,7 +691,7 @@
             </div>
           </div>
           <div class="detail-field">
-            <label>Mot de passe</label>
+            <label id="detail-password-label">Mot de passe</label>
             <div class="copyable-field">
               <span id="detail-password" class="mono">••••••••••••</span>
               <button id="btn-toggle-pwd" class="btn-copy-field" title="Afficher">
@@ -661,7 +703,7 @@
             </div>
           </div>
           <div class="detail-field" id="detail-url-field">
-            <label>URL</label>
+            <label id="detail-url-label">URL</label>
             <div class="copyable-field">
               <a id="detail-url" href="#" target="_blank" rel="noopener"></a>
               <i data-lucide="external-link" class="field-link-icon"></i>
@@ -728,15 +770,22 @@
         </div>
         <form id="form-entry" class="modal-body">
           <div class="form-group">
-            <label for="entry-title">Titre</label>
+            <label for="entry-type">Type</label>
+            <select id="entry-type" class="entry-type-select">
+              <option value="login">Connexion</option>
+              <option value="api_key">Clé API / credential</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="entry-title" id="label-entry-title">Titre</label>
             <input type="text" id="entry-title" required placeholder="Netflix, Gmail, Banque...">
           </div>
           <div class="form-group">
-            <label for="entry-username">Identifiant <span class="optional">(optionnel)</span></label>
+            <label for="entry-username" id="label-entry-username">Identifiant <span class="optional">(optionnel)</span></label>
             <input type="text" id="entry-username" placeholder="email ou nom d'utilisateur">
           </div>
           <div class="form-group">
-            <label for="entry-password">Mot de passe</label>
+            <label for="entry-password" id="label-entry-password">Mot de passe</label>
             <div class="password-input-row">
               <input type="text" id="entry-password" required placeholder="Mot de passe">
               <button type="button" id="btn-generate" class="btn btn-secondary">
@@ -747,11 +796,11 @@
             <div id="entry-generated" class="generated-preview hidden"></div>
           </div>
           <div class="form-group">
-            <label for="entry-url">URL <span class="optional">(optionnel)</span></label>
+            <label for="entry-url" id="label-entry-url">URL <span class="optional">(optionnel)</span></label>
             <input type="text" id="entry-url" placeholder="exemple.com ou https://...">
           </div>
           <div class="form-group">
-            <label for="entry-notes">Notes <span class="optional">(optionnel)</span></label>
+            <label for="entry-notes" id="label-entry-notes">Notes <span class="optional">(optionnel)</span></label>
             <textarea id="entry-notes" rows="2" placeholder="Informations supplémentaires"></textarea>
           </div>
           <button type="submit" id="btn-save-entry" class="btn btn-primary btn-full">

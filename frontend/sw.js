@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v70';
+const CACHE_VERSION = 'v71';
 const CACHE_STATIC = `gardefort-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
@@ -20,6 +20,7 @@ const PRECACHE = [
   '/js/master-password.js',
   '/js/auth-secrets.js',
   '/js/recovery-export.js',
+  '/js/recovery-input.js',
   '/js/auth-screens.js',
   '/vendor/hash-wasm.esm.min.js',
   '/vendor/noble-ed25519.bundle.js',
