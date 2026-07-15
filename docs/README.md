@@ -11,4 +11,4 @@
 | [SECURITE.md](./SECURITE.md) | Modèle de menace et bonnes pratiques |
 | [AUDIT.md](./AUDIT.md) | Audit sécurité / performance / maintenance |
 
-Repo : [Gestionnnaire-de-mot-de-passe](https://github.com/alphabarry015/Gestionnnaire-de-mot-de-passe)
+Repo : [Gardefort](https://github.com/alphabarry015/Gardefort)
