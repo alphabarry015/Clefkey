@@ -7,6 +7,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from vault.auth import b64_encode
 from vault.models import VaultRecoveryKey, VaultUser
 from vault.views import (
+    KEY_PROOF_SEAL_PREFIX,
     RECOVERY_KEY_COUNT,
     _key_proof_matches,
     _parse_recovery_packages,
@@ -28,15 +29,16 @@ class KeyProofSealTests(SimpleTestCase):
     def test_seal_hides_raw_proof(self):
         raw = os.urandom(32)
         sealed = _seal_key_proof(raw)
-        self.assertEqual(len(sealed), 32)
+        self.assertEqual(len(sealed), 33)
+        self.assertTrue(sealed.startswith(KEY_PROOF_SEAL_PREFIX))
         self.assertNotEqual(sealed, raw)
         self.assertTrue(_key_proof_matches(sealed, raw))
         self.assertFalse(_key_proof_matches(sealed, os.urandom(32)))
 
     @override_settings(SECRET_KEY="test-secret-key-for-hmac")
-    def test_legacy_raw_proof_still_accepted(self):
+    def test_rejects_unprefixed_stored_proof(self):
         raw = os.urandom(32)
-        self.assertTrue(_key_proof_matches(raw, raw))
+        self.assertFalse(_key_proof_matches(raw, raw))
 
 
 class ParseRecoveryPackagesTests(SimpleTestCase):
@@ -81,9 +83,9 @@ class SaveRecoveryKeysTests(TestCase):
         rows = list(VaultRecoveryKey.objects.filter(user=user).order_by("slot"))
         self.assertEqual(len(rows), 7)
         stored = bytes(rows[0].key_proof)
-        self.assertNotEqual(stored, raw_proof)
+        self.assertTrue(stored.startswith(KEY_PROOF_SEAL_PREFIX))
+        self.assertNotEqual(stored[1:], raw_proof)
         self.assertTrue(_key_proof_matches(stored, raw_proof))
-        # Les preuves brutes ne doivent pas apparaître en clair en DB.
         self.assertFalse(
             any(bytes(r.key_proof) == raw_proof for r in rows)
         )

@@ -70,22 +70,39 @@ export function enterDevMode(state) {
   state.vaultKey = null;
   state.privateKey = null;
   state.publicKey = null;
-  state.entries = MOCK_ENTRIES.map(e => ({
+  state.entries = MOCK_ENTRIES.map((e, i) => ({
     ...e,
     url: normalizeEntryUrl(e.url),
+    created_at: e.created_at || `2026-01-${String(10 + i).padStart(2, '0')}T10:00:00.000Z`,
+    updated_at: e.updated_at || `2026-03-${String(1 + i).padStart(2, '0')}T14:30:00.000Z`,
   }));
 }
 
 export function createDevEntry(entries, data) {
+  const now = new Date().toISOString();
   const entry = {
     id: `dev-${Date.now()}`,
     ...data,
     url: (data.url || '').trim() ? normalizeEntryUrl(data.url) : '',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: now,
+    updated_at: now,
   };
   entries.unshift(entry);
   return entry;
+}
+
+export function updateDevEntry(entries, id, data) {
+  const index = entries.findIndex((e) => e.id === id);
+  if (index === -1) return null;
+  const existing = entries[index];
+  const updated = {
+    ...existing,
+    ...data,
+    url: (data.url || '').trim() ? normalizeEntryUrl(data.url) : '',
+    updated_at: new Date().toISOString(),
+  };
+  entries[index] = updated;
+  return updated;
 }
 
 export function deleteDevEntry(entries, id) {

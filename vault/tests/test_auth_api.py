@@ -125,3 +125,51 @@ class AuthApiSmokeTests(TestCase):
         }
         r = self.client.post("/auth/register", data=payload, content_type="application/json")
         self.assertEqual(r.status_code, 409)
+
+    def test_register_rejects_oversized_salt(self):
+        salt = generate_salt()
+        derived = derive_key("MotDePasseFort-Audit99!", salt)
+        vault_key = generate_vault_key()
+        private_key, public_key = generate_keypair()
+        payload = {
+            "email": "big@example.com",
+            "first_name": "Big",
+            "last_name": "Salt",
+            "salt": b64_encode(os.urandom(64)),
+            "auth_verifier": b64_encode(create_auth_verifier(derived)),
+            "encrypted_vault_key": b64_encode(encrypt_bytes(vault_key, derived)),
+            "public_key": b64_encode(public_key),
+            "encrypted_private_key": b64_encode(encrypt_bytes(private_key, vault_key)),
+            "recovery_keys": _recovery_packages(vault_key),
+        }
+        r = self.client.post("/auth/register", data=payload, content_type="application/json")
+        self.assertEqual(r.status_code, 400)
+
+    def test_profile_omits_crypto_material(self):
+        salt = generate_salt()
+        master = "MotDePasseFort-Audit99!"
+        derived = derive_key(master, salt)
+        auth_verifier = create_auth_verifier(derived)
+        vault_key = generate_vault_key()
+        private_key, public_key = generate_keypair()
+        payload = {
+            "email": "profile@example.com",
+            "first_name": "Pro",
+            "last_name": "Fil",
+            "salt": b64_encode(salt),
+            "auth_verifier": b64_encode(auth_verifier),
+            "encrypted_vault_key": b64_encode(encrypt_bytes(vault_key, derived)),
+            "public_key": b64_encode(public_key),
+            "encrypted_private_key": b64_encode(encrypt_bytes(private_key, vault_key)),
+            "recovery_keys": _recovery_packages(vault_key),
+        }
+        reg = self.client.post("/auth/register", data=payload, content_type="application/json")
+        self.assertEqual(reg.status_code, 201, reg.content)
+        token = reg.json()["access_token"]
+        me = self.client.get("/auth/me", HTTP_AUTHORIZATION=f"Bearer {token}")
+        self.assertEqual(me.status_code, 200)
+        body = me.json()
+        for key in ("salt", "encrypted_vault_key", "public_key", "encrypted_private_key", "auth_verifier"):
+            self.assertNotIn(key, body)
+        self.assertEqual(body["email"], "profile@example.com")
+

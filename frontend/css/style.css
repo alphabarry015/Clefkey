@@ -394,8 +394,10 @@ body {
   background: var(--success-subtle);
   border: 1px solid rgba(52, 211, 153, 0.2);
   border-radius: var(--radius-sm);
-  font-family: 'SF Mono', 'Courier New', monospace;
-  font-size: 0.85rem;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
   color: var(--success);
   word-break: break-all;
 }
@@ -763,13 +765,93 @@ body {
 }
 
 .detail-footer-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
 }
 
 .detail-footer-actions .btn {
-  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.detail-footer-actions .btn svg,
+.detail-footer-actions .btn .lucide {
+  width: 16px;
+  height: 16px;
+}
+
+.detail-footer-actions #btn-delete-detail {
+  justify-self: end;
+}
+
+.modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.detail-date-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  max-width: 11rem;
+  height: 32px;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-primary));
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.detail-date-meta.is-updated {
+  background: color-mix(in srgb, var(--success, #10b981) 8%, var(--bg-primary));
+  border-color: color-mix(in srgb, var(--success, #10b981) 20%, var(--border));
+}
+
+.detail-date-meta-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.detail-date-meta.is-updated .detail-date-meta-label {
+  color: var(--success, #059669);
+}
+
+.detail-date-meta-sep {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.detail-date-meta-value {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.modal-header-actions .btn-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-content-sm {
@@ -1384,12 +1466,20 @@ body {
   color: var(--text-secondary);
 }
 
-.dash-tiles-empty svg,
-.dash-tiles-empty .lucide {
+.dash-tiles-empty > svg,
+.dash-tiles-empty > .lucide {
   width: 40px;
   height: 40px;
   color: var(--accent);
   opacity: 0.75;
+}
+
+.dash-tiles-empty .btn svg,
+.dash-tiles-empty .btn .lucide {
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+  opacity: 1;
 }
 
 .entry-avatar.sm { width: 36px; height: 36px; font-size: 0.95rem; border-radius: 10px; }
@@ -2216,6 +2306,10 @@ body.modal-open .vault-layout {
   overscroll-behavior: none;
 }
 
+#modal-master-confirm .modal-overlay {
+  z-index: 130;
+}
+
 .modal-content {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
@@ -2303,7 +2397,12 @@ body.modal-open .vault-layout {
 
 .copyable-field a:hover { color: var(--accent-light); text-decoration: underline; }
 
-.mono { font-family: 'SF Mono', 'Courier New', monospace; }
+.mono {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
 
 .detail-notes-text {
   margin-top: 0.35rem;
@@ -2311,8 +2410,10 @@ body.modal-open .vault-layout {
   background: var(--bg-primary);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 0.875rem;
-  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  word-break: break-word;
   white-space: pre-wrap;
 }
 
@@ -2324,6 +2425,13 @@ body.modal-open .vault-layout {
 
 /* ── Confirm ───────────────────────────────────────────── */
 .confirm-text { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+
+.confirm-help {
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
 
 .confirm-name-block {
   display: flex;
@@ -2943,6 +3051,42 @@ body.modal-open .vault-layout {
 
   .modal-header { padding: 1rem 1.15rem; }
   .modal-body { padding: 1rem 1.15rem; padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
+
+  .detail-date-meta {
+    max-width: 8.5rem;
+    height: 30px;
+    padding: 0 0.4rem;
+    gap: 0.2rem;
+  }
+
+  .detail-date-meta-label,
+  .detail-date-meta-sep {
+    font-size: 0.58rem;
+  }
+
+  .detail-date-meta-value {
+    font-size: 0.62rem;
+  }
+
+  .modal-header-actions .btn-close {
+    width: 30px;
+    height: 30px;
+  }
+
+  .detail-footer-actions {
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0.4rem;
+  }
+
+  .detail-footer-actions .btn {
+    padding: 0.55rem 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .detail-footer-actions #btn-delete-detail {
+    justify-self: end;
+  }
+
   .confirm-actions { flex-direction: column-reverse; }
   .confirm-actions .btn { width: 100%; }
 

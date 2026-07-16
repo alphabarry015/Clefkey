@@ -91,6 +91,14 @@ export const api = {
     });
   },
 
+  updateEntry(token, id, encryptedDataB64) {
+    return request(`/vault/entries/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ encrypted_data: encryptedDataB64 }),
+    });
+  },
+
   deleteEntry(token, id) {
     return request(`/vault/entries/${id}`, {
       method: 'DELETE',

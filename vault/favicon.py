@@ -7,7 +7,7 @@ import re
 import socket
 from dataclasses import dataclass
 from html.parser import HTMLParser
-from urllib.parse import quote, urljoin, urlparse
+from urllib.parse import quote, urljoin, urlparse, urlunparse
 
 import httpx
 
@@ -91,28 +91,51 @@ def normalize_page_url(url: str) -> str | None:
 
 
 def is_safe_hostname(hostname: str) -> bool:
+    return _resolve_global_ips(hostname) is not None
+
+
+def _resolve_global_ips(hostname: str) -> list[str] | None:
+    """Résout un hôte et ne retient que les IP globales (anti-SSRF / rebinding)."""
     host = hostname.strip().lower().rstrip(".")
     if not host or host == "localhost" or host.endswith(".local"):
-        return False
+        return None
     if host in {"0.0.0.0", "::1", "[::1]"}:
-        return False
+        return None
 
     try:
         infos = socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
     except socket.gaierror:
-        return False
+        return None
 
+    ips: list[str] = []
+    seen: set[str] = set()
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
-        if (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_reserved
-            or ip.is_multicast
-        ):
-            return False
-    return True
+        if not ip.is_global:
+            continue
+        text = ip.compressed if ip.version == 6 else str(ip)
+        if text in seen:
+            continue
+        seen.add(text)
+        ips.append(text)
+    return ips or None
+
+
+def _pinned_request_target(url: str, ip: str) -> tuple[str, dict[str, str]]:
+    """URL vers IP résolue + en-tête Host d'origine (pin DNS)."""
+    parsed = urlparse(url)
+    if not parsed.hostname:
+        raise ValueError("hostname requis")
+
+    port = parsed.port
+    if port is None:
+        port = 443 if parsed.scheme == "https" else 80
+
+    host_header = parsed.netloc
+    ip_host = f"[{ip}]" if ":" in ip else ip
+    netloc = f"{ip_host}:{port}" if port not in (80, 443) else ip_host
+    pinned_url = urlunparse(parsed._replace(netloc=netloc))
+    return pinned_url, {"Host": host_header}
 
 
 def _origin(page_url: str) -> str:
@@ -285,34 +308,66 @@ def _fetch_bytes(
 ) -> tuple[bytes, str] | None:
     """
     GET sans follow_redirects aveugle : chaque hop est revalidé (anti-SSRF).
-    Retourne (body tronqué, content-type) ou None.
+    IP épinglée après résolution DNS (anti-rebinding).
+    Corps lu en streaming avec plafond strict (anti-DoS mémoire).
     """
     current = _safe_request_url(url)
     if not current:
         return None
 
     for _ in range(MAX_REDIRECTS + 1):
+        parsed = urlparse(current)
+        hostname = parsed.hostname
+        if not hostname:
+            return None
+        ips = _resolve_global_ips(hostname)
+        if not ips:
+            return None
+
         try:
-            resp = client.get(current)
-        except httpx.HTTPError:
+            pinned_url, pin_headers = _pinned_request_target(current, ips[0])
+            with client.stream("GET", pinned_url, headers=pin_headers) as resp:
+                if resp.status_code in {301, 302, 303, 307, 308}:
+                    location = (resp.headers.get("location") or "").strip()
+                    if not location:
+                        return None
+                    nxt = urljoin(current, location)
+                    current = _safe_request_url(nxt)
+                    if not current:
+                        return None
+                    continue
+
+                if resp.status_code != 200:
+                    return None
+
+                content_length = resp.headers.get("content-length")
+                if content_length is not None:
+                    try:
+                        if int(content_length) > max_bytes:
+                            return None
+                    except ValueError:
+                        pass
+
+                chunks: list[bytes] = []
+                total = 0
+                for chunk in resp.iter_bytes():
+                    if not chunk:
+                        continue
+                    remaining = max_bytes - total
+                    if remaining <= 0:
+                        break
+                    if len(chunk) > remaining:
+                        chunks.append(chunk[:remaining])
+                        total = max_bytes
+                        break
+                    chunks.append(chunk)
+                    total += len(chunk)
+
+                body = b"".join(chunks)
+                content_type = resp.headers.get("content-type", "application/octet-stream")
+                return body, content_type
+        except (httpx.HTTPError, ValueError):
             return None
-
-        if resp.status_code in {301, 302, 303, 307, 308}:
-            location = (resp.headers.get("location") or "").strip()
-            if not location:
-                return None
-            nxt = urljoin(current, location)
-            current = _safe_request_url(nxt)
-            if not current:
-                return None
-            continue
-
-        if resp.status_code != 200:
-            return None
-
-        body = resp.content[:max_bytes]
-        content_type = resp.headers.get("content-type", "application/octet-stream")
-        return body, content_type
 
     return None
 

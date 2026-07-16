@@ -50,10 +50,10 @@ SECRET_KEY = os.getenv("SECRET_KEY", _DEFAULT_DEV_SECRET).strip() or _DEFAULT_DE
 
 DEBUG = os.getenv("DEBUG", "false" if IS_VERCEL else "true").lower() in ("1", "true", "yes")
 
-# En production (Vercel), refuser la clé de développement.
-if IS_VERCEL and SECRET_KEY == _DEFAULT_DEV_SECRET:
+# En production, refuser la clé de développement (Vercel, Docker, VM, etc.).
+if not DEBUG and SECRET_KEY == _DEFAULT_DEV_SECRET:
     raise RuntimeError(
-        "SECRET_KEY doit être défini sur Vercel (ne pas utiliser la valeur de développement)."
+        "SECRET_KEY doit être défini en production (ne pas utiliser la valeur de développement)."
     )
 
 # Rate limit partagé obligatoire sur Vercel (sauf contournement explicite).

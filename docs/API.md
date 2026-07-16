@@ -30,7 +30,7 @@ Les exemples ci-dessous sont schématiques. N’y placez jamais de jetons, mots 
 | POST | `/auth/register` | Non | Création de compte |
 | POST | `/auth/login` | Non | Connexion → JWT |
 | GET | `/auth/salt?email=` | Non | Salt pour dérivation client (toujours 200 si email fourni — sel factice si compte inconnu) |
-| GET | `/auth/me` | Oui | Profil |
+| GET | `/auth/me` | Oui | Profil (noms, email, compteurs — **sans** matériel crypto) |
 | PATCH | `/auth/me` | Oui | Mise à jour profil (noms, email) |
 | POST | `/auth/recovery/begin` | Non | Démarre la récupération (preuve / challenge) |
 | POST | `/auth/recovery/complete` | Non | Termine la récupération et régénère le matériel |
@@ -38,9 +38,13 @@ Les exemples ci-dessous sont schématiques. N’y placez jamais de jetons, mots 
 ### POST `/auth/register` (corps typique)
 
 Champs texte : `email`, `first_name`, `middle_name`, `last_name`  
-Champs base64 : `salt`, `auth_verifier`, `encrypted_vault_key`, `public_key`, `encrypted_private_key` (et champs recovery selon le flux client)
+Champs base64 : `salt` (16 o), `auth_verifier` (32 o), `public_key` (32 o), `encrypted_vault_key` / `encrypted_private_key` (AES-GCM 60–512 o), plus `recovery_keys` (exactement 7 paquets).
 
-Réponse **201** : `access_token`, `user_id`, `email`, noms, blobs crypto.
+Réponse **201** : `access_token`, `user_id`, `email`, noms, blobs crypto (nécessaires au client pour déverrouiller — pas renvoyés ensuite par `/auth/me`).
+
+### GET / PATCH `/auth/me`
+
+Profil uniquement (noms, email, `entries_count`). Le matériel crypto n’est **pas** exposé : il reste disponible après login / register / recovery, et en session locale (`authMaterial`).
 
 ### POST `/auth/login`
 

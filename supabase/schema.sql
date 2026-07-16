@@ -73,6 +73,21 @@ CREATE TABLE IF NOT EXISTS vault_recovery_keys (
 
 CREATE INDEX IF NOT EXISTS vault_recovery_keys_user_id_idx ON vault_recovery_keys (user_id);
 
+-- ---------------------------------------------------------------------------
+-- RLS : tables Django exposées via le schéma public PostgREST.
+-- Aucune policy = deny-all pour anon / authenticated.
+-- Django (rôle propriétaire / connexion directe) contourne RLS sauf FORCE.
+-- ---------------------------------------------------------------------------
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vault_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vault_shares ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vault_recovery_keys ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE users FROM anon, authenticated;
+REVOKE ALL ON TABLE vault_entries FROM anon, authenticated;
+REVOKE ALL ON TABLE vault_shares FROM anon, authenticated;
+REVOKE ALL ON TABLE vault_recovery_keys FROM anon, authenticated;
+
 COMMIT;
 
 -- Si une table existait déjà SANS ON DELETE CASCADE, exécutez aussi :

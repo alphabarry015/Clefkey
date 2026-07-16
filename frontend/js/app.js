@@ -16,11 +16,12 @@ import {
   unwrapVaultKeyWithRecoveryCode,
   prepareMasterPasswordReset,
   decryptPrivateKey,
+  deriveKey, decryptBytes,
 } from './crypto.js';
 import { api } from './api.js';
 import { initIcons, refreshIcons, setLucideIcon } from './icons.js';
 import {
-  enterDevMode, shouldUseDevBypass, createDevEntry, deleteDevEntry,
+  enterDevMode, shouldUseDevBypass, createDevEntry, updateDevEntry, deleteDevEntry,
 } from './dev.js';
 import {
   getFaviconUrl, getSiteDomain, normalizeEntryUrl, prepareEntry,
@@ -71,6 +72,9 @@ const state = {
   confirmCallback: null,
   confirmDeleteName: null,
   detailEntryId: null,
+  editingEntryId: null,
+  authMaterial: null,
+  masterConfirmResolve: null,
   shareEntryId: null,
   /** @type {null | { email: string, verifierB64: string, vaultKey: Uint8Array, privateKey: Uint8Array, publicKey: Uint8Array, salt: Uint8Array }} */
   recoverySession: null,
@@ -81,6 +85,147 @@ const state = {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 const EMPTY_VALUE = '…';
+
+function formatEntryDateTime(iso) {
+  if (!iso) return EMPTY_VALUE;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return EMPTY_VALUE;
+  return d.toLocaleString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatEntryDateCompact(iso) {
+  if (!iso) return EMPTY_VALUE;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return EMPTY_VALUE;
+  const now = new Date();
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function entryWasUpdated(entry) {
+  const created = Date.parse(entry?.created_at);
+  const updated = Date.parse(entry?.updated_at);
+  if (!Number.isFinite(created) || !Number.isFinite(updated)) return false;
+  // Tolérance : à la création Django fixe created_at et updated_at quasi simultanément.
+  return updated - created > 2000;
+}
+
+function setDetailDateMeta(entry, { visible = true } = {}) {
+  const meta = $('#detail-date-meta');
+  if (!meta) return;
+  if (!visible || !entry?.created_at) {
+    meta.classList.add('hidden');
+    meta.removeAttribute('title');
+    return;
+  }
+  const wasUpdated = entryWasUpdated(entry);
+  const iso = wasUpdated ? entry.updated_at : entry.created_at;
+  $('#detail-date-label').textContent = wasUpdated ? 'Modifiée' : 'Créée';
+  $('#detail-date-value').textContent = formatEntryDateCompact(iso);
+  meta.title = `${wasUpdated ? 'Modifiée' : 'Créée'} le ${formatEntryDateTime(iso)}`;
+  meta.classList.toggle('is-updated', wasUpdated);
+  meta.classList.remove('hidden');
+}
+
+function setDetailActionButtonsVisible({ edit = false, share = false, delete: del = false } = {}) {
+  $('#btn-edit-detail')?.classList.toggle('hidden', !edit);
+  $('#btn-share-detail')?.classList.toggle('hidden', !share);
+  $('#btn-delete-detail')?.classList.toggle('hidden', !del);
+}
+
+function fillEntryDetailCommon(e) {
+  setEntryAvatar($('#detail-avatar'), e);
+  applyDetailTypeLabels(e);
+  $('#detail-title').textContent = e.title;
+  $('#detail-username').textContent = displayUsername(e.username);
+  $('#detail-password').textContent = '••••••••••••';
+  $('#detail-password').dataset.real = e.password || '';
+  $('#detail-password').dataset.visible = 'false';
+  const icon = $('#btn-toggle-pwd')?.querySelector('[data-lucide], .lucide');
+  if (icon) setLucideIcon(icon, 'eye');
+
+  const urlField = $('#detail-url-field');
+  if (e.url) {
+    urlField.classList.remove('hidden');
+    const link = $('#detail-url');
+    link.href = e.url.startsWith('http') ? e.url : `https://${e.url}`;
+    link.textContent = e.url;
+  } else {
+    urlField.classList.add('hidden');
+  }
+
+  const notesField = $('#detail-notes-field');
+  if (e.notes) {
+    notesField.classList.remove('hidden');
+    $('#detail-notes').textContent = e.notes;
+  } else {
+    notesField.classList.add('hidden');
+  }
+}
+
+function resetEntryFormModal() {
+  state.editingEntryId = null;
+  $('#modal-entry-title').textContent = 'Nouvelle clé';
+  const btn = $('#btn-save-entry');
+  if (btn) btn.innerHTML = '<i data-lucide="check-circle"></i> Enregistrer';
+}
+
+function authMaterialFromPayload(payload) {
+  if (!payload?.salt || !payload?.encrypted_vault_key) {
+    return null;
+  }
+  return {
+    salt: payload.salt,
+    encrypted_vault_key: payload.encrypted_vault_key,
+    encrypted_private_key: payload.encrypted_private_key || null,
+    public_key: payload.public_key || null,
+  };
+}
+
+function sameBytes(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
+async function getAuthMaterialForVerification() {
+  if (state.authMaterial?.salt && state.authMaterial?.encrypted_vault_key) {
+    return state.authMaterial;
+  }
+  // Plus de fallback /auth/me : le profil ne renvoie plus le matériel crypto.
+  throw new Error('Impossible de vérifier le mot de passe maître pour cette session. Reconnectez-vous.');
+}
+
+async function verifyMasterPasswordForCurrentVault(masterPassword) {
+  if (!masterPassword || !state.vaultKey) return false;
+  try {
+    const material = await getAuthMaterialForVerification();
+    const derived = await deriveKey(masterPassword, fromB64(material.salt));
+    const vaultKey = await decryptBytes(fromB64(material.encrypted_vault_key), derived);
+    return sameBytes(vaultKey, state.vaultKey);
+  } catch {
+    return false;
+  }
+}
+
+function displayUsername(username) {
+  const value = (username || '').trim();
+  if (!value || value === EMPTY_VALUE || value === '...' || value === '…') return 'none';
+  return value;
+}
 
 function buildDisplayName(user) {
   return [user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ');
@@ -413,7 +558,18 @@ function isRecoveryKeysModalOpen() {
   return Boolean($('#modal-recovery-keys')?.classList.contains('open'));
 }
 
+function clearDetailSecrets() {
+  const el = $('#detail-password');
+  if (!el) return;
+  el.textContent = '';
+  delete el.dataset.real;
+  el.dataset.visible = 'false';
+  const icon = $('#btn-toggle-pwd')?.querySelector('[data-lucide], .lucide');
+  if (icon) setLucideIcon(icon, 'eye');
+}
+
 function closeAllModals() {
+  if (state.masterConfirmResolve) settleMasterConfirm(false);
   // Ne jamais fermer le modal des 7 clés sans confirmation explicite.
   $$('.modal.open').forEach(m => {
     if (m.id === 'modal-recovery-keys') return;
@@ -421,6 +577,7 @@ function closeAllModals() {
   });
   syncBodyModalLock();
   resetDeleteConfirm();
+  clearDetailSecrets();
   state.detailEntryId = null;
 }
 
@@ -429,6 +586,28 @@ function resetDeleteConfirm() {
   $('#btn-confirm-ok').disabled = true;
   state.confirmDeleteName = null;
   state.confirmCallback = null;
+}
+
+function settleMasterConfirm(ok) {
+  const resolve = state.masterConfirmResolve;
+  state.masterConfirmResolve = null;
+  $('#master-confirm-password').value = '';
+  $('#btn-master-confirm-ok').disabled = false;
+  closeModal($('#modal-master-confirm'));
+  if (resolve) resolve(ok);
+}
+
+function requestMasterPasswordConfirmation() {
+  if (state.devMode) return Promise.resolve(true);
+  if (state.masterConfirmResolve) state.masterConfirmResolve(false);
+  $('#master-confirm-password').value = '';
+  $('#btn-master-confirm-ok').disabled = false;
+  openModal($('#modal-master-confirm'));
+  refreshIcons($('#modal-master-confirm'));
+  setTimeout(() => $('#master-confirm-password')?.focus(), 50);
+  return new Promise((resolve) => {
+    state.masterConfirmResolve = resolve;
+  });
 }
 
 function showDeleteConfirm(entry, onConfirm, options = {}) {
@@ -472,6 +651,41 @@ $('#btn-confirm-ok').addEventListener('click', () => {
   closeModal($('#modal-confirm'));
   resetDeleteConfirm();
   if (callback) callback();
+});
+
+$('#btn-master-confirm-cancel')?.addEventListener('click', () => settleMasterConfirm(false));
+$('#btn-close-master-confirm')?.addEventListener('click', () => settleMasterConfirm(false));
+
+$('#form-master-confirm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = $('#master-confirm-password');
+  const btn = $('#btn-master-confirm-ok');
+  const master = input.value;
+  if (!master) {
+    toast('Mot de passe maître requis', 'error');
+    input.focus();
+    return;
+  }
+
+  btn.disabled = true;
+  showLoading('Vérification du mot de passe maître...');
+  try {
+    const ok = await verifyMasterPasswordForCurrentVault(master);
+    if (!ok) {
+      toast('Mot de passe maître incorrect', 'error');
+      input.value = '';
+      input.focus();
+      return;
+    }
+    settleMasterConfirm(true);
+  } catch (err) {
+    toast(err.message || 'Vérification impossible', 'error');
+    input.value = '';
+    input.focus();
+  } finally {
+    hideLoading();
+    btn.disabled = false;
+  }
 });
 
 async function copyText(text, btn) {
@@ -654,6 +868,7 @@ $('#form-login').addEventListener('submit', async (e) => {
     state.devMode = false;
     state.token = data.access_token;
     state.user = userFromProfile(data);
+    state.authMaterial = authMaterialFromPayload(data);
     Object.assign(state, keys);
     try {
       await loadEntries();
@@ -705,6 +920,12 @@ $('#form-register').addEventListener('submit', async (e) => {
     });
     state.token = data.access_token;
     state.user = userFromProfile(data);
+    state.authMaterial = authMaterialFromPayload(data) || {
+      salt: toB64(prep.salt),
+      encrypted_vault_key: toB64(prep.encryptedVaultKey),
+      encrypted_private_key: toB64(prep.encryptedPrivateKey),
+      public_key: toB64(prep.publicKey),
+    };
     state.vaultKey = prep.vaultKey;
     state.privateKey = prep.privateKey;
     state.publicKey = prep.publicKey;
@@ -831,6 +1052,7 @@ $('#form-recovery-reset')?.addEventListener('submit', async (e) => {
     });
     state.token = data.access_token;
     state.user = userFromProfile(data);
+    state.authMaterial = authMaterialFromPayload(data);
     state.vaultKey = session.vaultKey;
     state.privateKey = session.privateKey;
     state.publicKey = session.publicKey;
@@ -855,6 +1077,8 @@ $('#form-recovery-reset')?.addEventListener('submit', async (e) => {
 
 function lockVault(reason = 'manual') {
   stopIdleWatch();
+  // Résoudre toute Promise de confirmation avant de vider l'état (évite hang bouton).
+  if (state.masterConfirmResolve) settleMasterConfirm(false);
   clearStoredSession();
   Object.assign(state, {
     token: null,
@@ -867,6 +1091,9 @@ function lockVault(reason = 'manual') {
     sharesSent: [],
     shareEntryId: null,
     detailEntryId: null,
+    editingEntryId: null,
+    authMaterial: null,
+    masterConfirmResolve: null,
     recoverySession: null,
     pendingRecoveryCodes: null,
     afterRecoveryKeys: null,
@@ -1070,29 +1297,7 @@ window.showShareReceived = function(id) {
   const e = state.sharesReceived.find((x) => x.id === id);
   if (!e) return;
   state.detailEntryId = null;
-  setEntryAvatar($('#detail-avatar'), e);
-  applyDetailTypeLabels(e);
-  $('#detail-title').textContent = e.title;
-  $('#detail-username').textContent = e.username || EMPTY_VALUE;
-  $('#detail-password').textContent = '••••••••••••';
-  $('#detail-password').dataset.real = e.password || '';
-  $('#detail-password').dataset.visible = 'false';
-  const urlField = $('#detail-url-field');
-  if (e.url) {
-    urlField.classList.remove('hidden');
-    const link = $('#detail-url');
-    link.href = e.url.startsWith('http') ? e.url : `https://${e.url}`;
-    link.textContent = e.url;
-  } else {
-    urlField.classList.add('hidden');
-  }
-  const notesField = $('#detail-notes-field');
-  if (e.notes) {
-    notesField.classList.remove('hidden');
-    $('#detail-notes').textContent = e.notes;
-  } else {
-    notesField.classList.add('hidden');
-  }
+  fillEntryDetailCommon(e);
   const shareNoteField = $('#detail-share-note-field');
   if (e.share_note) {
     shareNoteField?.classList.remove('hidden');
@@ -1100,8 +1305,9 @@ window.showShareReceived = function(id) {
   } else {
     shareNoteField?.classList.add('hidden');
   }
-  $('#btn-share-detail')?.classList.add('hidden');
-  $('#btn-delete-detail')?.classList.add('hidden');
+  $('#detail-share-note-field')?.classList.add('hidden');
+  setDetailDateMeta(null, { visible: false });
+  setDetailActionButtonsVisible({});
   openModal($('#modal-detail'));
   refreshIcons($('#modal-detail'));
 };
@@ -1175,6 +1381,7 @@ function renderDashboard() {
     grid.innerHTML = '';
     empty.classList.remove('hidden');
     empty.querySelector('p').textContent = 'Aucun résultat pour cette recherche';
+    refreshIcons(empty);
     return;
   }
 
@@ -1404,7 +1611,7 @@ function renderEntries() {
           <div class="entry-title">${esc(e.title)}</div>
           ${entryTypeBadgeMarkup(e)}
         </div>
-        <div class="entry-username">${esc(e.username || (entryType(e) === 'api_key' ? 'Secret API' : ''))}</div>
+        <div class="entry-username">${esc(entryType(e) === 'api_key' && displayUsername(e.username) === 'none' ? 'Secret API' : displayUsername(e.username))}</div>
       </div>
       <div class="entry-actions">
         <button type="button" class="btn-icon" title="Copier" data-action="copy-password" data-id="${esc(e.id)}">
@@ -1571,38 +1778,18 @@ window.showEntry = function(id) {
   if (!e) return;
 
   state.detailEntryId = id;
-  setEntryAvatar($('#detail-avatar'), e);
-  applyDetailTypeLabels(e);
-  $('#detail-title').textContent = e.title;
-  $('#detail-username').textContent = e.username || EMPTY_VALUE;
-  $('#detail-password').textContent = '••••••••••••';
-  $('#detail-password').dataset.real = e.password || '';
-  $('#detail-password').dataset.visible = 'false';
-
-  const urlField = $('#detail-url-field');
-  if (e.url) {
-    urlField.classList.remove('hidden');
-    const link = $('#detail-url');
-    link.href = e.url.startsWith('http') ? e.url : `https://${e.url}`;
-    link.textContent = e.url;
-  } else {
-    urlField.classList.add('hidden');
-  }
-
-  const notesField = $('#detail-notes-field');
-  if (e.notes) {
-    notesField.classList.remove('hidden');
-    $('#detail-notes').textContent = e.notes;
-  } else {
-    notesField.classList.add('hidden');
-  }
-
+  fillEntryDetailCommon(e);
   $('#detail-share-note-field')?.classList.add('hidden');
-  $('#btn-share-detail')?.classList.remove('hidden');
-  $('#btn-delete-detail')?.classList.remove('hidden');
+  setDetailDateMeta(e, { visible: true });
+  setDetailActionButtonsVisible({ edit: true, share: true, delete: true });
   openModal($('#modal-detail'));
   refreshIcons($('#modal-detail'));
 };
+
+$('#btn-edit-detail')?.addEventListener('click', () => {
+  if (!state.detailEntryId) return;
+  openEditModal(state.detailEntryId);
+});
 
 $('#btn-share-detail')?.addEventListener('click', () => {
   if (!state.detailEntryId) return;
@@ -1687,6 +1874,7 @@ $$('.btn-copy-field[data-copy]').forEach(btn => {
 
 $('#btn-close-detail').addEventListener('click', () => {
   closeModal($('#modal-detail'));
+  clearDetailSecrets();
   state.detailEntryId = null;
 });
 
@@ -1703,10 +1891,34 @@ window.copyPassword = async function(id) {
 // ── Ajouter clé ──────────────────────────────────────────
 
 function openAddModal() {
+  resetEntryFormModal();
   $('#form-entry').reset();
   if ($('#entry-type')) $('#entry-type').value = 'login';
   applyEntryFormLabels('login');
   $('#entry-generated').classList.add('hidden');
+  openModal($('#modal-add'));
+  refreshIcons($('#modal-add'));
+  setTimeout(() => $('#entry-title')?.focus(), 50);
+}
+
+function openEditModal(entryId) {
+  const e = state.entries.find((x) => x.id === entryId);
+  if (!e) return;
+
+  state.editingEntryId = entryId;
+  $('#form-entry').reset();
+  const type = entryType(e);
+  if ($('#entry-type')) $('#entry-type').value = type;
+  applyEntryFormLabels(type);
+  $('#entry-title').value = e.title;
+  $('#entry-username').value = e.username || '';
+  $('#entry-password').value = e.password || '';
+  $('#entry-url').value = e.url || '';
+  $('#entry-notes').value = e.notes || '';
+  $('#entry-generated').classList.add('hidden');
+  $('#modal-entry-title').textContent = 'Modifier la clé';
+  $('#btn-save-entry').innerHTML = '<i data-lucide="check-circle"></i> Mettre à jour';
+  closeModal($('#modal-detail'));
   openModal($('#modal-add'));
   refreshIcons($('#modal-add'));
   setTimeout(() => $('#entry-title')?.focus(), 50);
@@ -1739,7 +1951,10 @@ $('#btn-add-sidebar').addEventListener('click', () => {
   if (window.innerWidth <= 900) collapseSidebar();
 });
 $('#fab-add').addEventListener('click', openAddModal);
-$('#btn-close-add').addEventListener('click', () => closeModal($('#modal-add')));
+$('#btn-close-add').addEventListener('click', () => {
+  resetEntryFormModal();
+  closeModal($('#modal-add'));
+});
 
 $('#btn-generate').addEventListener('click', () => {
   const pwd = generatePassword(20);
@@ -1767,14 +1982,43 @@ $('#form-entry').addEventListener('submit', async (e) => {
   if (!data) return;
 
   const btn = $('#btn-save-entry');
+  const editingId = state.editingEntryId;
   btn.disabled = true;
   try {
     if (state.devMode) {
-      createDevEntry(state.entries, data);
+      if (editingId) {
+        updateDevEntry(state.entries, editingId, data);
+      } else {
+        createDevEntry(state.entries, data);
+      }
       if (data.url) await preloadFavicon(data.url);
       refreshCurrentView();
       closeModal($('#modal-add'));
-      toast(`"${data.title}" ajouté`, 'success');
+      resetEntryFormModal();
+      toast(editingId ? `"${data.title}" mis à jour` : `"${data.title}" ajouté`, 'success');
+      if (editingId && state.detailEntryId === editingId) {
+        showEntry(editingId);
+      }
+      return;
+    }
+
+    if (editingId) {
+      const confirmed = await requestMasterPasswordConfirmation();
+      if (!confirmed) {
+        toast('Mise à jour annulée', 'info');
+        return;
+      }
+      const encrypted = await encryptData(data, state.vaultKey);
+      await api.updateEntry(state.token, editingId, toB64(encrypted));
+      await loadEntries();
+      if (data.url) await preloadFavicon(data.url);
+      refreshCurrentView();
+      closeModal($('#modal-add'));
+      resetEntryFormModal();
+      toast(`"${data.title}" mis à jour`, 'success');
+      if (state.detailEntryId === editingId) {
+        showEntry(editingId);
+      }
       return;
     }
 
@@ -1784,6 +2028,7 @@ $('#form-entry').addEventListener('submit', async (e) => {
     if (data.url) await preloadFavicon(data.url);
     refreshCurrentView();
     closeModal($('#modal-add'));
+    resetEntryFormModal();
     toast(`"${data.title}" ajouté`, 'success');
   } catch (err) {
     toast(err.message, 'error');
@@ -1799,22 +2044,24 @@ window.deleteEntry = function(id) {
   if (!e) return;
   showDeleteConfirm(e, async () => {
     try {
-      if (state.devMode) {
-        deleteDevEntry(state.entries, id);
+        if (state.devMode) {
+          deleteDevEntry(state.entries, id);
+          if ($('#modal-detail').classList.contains('open')) {
+            closeModal($('#modal-detail'));
+            clearDetailSecrets();
+            state.detailEntryId = null;
+          }
+          refreshCurrentView();
+          toast(`"${e.title}" supprimé`, 'info');
+          return;
+        }
+        await api.deleteEntry(state.token, id);
+        await loadEntries();
         if ($('#modal-detail').classList.contains('open')) {
           closeModal($('#modal-detail'));
+          clearDetailSecrets();
           state.detailEntryId = null;
         }
-        refreshCurrentView();
-        toast(`"${e.title}" supprimé`, 'info');
-        return;
-      }
-      await api.deleteEntry(state.token, id);
-      await loadEntries();
-      if ($('#modal-detail').classList.contains('open')) {
-        closeModal($('#modal-detail'));
-        state.detailEntryId = null;
-      }
       refreshCurrentView();
       toast(`"${e.title}" supprimé`, 'info');
     } catch (err) {
@@ -1842,6 +2089,14 @@ $$('.modal-overlay').forEach(overlay => {
     if (modal?.id === 'modal-recovery-keys') {
       toast('Confirmez d’abord avoir sauvegardé vos 7 clés', 'error');
       return;
+    }
+    if (modal?.id === 'modal-master-confirm') {
+      settleMasterConfirm(false);
+      return;
+    }
+    if (modal?.id === 'modal-detail') {
+      clearDetailSecrets();
+      state.detailEntryId = null;
     }
     closeModal(modal);
   });

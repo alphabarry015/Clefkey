@@ -24,27 +24,31 @@ MAX_ENCRYPTED_ENTRY_BYTES = 256 * 1024
 SALT_SIZE = 16
 _DUMMY_AUTH_VERIFIER = b"\x00" * 32
 RECOVERY_KEY_COUNT = VaultRecoveryKey.RECOVERY_KEY_COUNT
+# AES-GCM : nonce 12 + plaintext 32 + tag 16 = 60 octets (vaultKey / clé privée X25519)
+AES_GCM_OVERHEAD = 12 + 16
+KEY_SIZE = 32
+MIN_WRAPPED_KEY_BYTES = AES_GCM_OVERHEAD + KEY_SIZE
 # Vérificateur + blob AES-GCM (nonce 12 + tag 16 + 32 octets vaultKey) ≈ 60–120 B attendus
 MAX_RECOVERY_BLOB_BYTES = 512
 VERIFIER_SIZE = 32
+PUBLIC_KEY_SIZE = 32
+KEY_PROOF_SEAL_PREFIX = b"\x01"
 
 
 def _seal_key_proof(raw_proof: bytes) -> bytes:
     """HMAC serveur du key_proof client — un dump DB ne suffit plus pour complete."""
-    return hmac.new(
+    digest = hmac.new(
         settings.SECRET_KEY.encode("utf-8"),
         raw_proof,
         hashlib.sha256,
     ).digest()
+    return KEY_PROOF_SEAL_PREFIX + digest
 
 
 def _key_proof_matches(stored: bytes, provided: bytes) -> bool:
-    """Accepte preuve scellée (nouveau) ou brute héritée (anciens comptes)."""
-    sealed = _seal_key_proof(provided)
-    if hmac.compare_digest(bytes(stored), sealed):
-        return True
-    # Compat comptes créés avant le scellement HMAC.
-    return hmac.compare_digest(bytes(stored), provided)
+    """Vérifie la preuve scellée (format v2 : préfixe + HMAC)."""
+    expected = _seal_key_proof(provided)
+    return hmac.compare_digest(bytes(stored), expected)
 
 
 def _decode_encrypted_blob(encrypted_b64: str) -> bytes | str:
@@ -60,6 +64,27 @@ def _decode_encrypted_blob(encrypted_b64: str) -> bytes | str:
     return raw
 
 
+def _decode_fixed_b64(value: str, expected: int, label: str) -> bytes | str:
+    try:
+        raw = b64_decode(value or "")
+    except Exception:
+        return f"{label} invalide"
+    if len(raw) != expected:
+        return f"{label} invalide"
+    return raw
+
+
+def _decode_wrapped_key_b64(value: str, label: str) -> bytes | str:
+    """Blob AES-GCM envelopant une clé de 32 octets (vaultKey ou clé privée)."""
+    try:
+        raw = b64_decode(value or "")
+    except Exception:
+        return f"{label} invalide"
+    if len(raw) < MIN_WRAPPED_KEY_BYTES or len(raw) > MAX_RECOVERY_BLOB_BYTES:
+        return f"{label} invalide"
+    return raw
+
+
 def _dummy_salt_for_email(email: str) -> bytes:
     """Sel déterministe pour emails inconnus (anti-énumération, même format que les vrais)."""
     digest = hmac.new(
@@ -71,6 +96,7 @@ def _dummy_salt_for_email(email: str) -> bytes:
 
 
 def _profile_payload(user: VaultUser, entries_count: int | None = None) -> dict:
+    """Profil public JWT — sans matériel crypto (salt / blobs restent sur login/register/recovery)."""
     if entries_count is None:
         entries_count = VaultEntry.objects.filter(owner=user).count()
     return {
@@ -218,7 +244,7 @@ def _parse_recovery_packages(raw) -> list[tuple[bytes, bytes, bytes]] | str:
             return "Vérificateur de récupération invalide"
         if len(key_proof) != VERIFIER_SIZE:
             return "Preuve de récupération invalide"
-        if not blob or len(blob) > MAX_RECOVERY_BLOB_BYTES:
+        if len(blob) < MIN_WRAPPED_KEY_BYTES or len(blob) > MAX_RECOVERY_BLOB_BYTES:
             return "Blob de récupération invalide"
         if verifier in seen:
             return "Vérificateurs de récupération en double"
@@ -279,6 +305,24 @@ def register(request):
     if VaultUser.objects.filter(email=email).exists():
         return api_error("Email déjà utilisé", 409)
 
+    salt = _decode_fixed_b64(data["salt"], SALT_SIZE, "salt")
+    if isinstance(salt, str):
+        return api_error(salt, 400)
+    auth_verifier = _decode_fixed_b64(data["auth_verifier"], VERIFIER_SIZE, "auth_verifier")
+    if isinstance(auth_verifier, str):
+        return api_error(auth_verifier, 400)
+    public_key = _decode_fixed_b64(data["public_key"], PUBLIC_KEY_SIZE, "public_key")
+    if isinstance(public_key, str):
+        return api_error(public_key, 400)
+    encrypted_vault_key = _decode_wrapped_key_b64(data["encrypted_vault_key"], "encrypted_vault_key")
+    if isinstance(encrypted_vault_key, str):
+        return api_error(encrypted_vault_key, 400)
+    encrypted_private_key = _decode_wrapped_key_b64(
+        data["encrypted_private_key"], "encrypted_private_key"
+    )
+    if isinstance(encrypted_private_key, str):
+        return api_error(encrypted_private_key, 400)
+
     try:
         with transaction.atomic():
             user = VaultUser.objects.create(
@@ -287,11 +331,11 @@ def register(request):
                 middle_name=middle_name,
                 last_name=last_name,
                 display_name="",
-                salt=b64_decode(data["salt"]),
-                auth_verifier=b64_decode(data["auth_verifier"]),
-                encrypted_vault_key=b64_decode(data["encrypted_vault_key"]),
-                public_key=b64_decode(data["public_key"]),
-                encrypted_private_key=b64_decode(data["encrypted_private_key"]),
+                salt=salt,
+                auth_verifier=auth_verifier,
+                encrypted_vault_key=encrypted_vault_key,
+                public_key=public_key,
+                encrypted_private_key=encrypted_private_key,
             )
             _save_recovery_keys(user, packages)
     except Exception:
@@ -368,15 +412,18 @@ def recovery_complete(request):
     if not email or not verifier_b64 or not key_proof_b64 or not auth_verifier_b64 or not encrypted_vault_key_b64:
         return api_error("Champs requis manquants", 400)
 
-    try:
-        verifier = b64_decode(verifier_b64)
-        key_proof = b64_decode(key_proof_b64)
-        auth_verifier = b64_decode(auth_verifier_b64)
-        encrypted_vault_key = b64_decode(encrypted_vault_key_b64)
-    except Exception:
-        return api_error("Données invalides", 400)
-    if len(verifier) != VERIFIER_SIZE or len(key_proof) != VERIFIER_SIZE:
+    verifier = _decode_fixed_b64(verifier_b64, VERIFIER_SIZE, "verifier")
+    if isinstance(verifier, str):
         return api_error("Récupération impossible", 400)
+    key_proof = _decode_fixed_b64(key_proof_b64, VERIFIER_SIZE, "key_proof")
+    if isinstance(key_proof, str):
+        return api_error("Récupération impossible", 400)
+    auth_verifier = _decode_fixed_b64(auth_verifier_b64, VERIFIER_SIZE, "auth_verifier")
+    if isinstance(auth_verifier, str):
+        return api_error(auth_verifier, 400)
+    encrypted_vault_key = _decode_wrapped_key_b64(encrypted_vault_key_b64, "encrypted_vault_key")
+    if isinstance(encrypted_vault_key, str):
+        return api_error(encrypted_vault_key, 400)
 
     user = VaultUser.objects.filter(email__iexact=email).first()
     recovery = VaultRecoveryKey.objects.filter(verifier=verifier).first()

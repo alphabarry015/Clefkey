@@ -43,6 +43,7 @@ export function saveSession(state) {
       vaultKey: toB64(state.vaultKey),
       privateKey: toB64(state.privateKey),
       publicKey: toB64(state.publicKey),
+      authMaterial: state.authMaterial || null,
       lastActivity: now(),
     };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -52,7 +53,7 @@ export function saveSession(state) {
 }
 
 /**
- * @returns {null | { token, user, vaultKey, privateKey, publicKey }}
+ * @returns {null | { token, user, vaultKey, privateKey, publicKey, authMaterial }}
  */
 export function loadSessionIfFresh() {
   try {
@@ -83,6 +84,7 @@ export function loadSessionIfFresh() {
       vaultKey: fromB64(data.vaultKey),
       privateKey: fromB64(data.privateKey),
       publicKey: fromB64(data.publicKey),
+      authMaterial: data.authMaterial || null,
     };
   } catch {
     clearStoredSession();
@@ -102,6 +104,7 @@ export function touchSessionActivity(state) {
     data.lastActivity = now();
     data.token = state.token;
     data.user = state.user;
+    if (state.authMaterial) data.authMaterial = state.authMaterial;
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
     saveSession(state);

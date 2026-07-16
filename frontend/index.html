@@ -675,7 +675,16 @@
             <h2 id="detail-title"></h2>
             <span id="detail-type-badge" class="entry-type-badge hidden"></span>
           </div>
-          <button id="btn-close-detail" class="btn-close"><i data-lucide="x"></i></button>
+          <div class="modal-header-actions">
+            <div id="detail-date-meta" class="detail-date-meta hidden">
+              <span id="detail-date-label" class="detail-date-meta-label"></span>
+              <span class="detail-date-meta-sep" aria-hidden="true">·</span>
+              <span id="detail-date-value" class="detail-date-meta-value"></span>
+            </div>
+            <button id="btn-close-detail" class="btn-close" aria-label="Fermer">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
         </div>
         <div class="modal-body">
           <div class="detail-field">
@@ -690,7 +699,7 @@
           <div class="detail-field">
             <label id="detail-password-label">Mot de passe</label>
             <div class="copyable-field">
-              <span id="detail-password" class="mono">••••••••••••</span>
+              <span id="detail-password">••••••••••••</span>
               <button id="btn-toggle-pwd" class="btn-copy-field" title="Afficher">
                 <i data-lucide="eye"></i>
               </button>
@@ -715,13 +724,17 @@
             <div id="detail-share-note" class="detail-notes-text"></div>
           </div>
           <div class="detail-footer detail-footer-actions">
+            <button type="button" id="btn-edit-detail" class="btn btn-secondary">
+              <i data-lucide="pencil"></i>
+              <span>Modifier</span>
+            </button>
             <button type="button" id="btn-share-detail" class="btn btn-secondary">
               <i data-lucide="user-plus"></i>
-              Partager
+              <span>Partager</span>
             </button>
             <button type="button" id="btn-delete-detail" class="btn btn-danger-outline">
               <i data-lucide="trash-2"></i>
-              Supprimer
+              <span>Supprimer</span>
             </button>
           </div>
         </div>
@@ -762,7 +775,7 @@
     <div class="modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Nouvelle clé</h2>
+          <h2 id="modal-entry-title">Nouvelle clé</h2>
           <button id="btn-close-add" class="btn-close"><i data-lucide="x"></i></button>
         </div>
         <form id="form-entry" class="modal-body">
@@ -801,7 +814,7 @@
             <textarea id="entry-notes" rows="2" placeholder="Informations supplémentaires"></textarea>
           </div>
           <button type="submit" id="btn-save-entry" class="btn btn-primary btn-full">
-            <i data-lucide="save"></i>
+            <i data-lucide="check-circle"></i>
             Enregistrer
           </button>
         </form>
@@ -850,6 +863,48 @@
             Continuer vers le coffre
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Mot de passe maître ──────────────────── -->
+  <div id="modal-master-confirm" class="modal">
+    <div class="modal-overlay">
+      <div class="modal-content modal-sm">
+        <div class="modal-header">
+          <h2>Confirmer la modification</h2>
+          <button id="btn-close-master-confirm" class="btn-close" aria-label="Fermer">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <form id="form-master-confirm" class="modal-body">
+          <p class="confirm-text">
+            Saisissez votre mot de passe maître pour autoriser la mise à jour de cette clé.
+          </p>
+          <div class="confirm-name-block">
+            <label for="master-confirm-password" class="confirm-name-label">Mot de passe maître</label>
+            <input
+              type="password"
+              id="master-confirm-password"
+              class="confirm-name-input"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              placeholder="Votre mot de passe maître"
+              required
+            >
+          </div>
+          <p class="confirm-help">
+            Le mot de passe maître est vérifié localement. Il n’est jamais envoyé au serveur.
+          </p>
+          <div class="confirm-actions">
+            <button type="button" id="btn-master-confirm-cancel" class="btn btn-secondary">Annuler</button>
+            <button type="submit" id="btn-master-confirm-ok" class="btn btn-primary">
+              <i data-lucide="check-circle"></i>
+              Confirmer
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
