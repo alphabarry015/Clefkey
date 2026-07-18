@@ -61,7 +61,7 @@ Tests exécutés : `manage.py check` OK · `manage.py test vault.tests --keepdb`
 | ~~P1~~ | ~~S-07~~ | ~~RLS Supabase~~ | **Corrigé dans schema** ; exécuter `supabase/enable_rls.sql` sur bases existantes |
 | ~~P1~~ | ~~S-08~~ | ~~`SECRET_KEY` dév hors Vercel~~ | **Corrigé** : refus dès `DEBUG=false` |
 | P2 | — | Favicon = exception ZK | URL claire envoyée au proxy + fallbacks tiers |
-| P2 | — | `sessionStorage` JWT + vaultKey + privateKey | XSS / poste partagé = coffre ouvert |
+| ~~P2~~ | — | ~~`sessionStorage` JWT + vaultKey + privateKey~~ | **Corrigé (soft lock)** : sessionStorage = JWT + authMaterial chiffré ; F5 → unlock maître |
 | P2 | — | Énumération `POST /auth/register` (409) | Difficile sans UX dégradée ; rate limit partiel |
 | P2 | — | `X-Forwarded-For` | OK derrière Vercel ; ne pas exposer sans proxy de confiance |
 | Basse | — | Pas de refresh / révocation JWT | TTL ~60 min acceptable |
@@ -78,7 +78,9 @@ Argon2id + AES-GCM + `auth_verifier` client. CSP stricte, HSTS, framing DENY. Ve
 
 | Sujet | Constat | Statut |
 |-------|---------|--------|
-| Double Argon2 au login | `prepareLogin` puis `unlockSession` | **P1 ouvert** : mutualiser le dérivé |
+| Double Argon2 au login | `prepareLogin` puis `unlockSession` | **Corrigé** : un seul `deriveKey`, réutilisé à l’unlock |
+| Déchiffrement entrées | Parallèle (concurrence 6) | **Corrigé** |
+| Favicon proxy | CDN serveur + cache TTL + Cache-Control 7j / ETag | **Amélioré** (proxy conservé, pas de CDN navigateur) |
 | Déchiffrement entrées | Séquentiel après GET | **P1** : paralléliser (`Promise.all` borné) |
 | Favicon proxy | Jusqu’à 12 fetches × 6s ; body non streamé | **P2** : stream + plafond + moins de candidats |
 | Listes MDP (~10 Mo) | Inscription | Amélioré : priority puis arrière-plan |
@@ -120,7 +122,7 @@ Argon2id + AES-GCM + `auth_verifier` client. CSP stricte, HSTS, framing DENY. Ve
 
 **Ensuite**
 
-1. Mutualiser Argon2 login (P-01)
+1. Cache favicon partagé multi-instances (si besoin, sans exposer le domaine en clair)
 2. Tests shares + master-confirm (T-01)
 3. Sur prod Supabase : exécuter `supabase/enable_rls.sql` si pas déjà fait
 4. Si recovery impossible après déploiement v2 : `python manage.py reseal_key_proofs --legacy-raw`

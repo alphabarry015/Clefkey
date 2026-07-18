@@ -40,6 +40,8 @@ import {
   startIdleWatch,
   stopIdleWatch,
   IDLE_TIMEOUT_MS,
+  wipeUnlockedSecrets,
+  wipeStateSecrets,
 } from './session.js';
 import { showCompatBannerIfNeeded, copyToClipboard } from './compat.js';
 import {
@@ -439,6 +441,7 @@ function dashTileIconMarkup(entry) {
         class="dash-tile-favicon"
         src="${esc(faviconUrl)}"
         alt=""
+        loading="lazy"
         decoding="async"
         data-site-url="${esc(siteUrl)}"
         onerror="window.onFaviconError(this)"
@@ -468,7 +471,7 @@ function entryAvatarMarkup(entry) {
   }
   return `
     <div class="entry-avatar entry-icon entry-icon-branded">
-      <img class="entry-favicon" src="${esc(faviconUrl)}" alt="" width="24" height="24" decoding="async" data-site-url="${esc(siteUrl)}" onerror="window.onFaviconError(this)">
+      <img class="entry-favicon" src="${esc(faviconUrl)}" alt="" width="24" height="24" loading="lazy" decoding="async" data-site-url="${esc(siteUrl)}" onerror="window.onFaviconError(this)">
       <span class="entry-letter">${letter}</span>
     </div>`;
 }
@@ -528,6 +531,7 @@ function closeModal(modal) {
 const {
   showScreen,
   openAuthTab,
+  openUnlockScreen,
   showRecoveryKeysModal,
   bindLandingNavigation,
   bindRecoveryExportButtons,
@@ -541,8 +545,101 @@ const {
   esc,
 });
 
+function clearEntrySecretsInMemory() {
+  if (!Array.isArray(state.entries)) return;
+  state.entries.forEach((e) => {
+    if (e && typeof e.password === 'string') e.password = '';
+  });
+}
+
+/** Déconnexion complète : efface JWT + authMaterial + stockage. */
+function hardLogout(reason = 'manual') {
+  stopIdleWatch();
+  if (state.masterConfirmResolve) settleMasterConfirm(false);
+  clearStoredSession();
+  wipeStateSecrets(state);
+  clearEntrySecretsInMemory();
+  Object.assign(state, {
+    token: null,
+    user: null,
+    vaultKey: null,
+    privateKey: null,
+    publicKey: null,
+    entries: [],
+    sharesReceived: [],
+    sharesSent: [],
+    shareEntryId: null,
+    detailEntryId: null,
+    editingEntryId: null,
+    authMaterial: null,
+    masterConfirmResolve: null,
+    recoverySession: null,
+    pendingRecoveryCodes: null,
+    afterRecoveryKeys: null,
+    devMode: false,
+    page: 'dashboard',
+    search: '',
+    dashTab: 'popular',
+    dashSearch: '',
+    typeFilter: 'all',
+  });
+  $('#modal-recovery-keys')?.classList.remove('open');
+  closeAllModals();
+  clearAuthSecrets();
+  clearLoginForm();
+  $('#form-register')?.reset();
+  $('#form-recovery')?.reset();
+  setRecoveryCodeValue($('#recovery-code'), '', $('#recovery-code-count'));
+  $('#form-recovery-reset')?.reset();
+  $('#form-unlock')?.reset();
+  collapseSidebar();
+  showScreen('landing');
+  refreshIcons($('#screen-landing'));
+  if (reason !== 'silent') {
+    const minutes = Math.round(IDLE_TIMEOUT_MS / 60000);
+    const messages = {
+      idle: `Session expirée après ${minutes} min d'inactivité`,
+      hidden: 'Session fermée (onglet en arrière-plan trop longtemps)',
+      manual: 'Déconnecté',
+      unlock_back: 'Déconnecté',
+    };
+    toast(messages[reason] || messages.manual, 'info');
+  }
+}
+
+/** Soft lock : garde JWT + authMaterial, efface les clés déchiffrées. */
+function softLockVault(reason = 'manual') {
+  stopIdleWatch();
+  if (state.masterConfirmResolve) settleMasterConfirm(false);
+  if (!state.token || !state.authMaterial?.salt || !state.authMaterial?.encrypted_vault_key || state.devMode) {
+    hardLogout(reason);
+    return;
+  }
+  wipeUnlockedSecrets(state);
+  clearEntrySecretsInMemory();
+  state.entries = [];
+  state.sharesReceived = [];
+  state.sharesSent = [];
+  state.shareEntryId = null;
+  state.detailEntryId = null;
+  state.editingEntryId = null;
+  $('#modal-recovery-keys')?.classList.remove('open');
+  closeAllModals();
+  clearAuthSecrets();
+  collapseSidebar();
+  saveSession(state);
+  openUnlockScreen();
+  const minutes = Math.round(IDLE_TIMEOUT_MS / 60000);
+  const messages = {
+    idle: `Coffre verrouillé après ${minutes} min d'inactivité`,
+    hidden: 'Coffre verrouillé (onglet en arrière-plan)',
+    manual: 'Coffre verrouillé',
+  };
+  toast(messages[reason] || messages.manual, 'info');
+}
+
 // Navigation landing tôt (avant les listeners coffre).
-bindLandingNavigation();
+bindLandingNavigation({ onUnlockBack: () => hardLogout('unlock_back') });
 showScreen('landing');
 bindRecoveryCodeInput($('#recovery-code'), { counter: $('#recovery-code-count') });
 bindRecoveryExportButtons({
@@ -808,7 +905,7 @@ function showVault() {
   switchPage('dashboard');
   if (!state.devMode) {
     saveSession(state);
-    startIdleWatch(() => state, () => lockVault('idle'));
+    startIdleWatch(() => state, (reason) => lockVault(reason || 'idle'));
     loadShares().catch((err) => console.warn('Partages:', err));
   }
 }
@@ -861,22 +958,31 @@ $('#form-login').addEventListener('submit', async (e) => {
   btn.disabled = true;
   showLoading('Déverrouillage du coffre...');
   try {
-    const authVerifier = await prepareLogin(creds.email, creds.master, window.location.origin);
-    const data = await api.login(creds.email, authVerifier);
-    const keys = await unlockSession(data, creds.master);
+    const prepared = await prepareLogin(creds.email, creds.master, window.location.origin);
+    const data = await api.login(creds.email, prepared.authVerifier);
+    const keys = await unlockSession(data, creds.master, {
+      derivedKey: prepared.derived,
+      saltB64: prepared.saltB64,
+    });
+    // Efface le matériel KDF de la closure dès que possible.
+    if (prepared.derived) prepared.derived.fill(0);
+    prepared.derived = null;
     clearAuthSecrets();
     state.devMode = false;
     state.token = data.access_token;
     state.user = userFromProfile(data);
     state.authMaterial = authMaterialFromPayload(data);
     Object.assign(state, keys);
+    state.entries = [];
+    // Afficher l’UI tout de suite (lettres) ; les clés se chargent ensuite.
+    showVault();
     try {
       await loadEntries();
+      refreshCurrentView();
     } catch (err) {
       console.warn('Chargement des clés partiel:', err);
       toast('Connexion réussie, mais certaines clés n\'ont pas pu être chargées', 'info');
     }
-    showVault();
     toast('Coffre déverrouillé', 'success');
   } catch (err) {
     toast(err.message, 'error');
@@ -1076,53 +1182,7 @@ $('#form-recovery-reset')?.addEventListener('submit', async (e) => {
 });
 
 function lockVault(reason = 'manual') {
-  stopIdleWatch();
-  // Résoudre toute Promise de confirmation avant de vider l'état (évite hang bouton).
-  if (state.masterConfirmResolve) settleMasterConfirm(false);
-  clearStoredSession();
-  Object.assign(state, {
-    token: null,
-    user: null,
-    vaultKey: null,
-    privateKey: null,
-    publicKey: null,
-    entries: [],
-    sharesReceived: [],
-    sharesSent: [],
-    shareEntryId: null,
-    detailEntryId: null,
-    editingEntryId: null,
-    authMaterial: null,
-    masterConfirmResolve: null,
-    recoverySession: null,
-    pendingRecoveryCodes: null,
-    afterRecoveryKeys: null,
-    devMode: false,
-    page: 'dashboard',
-    search: '',
-    dashTab: 'popular',
-    dashSearch: '',
-    typeFilter: 'all',
-  });
-  // Force-close même le modal des 7 clés si le coffre se verrouille.
-  $('#modal-recovery-keys')?.classList.remove('open');
-  closeAllModals();
-  clearAuthSecrets();
-  clearLoginForm();
-  $('#form-register')?.reset();
-  $('#form-recovery')?.reset();
-  setRecoveryCodeValue($('#recovery-code'), '', $('#recovery-code-count'));
-  $('#form-recovery-reset')?.reset();
-  collapseSidebar();
-  showScreen('landing');
-  refreshIcons($('#screen-landing'));
-  const minutes = Math.round(IDLE_TIMEOUT_MS / 60000);
-  toast(
-    reason === 'idle'
-      ? `Coffre verrouillé après ${minutes} min d'inactivité`
-      : 'Coffre verrouillé',
-    'info',
-  );
+  softLockVault(reason);
 }
 
 // ── Clés ─────────────────────────────────────────────────
@@ -1130,16 +1190,33 @@ function lockVault(reason = 'manual') {
 async function loadEntries() {
   if (state.devMode) return;
   const raw = await api.getEntries(state.token);
-  state.entries = [];
-  for (const e of raw) {
-    try {
-      const encrypted = fromB64(e.encrypted_data);
-      const data = await decryptData(encrypted, state.vaultKey);
-      state.entries.push(prepareEntry({ ...data, ...e }));
-    } catch (err) {
-      console.warn('Clé ignorée (déchiffrement impossible):', e.id, err);
+  if (!raw.length) {
+    state.entries = [];
+    return;
+  }
+  const concurrency = 6;
+  const decrypted = new Array(raw.length);
+  let next = 0;
+
+  async function worker() {
+    while (next < raw.length) {
+      const index = next++;
+      const e = raw[index];
+      try {
+        const encrypted = fromB64(e.encrypted_data);
+        const data = await decryptData(encrypted, state.vaultKey);
+        decrypted[index] = prepareEntry({ ...data, ...e });
+      } catch (err) {
+        console.warn('Clé ignorée (déchiffrement impossible):', e.id, err);
+        decrypted[index] = null;
+      }
     }
   }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, raw.length) }, () => worker()),
+  );
+  state.entries = decrypted.filter(Boolean);
 }
 
 function getFilteredEntries() {
@@ -1453,6 +1530,7 @@ async function renderProfile() {
 
   setProfileStatus(state.devMode);
   applyUserToUI(user);
+  syncPersistSessionPrefUI();
   $('#profile-detail-id').textContent = shortenUserId(user.id);
   $('#profile-detail-id').dataset.full = user.id;
   updateProfileChip();
@@ -1991,7 +2069,7 @@ $('#form-entry').addEventListener('submit', async (e) => {
       } else {
         createDevEntry(state.entries, data);
       }
-      if (data.url) await preloadFavicon(data.url);
+      if (data.url) void preloadFavicon(data.url);
       refreshCurrentView();
       closeModal($('#modal-add'));
       resetEntryFormModal();
@@ -2011,7 +2089,7 @@ $('#form-entry').addEventListener('submit', async (e) => {
       const encrypted = await encryptData(data, state.vaultKey);
       await api.updateEntry(state.token, editingId, toB64(encrypted));
       await loadEntries();
-      if (data.url) await preloadFavicon(data.url);
+      if (data.url) void preloadFavicon(data.url);
       refreshCurrentView();
       closeModal($('#modal-add'));
       resetEntryFormModal();
@@ -2025,7 +2103,7 @@ $('#form-entry').addEventListener('submit', async (e) => {
     const encrypted = await encryptData(data, state.vaultKey);
     await api.createEntry(state.token, toB64(encrypted));
     await loadEntries();
-    if (data.url) await preloadFavicon(data.url);
+    if (data.url) void preloadFavicon(data.url);
     refreshCurrentView();
     closeModal($('#modal-add'));
     resetEntryFormModal();
@@ -2105,41 +2183,71 @@ $$('.modal-overlay').forEach(overlay => {
 async function restoreSessionIfAny() {
   const saved = loadSessionIfFresh();
   if (!saved) return false;
-  showLoading('Restauration de la session...');
+  Object.assign(state, {
+    token: saved.token,
+    user: normalizeUser(saved.user),
+    authMaterial: saved.authMaterial,
+    vaultKey: null,
+    privateKey: null,
+    publicKey: null,
+    devMode: false,
+    entries: [],
+    sharesReceived: [],
+    sharesSent: [],
+  });
+  openUnlockScreen();
+  return true;
+}
+
+$('#form-unlock')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const master = $('#unlock-password')?.value || '';
+  if (!master) {
+    toast('Veuillez saisir votre mot de passe maître', 'error');
+    $('#unlock-password')?.focus();
+    return;
+  }
+  if (!state.authMaterial?.salt || !state.authMaterial?.encrypted_vault_key) {
+    hardLogout('silent');
+    toast('Session invalide — reconnectez-vous', 'error');
+    openAuthTab('login');
+    return;
+  }
+  const btn = $('#btn-unlock');
+  if (btn) btn.disabled = true;
+  showLoading('Déverrouillage du coffre...');
   try {
-    Object.assign(state, {
-      ...saved,
-      user: normalizeUser(saved.user),
-      devMode: false,
-      entries: [],
-      sharesReceived: [],
-      sharesSent: [],
-    });
+    const keys = await unlockSession(state.authMaterial, master);
+    clearAuthSecrets();
+    Object.assign(state, keys);
+    state.entries = [];
+    showVault();
     try {
       await loadEntries();
+      refreshCurrentView();
     } catch (err) {
       console.warn('Chargement des clés partiel:', err);
+      const msg = String(err.message || err);
+      if (/401|403|expir|unauthor|token/i.test(msg)) {
+        hardLogout('silent');
+        toast('Session expirée — reconnectez-vous', 'error');
+        openAuthTab('login');
+        return;
+      }
+      toast('Coffre ouvert, mais certaines clés n\'ont pas pu être chargées', 'info');
     }
-    showVault();
-    return true;
-  } catch (err) {
-    console.warn('Session non restaurable:', err);
-    clearStoredSession();
-    Object.assign(state, {
-      token: null,
-      user: null,
-      vaultKey: null,
-      privateKey: null,
-      publicKey: null,
-      entries: [],
-      sharesReceived: [],
-      sharesSent: [],
-    });
-    return false;
+    toast('Coffre déverrouillé', 'success');
+  } catch {
+    toast('Mot de passe maître incorrect', 'error');
+    $('#unlock-password').value = '';
+    $('#unlock-password')?.focus();
   } finally {
     hideLoading();
+    if (btn) btn.disabled = false;
   }
-}
+});
+
+$('#btn-unlock-logout')?.addEventListener('click', () => hardLogout('manual'));
 
 showScreen('landing');
 clearLoginForm();

@@ -23,6 +23,14 @@ export function createAuthScreens({
     screens[name]?.classList.add('active');
   }
 
+  function hideAllAuthForms() {
+    $('#form-login')?.classList.add('hidden');
+    $('#form-register')?.classList.add('hidden');
+    $('#form-recovery')?.classList.add('hidden');
+    $('#form-recovery-reset')?.classList.add('hidden');
+    $('#form-unlock')?.classList.add('hidden');
+  }
+
   function openAuthTab(tab = 'login') {
     const onLogin = tab === 'login';
     const onRegister = tab === 'register';
@@ -32,14 +40,33 @@ export function createAuthScreens({
     $('#tab-login')?.classList.toggle('active', onLogin);
     $('#tab-register')?.classList.toggle('active', onRegister);
     $('.auth-tabs')?.classList.toggle('hidden', onRecoveryFlow);
-    $('#form-login')?.classList.toggle('hidden', !onLogin);
-    $('#form-register')?.classList.toggle('hidden', !onRegister);
-    $('#form-recovery')?.classList.toggle('hidden', !onRecovery);
-    $('#form-recovery-reset')?.classList.toggle('hidden', !onRecoveryReset);
+    hideAllAuthForms();
+    if (onLogin) $('#form-login')?.classList.remove('hidden');
+    if (onRegister) $('#form-register')?.classList.remove('hidden');
+    if (onRecovery) $('#form-recovery')?.classList.remove('hidden');
+    if (onRecoveryReset) $('#form-recovery-reset')?.classList.remove('hidden');
     if (onRegister) prefetchCommonPasswords();
     if (!onRecoveryFlow) state.recoverySession = null;
     showScreen('auth');
     refreshIcons($('#screen-auth'));
+  }
+
+  /** Écran soft-lock : mot de passe maître uniquement. */
+  function openUnlockScreen() {
+    $('.auth-tabs')?.classList.add('hidden');
+    hideAllAuthForms();
+    $('#form-unlock')?.classList.remove('hidden');
+    const email = state.user?.email || '';
+    const label = $('#unlock-user-label');
+    if (label) {
+      label.textContent = email ? `Compte : ${email}` : '';
+      label.classList.toggle('hidden', !email);
+    }
+    const input = $('#unlock-password');
+    if (input) input.value = '';
+    showScreen('auth');
+    refreshIcons($('#screen-auth'));
+    setTimeout(() => input?.focus(), 50);
   }
 
   function recoveryExportMeta() {
@@ -65,13 +92,18 @@ export function createAuthScreens({
     refreshIcons($('#modal-recovery-keys'));
   }
 
-  function bindLandingNavigation() {
+  function bindLandingNavigation({ onUnlockBack } = {}) {
     const goRegister = () => openAuthTab('register');
     const goLogin = () => openAuthTab('login');
 
     $('#btn-landing-start')?.addEventListener('click', goRegister);
     $('#btn-landing-login')?.addEventListener('click', goLogin);
     $('#btn-back-landing')?.addEventListener('click', () => {
+      const onUnlock = !$('#form-unlock')?.classList.contains('hidden');
+      if (onUnlock && typeof onUnlockBack === 'function') {
+        onUnlockBack();
+        return;
+      }
       showScreen('landing');
       refreshIcons($('#screen-landing'));
     });
@@ -141,6 +173,7 @@ export function createAuthScreens({
     screens,
     showScreen,
     openAuthTab,
+    openUnlockScreen,
     showRecoveryKeysModal,
     recoveryExportMeta,
     bindLandingNavigation,

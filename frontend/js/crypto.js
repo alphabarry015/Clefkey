@@ -375,9 +375,13 @@ export async function prepareRegistration(masterPassword) {
   };
 }
 
-export async function unlockSession(authResponse, masterPassword) {
+export async function unlockSession(authResponse, masterPassword, options = {}) {
   const salt = fromB64(authResponse.salt);
-  const derived = await deriveKey(masterPassword, salt);
+  // Réutilise le dérivé de prepareLogin quand le sel n’a pas changé (évite un 2ᵉ Argon2).
+  let derived = options.derivedKey || null;
+  if (!derived || (options.saltB64 && options.saltB64 !== authResponse.salt)) {
+    derived = await deriveKey(masterPassword, salt);
+  }
   const vaultKey = await decryptBytes(fromB64(authResponse.encrypted_vault_key), derived);
   const privateKey = await decryptPrivateKey(fromB64(authResponse.encrypted_private_key), vaultKey);
   const publicKey = fromB64(authResponse.public_key);
@@ -406,5 +410,9 @@ export async function prepareLogin(email, masterPassword, apiBase) {
   const salt = fromB64(saltB64);
   const derived = await deriveKey(masterPassword, salt);
   const authVerifier = await createAuthVerifier(derived);
-  return toB64(authVerifier);
+  return {
+    authVerifier: toB64(authVerifier),
+    derived,
+    saltB64,
+  };
 }

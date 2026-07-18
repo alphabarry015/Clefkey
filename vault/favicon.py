@@ -5,28 +5,56 @@ from __future__ import annotations
 import ipaddress
 import re
 import socket
+import time
 from dataclasses import dataclass
 from html.parser import HTMLParser
-from urllib.parse import quote, urljoin, urlparse, urlunparse
+from urllib.parse import urljoin, urlparse
 
+import httpcore
 import httpx
+from httpcore._backends.sync import SyncBackend
+from httpx._config import DEFAULT_LIMITS, create_ssl_context
+
 
 USER_AGENT = "Gardefort/1.0 (+favicon; usage personnel)"
-TIMEOUT = 6.0
-MAX_ICON_BYTES = 512_000
-MAX_HTML_BYTES = 200_000
+# Timeouts courts : un favicon lent ne doit pas bloquer le dashboard.
+TIMEOUT = httpx.Timeout(2.5, connect=1.2)
+MAX_ICON_BYTES = 128_000
+MAX_HTML_BYTES = 64_000
+MAX_CANDIDATES = 4
+MAX_REDIRECTS = 2
 # Cache en mémoire borné (processus serverless / long-running).
 MAX_CACHE_ENTRIES = 256
+# Succès : garder longtemps (même instance). Échecs : TTL court pour réessayer.
+CACHE_HIT_TTL_SECONDS = 6 * 3600
+CACHE_MISS_TTL_SECONDS = 90
 
-_cache: dict[str, tuple[bytes, str] | None] = {}
+_cache: dict[str, tuple[float, tuple[bytes, str] | None]] = {}
+# Résolution DNS mémorisée brièvement (évite getaddrinfo × N candidats).
+_dns_cache: dict[str, tuple[float, list[str] | None]] = {}
+_DNS_TTL_SECONDS = 60.0
+
+
+def _cache_get(key: str) -> tuple[bool, tuple[bytes, str] | None]:
+    """Retourne (trouvé, valeur). valeur peut être None (miss négatif encore valide)."""
+    entry = _cache.get(key)
+    if entry is None:
+        return False, None
+    expires_at, value = entry
+    if time.monotonic() >= expires_at:
+        _cache.pop(key, None)
+        return False, None
+    return True, value
 
 
 def _cache_put(key: str, value: tuple[bytes, str] | None) -> None:
+    ttl = CACHE_HIT_TTL_SECONDS if value is not None else CACHE_MISS_TTL_SECONDS
+    expires_at = time.monotonic() + ttl
     if key in _cache:
         _cache.pop(key, None)
     elif len(_cache) >= MAX_CACHE_ENTRIES:
         _cache.pop(next(iter(_cache)), None)
-    _cache[key] = value
+    _cache[key] = (expires_at, value)
 
 
 @dataclass
@@ -102,9 +130,17 @@ def _resolve_global_ips(hostname: str) -> list[str] | None:
     if host in {"0.0.0.0", "::1", "[::1]"}:
         return None
 
+    now = time.monotonic()
+    cached = _dns_cache.get(host)
+    if cached is not None:
+        expires_at, ips = cached
+        if now < expires_at:
+            return ips
+
     try:
         infos = socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
     except socket.gaierror:
+        _dns_cache[host] = (now + _DNS_TTL_SECONDS, None)
         return None
 
     ips: list[str] = []
@@ -118,24 +154,113 @@ def _resolve_global_ips(hostname: str) -> list[str] | None:
             continue
         seen.add(text)
         ips.append(text)
-    return ips or None
+    result = ips or None
+    if len(_dns_cache) > 512:
+        _dns_cache.clear()
+    _dns_cache[host] = (now + _DNS_TTL_SECONDS, result)
+    return result
 
 
 def _pinned_request_target(url: str, ip: str) -> tuple[str, dict[str, str]]:
-    """URL vers IP résolue + en-tête Host d'origine (pin DNS)."""
+    """Conserve l’URL hostname (TLS/SNI) et expose l’IP à épingler côté transport."""
     parsed = urlparse(url)
     if not parsed.hostname:
         raise ValueError("hostname requis")
-
-    port = parsed.port
-    if port is None:
-        port = 443 if parsed.scheme == "https" else 80
-
     host_header = parsed.netloc
-    ip_host = f"[{ip}]" if ":" in ip else ip
-    netloc = f"{ip_host}:{port}" if port not in (80, 443) else ip_host
-    pinned_url = urlunparse(parsed._replace(netloc=netloc))
-    return pinned_url, {"Host": host_header}
+    return url, {"Host": host_header, "X-Gardefort-Pinned-IP": ip}
+
+
+class _PinIPBackend(httpcore.NetworkBackend):
+    """Connecte le TCP à une IP fixe ; le hostname reste pour SNI / vérif certificat."""
+
+    def __init__(self, pinned_ip: str) -> None:
+        self._pinned_ip = pinned_ip
+        self._inner = SyncBackend()
+
+    def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: float | None = None,
+        local_address: str | None = None,
+        socket_options=None,
+    ):
+        return self._inner.connect_tcp(
+            self._pinned_ip,
+            port,
+            timeout=timeout,
+            local_address=local_address,
+            socket_options=socket_options,
+        )
+
+    def connect_unix_socket(self, path: str, timeout: float | None = None, socket_options=None):
+        return self._inner.connect_unix_socket(
+            path, timeout=timeout, socket_options=socket_options
+        )
+
+    def sleep(self, seconds: float) -> None:
+        self._inner.sleep(seconds)
+
+
+class _PinnedIPTransport(httpx.HTTPTransport):
+    """Transport httpx qui force la connexion TCP vers une IP déjà validée."""
+
+    def __init__(self, pinned_ip: str, **kwargs) -> None:
+        verify = kwargs.pop("verify", True)
+        cert = kwargs.pop("cert", None)
+        trust_env = kwargs.pop("trust_env", True)
+        http1 = kwargs.pop("http1", True)
+        http2 = kwargs.pop("http2", False)
+        limits = kwargs.pop("limits", DEFAULT_LIMITS)
+        retries = kwargs.pop("retries", 0)
+        socket_options = kwargs.pop("socket_options", None)
+        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
+        # Ne pas appeler super().__init__ : on injecte network_backend.
+        self._pool = httpcore.ConnectionPool(
+            ssl_context=ssl_context,
+            max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
+            keepalive_expiry=limits.keepalive_expiry,
+            http1=http1,
+            http2=http2,
+            retries=retries,
+            socket_options=socket_options,
+            network_backend=_PinIPBackend(pinned_ip),
+        )
+
+
+class _PinnedFetchSession:
+    """Réutilise client/transport tant que l’IP épinglée ne change pas."""
+
+    def __init__(self, headers: dict[str, str]) -> None:
+        self._headers = headers
+        self._ip: str | None = None
+        self._transport: _PinnedIPTransport | None = None
+        self._client: httpx.Client | None = None
+
+    def client_for(self, ip: str) -> httpx.Client:
+        if self._client is not None and self._ip == ip:
+            return self._client
+        self.close()
+        self._ip = ip
+        self._transport = _PinnedIPTransport(ip)
+        self._client = httpx.Client(
+            timeout=TIMEOUT,
+            follow_redirects=False,
+            headers=self._headers,
+            transport=self._transport,
+        )
+        return self._client
+
+    def close(self) -> None:
+        if self._client is not None:
+            self._client.close()
+            self._client = None
+        if self._transport is not None:
+            self._transport.close()
+            self._transport = None
+        self._ip = None
+
 
 
 def _origin(page_url: str) -> str:
@@ -171,21 +296,18 @@ def _cache_key(page_url: str) -> str:
 
 
 def _build_fallback_candidates(page_url: str) -> list[IconCandidate]:
-    parsed = urlparse(page_url)
+    """Candidats rapides d’abord (CDN), puis favicon d’origine — pas de scrape HTML."""
     domain = _cache_key(page_url)
-    encoded = quote(page_url, safe="")
     return _dedupe_candidates([
         IconCandidate(
-            f"https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON"
-            f"&fallback_opts=TYPE,SIZE,URL&url={encoded}&size=128",
-            85,
+            f"https://www.google.com/s2/favicons?domain={domain}&sz=128",
+            100,
         ),
         IconCandidate(
-            f"https://www.google.com/s2/favicons?domain={domain}&sz=128",
-            75,
+            f"https://icons.duckduckgo.com/ip3/{domain}.ico",
+            80,
         ),
-        IconCandidate(urljoin(_origin(page_url), "/favicon.ico"), 20),
-        IconCandidate(f"https://icons.duckduckgo.com/ip3/{domain}.ico", 10),
+        IconCandidate(urljoin(_origin(page_url), "/favicon.ico"), 40),
     ])
 
 
@@ -287,9 +409,6 @@ def _image_quality_score(content: bytes, content_type: str) -> int:
     return min(len(content), 4096)
 
 
-MAX_REDIRECTS = 3
-
-
 def _safe_request_url(url: str) -> str | None:
     """Valide schéma + hostname (résolution DNS anti-SSRF) avant chaque requête."""
     parsed = urlparse(url)
@@ -300,16 +419,27 @@ def _safe_request_url(url: str) -> str | None:
     return url
 
 
+def _is_trusted_cdn_host(hostname: str) -> bool:
+    host = hostname.strip().lower().rstrip(".")
+    return host in {
+        "www.google.com",
+        "google.com",
+        "icons.duckduckgo.com",
+        "t1.gstatic.com",
+    }
+
+
 def _fetch_bytes(
-    client: httpx.Client,
+    session: _PinnedFetchSession,
     url: str,
     *,
     max_bytes: int,
+    plain_client: httpx.Client | None = None,
 ) -> tuple[bytes, str] | None:
     """
     GET sans follow_redirects aveugle : chaque hop est revalidé (anti-SSRF).
-    IP épinglée après résolution DNS (anti-rebinding).
-    Corps lu en streaming avec plafond strict (anti-DoS mémoire).
+    CDN de confiance : client HTTP classique (plus rapide).
+    Autres hôtes : TCP épinglé ; hostname conservé pour TLS/SNI.
     """
     current = _safe_request_url(url)
     if not current:
@@ -325,8 +455,11 @@ def _fetch_bytes(
             return None
 
         try:
-            pinned_url, pin_headers = _pinned_request_target(current, ips[0])
-            with client.stream("GET", pinned_url, headers=pin_headers) as resp:
+            if plain_client is not None and _is_trusted_cdn_host(hostname):
+                client = plain_client
+            else:
+                client = session.client_for(ips[0])
+            with client.stream("GET", current) as resp:
                 if resp.status_code in {301, 302, 303, 307, 308}:
                     location = (resp.headers.get("location") or "").strip()
                     if not location:
@@ -366,14 +499,19 @@ def _fetch_bytes(
                 body = b"".join(chunks)
                 content_type = resp.headers.get("content-type", "application/octet-stream")
                 return body, content_type
-        except (httpx.HTTPError, ValueError):
+        except (httpx.HTTPError, ValueError, OSError):
             return None
 
     return None
 
 
-def _fetch_url(client: httpx.Client, url: str) -> tuple[bytes, str] | None:
-    result = _fetch_bytes(client, url, max_bytes=MAX_ICON_BYTES)
+def _fetch_url(
+    session: _PinnedFetchSession,
+    url: str,
+    *,
+    plain_client: httpx.Client | None = None,
+) -> tuple[bytes, str] | None:
+    result = _fetch_bytes(session, url, max_bytes=MAX_ICON_BYTES, plain_client=plain_client)
     if result is None:
         return None
     body, content_type = result
@@ -388,50 +526,30 @@ def fetch_site_favicon(page_url: str) -> tuple[bytes, str] | None:
         return None
 
     cache_key = _cache_key(normalized)
-    if cache_key in _cache:
-        return _cache[cache_key]
+    hit, cached = _cache_get(cache_key)
+    if hit:
+        return cached
 
-    headers = {"User-Agent": USER_AGENT, "Accept": "text/html,image/*,*/*;q=0.8"}
-    candidates = _build_fallback_candidates(normalized)
-
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept": "image/*,*/*;q=0.8",
+    }
+    # Fast path : CDN puis /favicon.ico — pas de scrape HTML (trop lent).
+    # Les CDN sont appelés uniquement côté serveur (proxy) — pas depuis le navigateur.
+    candidates = _build_fallback_candidates(normalized)[:MAX_CANDIDATES]
+    session = _PinnedFetchSession(headers)
+    plain_client = httpx.Client(timeout=TIMEOUT, follow_redirects=False, headers=headers)
     try:
-        with httpx.Client(
-            timeout=TIMEOUT,
-            follow_redirects=False,
-            headers=headers,
-        ) as client:
-            try:
-                page = _fetch_bytes(client, normalized, max_bytes=MAX_HTML_BYTES)
-                if page is not None:
-                    body, content_type = page
-                    if "text/html" in content_type:
-                        html = body.decode("utf-8", errors="replace")[:MAX_HTML_BYTES]
-                        candidates = _discover_icon_candidates(normalized, html) + candidates
-            except httpx.HTTPError:
-                pass
-
-            candidates = _dedupe_candidates(candidates)[:12]
-            best: tuple[bytes, str] | None = None
-            best_score = 0
-
-            for candidate in candidates:
-                result = _fetch_url(client, candidate.url)
-                if not result:
-                    continue
-                body, icon_type = result
-                quality = _image_quality_score(body, icon_type)
-                width, height = _image_dimensions(body)
-                if quality > best_score:
-                    best_score = quality
-                    best = result
-                if width >= 128 and height >= 128:
-                    break
-
-            if best:
-                _cache_put(cache_key, best)
-                return best
+        for candidate in candidates:
+            result = _fetch_url(session, candidate.url, plain_client=plain_client)
+            if result:
+                _cache_put(cache_key, result)
+                return result
     except httpx.HTTPError:
         pass
+    finally:
+        plain_client.close()
+        session.close()
 
     _cache_put(cache_key, None)
     return None

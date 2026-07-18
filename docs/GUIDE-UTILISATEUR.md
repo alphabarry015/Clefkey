@@ -24,6 +24,8 @@ Conservez le **code de récupération** affiché après inscription (groupes de 
 
 Email + mot de passe maître → déverrouillage du coffre.
 
+Après **F5**, inactivité (15 min) ou onglet en arrière-plan, un écran demande uniquement le **mot de passe maître** (pas besoin de ressaisir l’email). **Se déconnecter** efface toute la session.
+
 Sur `localhost` uniquement : laisser les champs **vides** charge un mode démo (données **fictives** en mémoire). Désactiver avec `?dev=0`.
 
 ### 4. Dashboard
@@ -36,7 +38,7 @@ Liste complète, recherche (raccourci **Ctrl+K**), ouverture du détail. Chaque 
 
 ### 6. Profil
 
-Infos compte (édition inline), tags techniques, **Verrouiller le coffre** (fin de session).
+Infos compte (édition inline), tags techniques, **Verrouiller le coffre** (soft lock : le maître suffit pour rouvrir).
 
 ## Types d’entrées
 

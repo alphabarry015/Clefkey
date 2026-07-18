@@ -1,22 +1,27 @@
 /**
- * Session navigateur : survit au rafraîchissement (sessionStorage),
- * expire après inactivité (pas au simple F5).
- * Le mot de passe maître n’est jamais stocké.
+ * Session navigateur — sécurité d’abord + confort F5.
+ *
+ * On persiste : JWT + profil + authMaterial (salt + blobs chiffrés).
+ * On ne persiste JAMAIS : vaultKey / privateKey en clair, ni le mot de passe maître.
+ *
+ * Après F5 / verrouillage : écran « mot de passe maître » uniquement (pas de reconnect email).
  */
 
-import { toB64, fromB64 } from './crypto.js';
-
 const STORAGE_KEY = 'gardefort_vault_session';
-const LEGACY_STORAGE_KEYS = ['binalph93_vault_session'];
+const LEGACY_STORAGE_KEYS = ['binalph93_vault_session', 'gardefort_persist_session'];
 
-/** Durée sans action avant verrouillage (alignée sous le JWT ~60 min). */
+/** Durée sans action avant verrouillage soft (alignée sous le JWT ~60 min). */
 export const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+/** Onglet en arrière-plan trop longtemps → verrouillage soft au retour. */
+export const HIDDEN_LOCK_MS = 60 * 1000;
 
 const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'mousemove', 'scroll', 'touchstart'];
 
 let idleTimer = null;
 let activityThrottle = null;
 let onIdleCallback = null;
+let memoryLastActivity = 0;
+let hiddenAt = 0;
 
 function now() {
   return Date.now();
@@ -25,26 +30,70 @@ function now() {
 export function clearStoredSession() {
   try {
     sessionStorage.removeItem(STORAGE_KEY);
-    LEGACY_STORAGE_KEYS.forEach((key) => sessionStorage.removeItem(key));
+    LEGACY_STORAGE_KEYS.forEach((key) => {
+      try {
+        sessionStorage.removeItem(key);
+        localStorage.removeItem(key);
+      } catch {
+        /* ignore */
+      }
+    });
   } catch {
     /* private mode / quota */
   }
 }
 
+/** Efface les octets des clés en mémoire (best-effort). */
+export function wipeKeyBytes(key) {
+  if (key instanceof Uint8Array) {
+    key.fill(0);
+  }
+}
+
+/** Efface les clés déchiffrées (garde token + authMaterial pour re-unlock). */
+export function wipeUnlockedSecrets(state) {
+  if (!state) return;
+  wipeKeyBytes(state.vaultKey);
+  wipeKeyBytes(state.privateKey);
+  wipeKeyBytes(state.publicKey);
+  state.vaultKey = null;
+  state.privateKey = null;
+  state.publicKey = null;
+}
+
+/** Déconnexion complète. */
+export function wipeStateSecrets(state) {
+  wipeUnlockedSecrets(state);
+  if (!state) return;
+  state.authMaterial = null;
+  state.token = null;
+}
+
+function hasAuthMaterial(material) {
+  return Boolean(material?.salt && material?.encrypted_vault_key);
+}
+
+/**
+ * Persiste la session « verrouillable » (jamais de clés en clair).
+ */
 export function saveSession(state) {
-  if (state.devMode || !state.token || !state.vaultKey) {
+  if (state.devMode || !state.token || !hasAuthMaterial(state.authMaterial)) {
     clearStoredSession();
     return;
   }
+  memoryLastActivity = now();
   try {
     const payload = {
+      version: 2,
       token: state.token,
       user: state.user,
-      vaultKey: toB64(state.vaultKey),
-      privateKey: toB64(state.privateKey),
-      publicKey: toB64(state.publicKey),
-      authMaterial: state.authMaterial || null,
-      lastActivity: now(),
+      authMaterial: {
+        salt: state.authMaterial.salt,
+        encrypted_vault_key: state.authMaterial.encrypted_vault_key,
+        encrypted_private_key: state.authMaterial.encrypted_private_key || null,
+        public_key: state.authMaterial.public_key || null,
+      },
+      lastActivity: memoryLastActivity,
     };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch {
@@ -53,13 +102,15 @@ export function saveSession(state) {
 }
 
 /**
- * @returns {null | { token, user, vaultKey, privateKey, publicKey, authMaterial }}
+ * Charge une session fraîche (toujours « locked » : il faut le maître).
+ * @returns {null | { token, user, authMaterial }}
  */
 export function loadSessionIfFresh() {
   try {
     let raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) {
       for (const key of LEGACY_STORAGE_KEYS) {
+        if (key === 'gardefort_persist_session') continue;
         raw = sessionStorage.getItem(key);
         if (raw) {
           sessionStorage.setItem(STORAGE_KEY, raw);
@@ -70,7 +121,13 @@ export function loadSessionIfFresh() {
     }
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (!data?.token || !data?.vaultKey || !data?.lastActivity) {
+    // Purge d’anciennes sessions v1 qui stockaient vaultKey en clair.
+    if (data?.vaultKey || data?.privateKey) {
+      delete data.vaultKey;
+      delete data.privateKey;
+      delete data.publicKey;
+    }
+    if (!data?.token || !hasAuthMaterial(data.authMaterial) || !data?.lastActivity) {
       clearStoredSession();
       return null;
     }
@@ -78,13 +135,23 @@ export function loadSessionIfFresh() {
       clearStoredSession();
       return null;
     }
+    memoryLastActivity = Number(data.lastActivity) || now();
+    // Réécrire sans clés claires (migration).
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        version: 2,
+        token: data.token,
+        user: data.user,
+        authMaterial: data.authMaterial,
+        lastActivity: memoryLastActivity,
+      }));
+    } catch {
+      /* ignore */
+    }
     return {
       token: data.token,
       user: data.user,
-      vaultKey: fromB64(data.vaultKey),
-      privateKey: fromB64(data.privateKey),
-      publicKey: fromB64(data.publicKey),
-      authMaterial: data.authMaterial || null,
+      authMaterial: data.authMaterial,
     };
   } catch {
     clearStoredSession();
@@ -94,6 +161,9 @@ export function loadSessionIfFresh() {
 
 export function touchSessionActivity(state) {
   if (!state?.token || state.devMode) return;
+  // Idle watch uniquement coffre déverrouillé.
+  if (!state.vaultKey) return;
+  memoryLastActivity = now();
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) {
@@ -101,10 +171,14 @@ export function touchSessionActivity(state) {
       return;
     }
     const data = JSON.parse(raw);
-    data.lastActivity = now();
+    data.lastActivity = memoryLastActivity;
     data.token = state.token;
     data.user = state.user;
-    if (state.authMaterial) data.authMaterial = state.authMaterial;
+    if (hasAuthMaterial(state.authMaterial)) data.authMaterial = state.authMaterial;
+    delete data.vaultKey;
+    delete data.privateKey;
+    delete data.publicKey;
+    data.version = 2;
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
     saveSession(state);
@@ -112,27 +186,21 @@ export function touchSessionActivity(state) {
 }
 
 function remainingIdleMs() {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return 0;
-    const data = JSON.parse(raw);
-    return Math.max(0, IDLE_TIMEOUT_MS - (now() - Number(data.lastActivity || 0)));
-  } catch {
-    return 0;
-  }
+  if (!memoryLastActivity) return 0;
+  return Math.max(0, IDLE_TIMEOUT_MS - (now() - memoryLastActivity));
 }
 
 function scheduleIdleCheck() {
   if (idleTimer) clearTimeout(idleTimer);
   const delay = remainingIdleMs();
   idleTimer = setTimeout(() => {
-    if (typeof onIdleCallback === 'function') onIdleCallback();
-  }, delay);
+    if (typeof onIdleCallback === 'function') onIdleCallback('idle');
+  }, delay || 0);
 }
 
 function handleActivity(getState) {
   const state = getState();
-  if (!state?.token || state.devMode) return;
+  if (!state?.token || !state?.vaultKey || state.devMode) return;
   if (activityThrottle) return;
   activityThrottle = setTimeout(() => {
     activityThrottle = null;
@@ -142,19 +210,32 @@ function handleActivity(getState) {
 }
 
 function handleVisibility(getState) {
-  if (document.visibilityState !== 'visible') return;
-  const state = getState();
-  if (!state?.token || state.devMode) return;
-  if (!loadSessionIfFresh()) {
-    if (typeof onIdleCallback === 'function') onIdleCallback();
+  if (document.visibilityState === 'hidden') {
+    hiddenAt = now();
     return;
   }
+
+  const state = getState();
+  if (!state?.token || !state?.vaultKey || state.devMode) return;
+
+  const awayMs = hiddenAt ? now() - hiddenAt : 0;
+  hiddenAt = 0;
+
+  if (awayMs >= HIDDEN_LOCK_MS || remainingIdleMs() <= 0) {
+    if (typeof onIdleCallback === 'function') {
+      onIdleCallback(awayMs >= HIDDEN_LOCK_MS ? 'hidden' : 'idle');
+    }
+    return;
+  }
+
   scheduleIdleCheck();
 }
 
 export function startIdleWatch(getState, onIdle) {
   stopIdleWatch();
   onIdleCallback = onIdle;
+  memoryLastActivity = now();
+  hiddenAt = 0;
   const listener = () => handleActivity(getState);
   const visibilityListener = () => handleVisibility(getState);
   ACTIVITY_EVENTS.forEach((evt) => {
@@ -187,4 +268,5 @@ export function stopIdleWatch() {
     startIdleWatch._visibilityListener = null;
   }
   onIdleCallback = null;
+  hiddenAt = 0;
 }

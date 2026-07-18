@@ -1891,6 +1891,115 @@ body {
   text-align: center;
 }
 
+.profile-session-pref {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 80%, var(--bg));
+  text-align: left;
+}
+
+.profile-session-pref-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.profile-session-pref-text strong {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.profile-session-pref-text span {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.unlock-user-label {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.profile-session-pref-status {
+  margin-top: 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--success);
+  text-align: center;
+}
+
+.profile-session-pref-status.is-persist {
+  color: var(--warning, #b45309);
+}
+
+.profile-toggle {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.profile-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.profile-toggle-ui {
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 0.2s ease;
+  position: relative;
+}
+
+.profile-toggle-ui::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+
+.profile-toggle input:checked + .profile-toggle-ui {
+  background: var(--primary, #2563eb);
+}
+
+.profile-toggle input:checked + .profile-toggle-ui::after {
+  transform: translateX(18px);
+}
+
+.profile-toggle input:focus-visible + .profile-toggle-ui {
+  outline: 2px solid var(--primary, #2563eb);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .profile-lock-card { padding: 0.65rem; }
 
 .profile-lock-btn {

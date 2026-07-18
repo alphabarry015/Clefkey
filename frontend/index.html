@@ -137,6 +137,38 @@
           </button>
         </form>
 
+        <form id="form-unlock" class="auth-form hidden" autocomplete="off" data-form-type="other" novalidate>
+          <p class="shares-hint">Session en pause. Saisissez votre mot de passe maître pour rouvrir le coffre — sans vous reconnecter.</p>
+          <p id="unlock-user-label" class="unlock-user-label"></p>
+          <div class="form-group">
+            <label for="unlock-password">Mot de passe maître</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input
+                type="password"
+                id="unlock-password"
+                name="gardefort-master-unlock"
+                placeholder="••••••••"
+                autocomplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+              >
+              <button type="button" class="btn-eye" data-target="unlock-password" aria-label="Afficher">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+          <button type="submit" id="btn-unlock" class="btn btn-primary btn-full">
+            <span>Déverrouiller</span>
+            <i data-lucide="unlock"></i>
+          </button>
+          <button type="button" id="btn-unlock-logout" class="btn btn-secondary btn-full" style="margin-top:0.65rem">
+            Se déconnecter
+          </button>
+        </form>
+
         <form id="form-recovery" class="auth-form hidden" autocomplete="off" data-form-type="other">
           <p class="shares-hint">Entrez votre email et <strong>une</strong> de vos 7 clés de récupération.</p>
           <div class="form-group">
@@ -643,14 +675,20 @@
                   <span class="profile-tag profile-tag-success">Zero knowledge</span>
                 </div>
                 <p class="profile-security-text">Vos données sont chiffrées côté client. Le serveur ne peut pas lire vos mots de passe.</p>
+                <div class="profile-session-pref">
+                  <div class="profile-session-pref-text">
+                    <strong>Rechargement (F5) et verrouillage</strong>
+                    <span>Après F5, inactivité (15 min) ou onglet en arrière-plan, le coffre se verrouille. Seul le JWT et le matériel chiffré restent en session — jamais les clés en clair. Un mot de passe maître suffit pour rouvrir.</span>
+                  </div>
+                </div>
               </section>
 
               <section class="profile-card profile-lock-card">
                 <button type="button" class="profile-lock-btn" id="btn-profile-lock">
-                  <span class="profile-lock-icon"><i data-lucide="log-out"></i></span>
+                  <span class="profile-lock-icon"><i data-lucide="lock"></i></span>
                   <span class="profile-lock-text">
                     <strong>Verrouiller le coffre</strong>
-                    <span>Fermer la session et protéger vos données</span>
+                    <span>Efface les clés en mémoire — le mot de passe maître rouvre la session</span>
                   </span>
                   <i data-lucide="chevron-right" class="profile-shortcut-arrow"></i>
                 </button>

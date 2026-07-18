@@ -12,6 +12,8 @@
 |---------|--------|
 | Transport | HTTPS en production (Vercel) + HSTS |
 | Auth session | JWT Bearer à durée limitée |
+| Session navigateur | Soft lock : `sessionStorage` = JWT + `authMaterial` (blobs chiffrés). **Jamais** de clés en clair. F5 → écran mot de passe maître |
+| Verrouillage | Soft lock : idle 15 min ; onglet caché ≥ 1 min. Déconnexion = hard logout (efface tout) |
 | Entrées | Chiffrement client (AES-GCM via WebCrypto) ; blob max 256 KiB |
 | Mot de passe maître | Min. 12 car., complexité, **refus listes SecLists** (navigateur) |
 | Autofill navigateur | Désactivé volontairement (autocomplete off + clear secrets) |
@@ -28,7 +30,7 @@
 ## Limites / responsabilités
 
 - La force du coffre dépend du **mot de passe maître** (longueur, unicité).
-- XSS dans le frontend pourrait cibler des données déjà déchiffrées en session : CSP + échappement HTML réduisent le risque.
+- XSS dans le frontend pourrait cibler des données déjà déchiffrées **en mémoire** pendant la session : CSP + échappement HTML. Le soft lock ne stocke que des blobs déjà chiffrés + JWT (pas de `vaultKey` claire en `sessionStorage`).
 - JWT et `SECRET_KEY` : une fuite de `SECRET_KEY` permet de forger des tokens (pas de déchiffrer le coffre sans le maître).
 - Sans Upstash, le rate limit est par instance Vercel.
 - L’inscription peut encore révéler un email déjà pris (409) — limité par rate limit.

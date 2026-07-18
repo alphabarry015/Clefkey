@@ -35,10 +35,12 @@ class FaviconSsrfTests(SimpleTestCase):
         self.assertIsNone(_safe_request_url("file:///etc/passwd"))
         self.assertIsNone(_safe_request_url("ftp://example.com/x"))
 
-    def test_pinned_request_keeps_host_header(self):
+    def test_pinned_request_keeps_hostname_url(self):
+        # L’URL reste le hostname (TLS/SNI) ; l’IP est fournie au transport séparément.
         pinned, headers = _pinned_request_target("https://example.com/path", "93.184.216.34")
-        self.assertIn("93.184.216.34", pinned)
+        self.assertEqual(pinned, "https://example.com/path")
         self.assertEqual(headers["Host"], "example.com")
+        self.assertEqual(headers["X-Gardefort-Pinned-IP"], "93.184.216.34")
 
     def test_resolve_global_ips_rejects_localhost(self):
         self.assertIsNone(_resolve_global_ips("localhost"))
