@@ -2290,6 +2290,65 @@ body {
   border-color: rgba(16, 185, 129, 0.25);
 }
 
+.entry-type-badge-ssh_key {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.entry-secret-block {
+  width: 100%;
+  min-height: 9rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.entry-secret-block:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.btn-generate-ssh {
+  margin-top: 0.65rem;
+  width: 100%;
+}
+
+.entry-ssh-hint {
+  margin-top: 0.45rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+#detail-password.detail-secret-block {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+a.detail-url-plain {
+  color: var(--text-primary);
+  text-decoration: none;
+  pointer-events: none;
+  cursor: default;
+}
+
+.dash-tile-badge-ssh {
+  background: rgba(245, 158, 11, 0.9);
+}
+
 .modal-header-text .entry-type-badge {
   margin-top: 0.25rem;
 }

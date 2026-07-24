@@ -54,6 +54,15 @@ export const MOCK_ENTRIES = [
     url: 'https://dashboard.stripe.com',
     notes: 'Factice — environnement test',
   },
+  {
+    id: 'dev-6',
+    type: 'ssh_key',
+    title: 'GitHub deploy',
+    username: 'deploy@github',
+    password: '-----BEGIN OPENSSH PRIVATE KEY-----\nDEMO-NOT-A-REAL-KEY\n-----END OPENSSH PRIVATE KEY-----',
+    url: 'git@github.com',
+    notes: 'Factice — ssh-ed25519 AAAA… (exemple)',
+  },
 ];
 
 export function enterDevMode(state) {

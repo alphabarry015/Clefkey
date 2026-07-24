@@ -8,7 +8,7 @@
 
 import {
   toB64, fromB64, prepareRegistration, unlockSession, prepareLogin,
-  encryptData, decryptData, generatePassword,
+  encryptData, decryptData, generatePassword, generateSshEd25519KeyPair,
   encryptForRecipient, decryptFromSender,
   RECOVERY_KEY_COUNT,
   recoveryVerifierFromCode,
@@ -159,11 +159,23 @@ function fillEntryDetailCommon(e) {
   if (icon) setLucideIcon(icon, 'eye');
 
   const urlField = $('#detail-url-field');
+  const link = $('#detail-url');
+  const linkIcon = urlField?.querySelector('.field-link-icon');
   if (e.url) {
     urlField.classList.remove('hidden');
-    const link = $('#detail-url');
-    link.href = e.url.startsWith('http') ? e.url : `https://${e.url}`;
     link.textContent = e.url;
+    if (entryType(e) === 'ssh_key' && !/^https?:\/\//i.test(e.url)) {
+      link.removeAttribute('href');
+      link.removeAttribute('target');
+      link.classList.add('detail-url-plain');
+      linkIcon?.classList.add('hidden');
+    } else {
+      link.href = e.url.startsWith('http') ? e.url : `https://${e.url}`;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.classList.remove('detail-url-plain');
+      linkIcon?.classList.remove('hidden');
+    }
   } else {
     urlField.classList.add('hidden');
   }
@@ -179,7 +191,9 @@ function fillEntryDetailCommon(e) {
 
 function resetEntryFormModal() {
   state.editingEntryId = null;
-  $('#modal-entry-title').textContent = 'Nouvelle clé';
+  $('#modal-entry-title').textContent = ENTRY_TYPES.includes(state.typeFilter)
+    ? addEntryModalTitle(defaultEntryTypeFromFilter())
+    : 'Ajouter une clé';
   const btn = $('#btn-save-entry');
   if (btn) btn.innerHTML = '<i data-lucide="check-circle"></i> Enregistrer';
 }
@@ -336,12 +350,64 @@ function debounce(fn, delay = 250) {
   };
 }
 
+const ENTRY_TYPES = ['login', 'api_key', 'ssh_key'];
+
+function normalizeEntryType(value) {
+  return ENTRY_TYPES.includes(value) ? value : 'login';
+}
+
 function entryType(entry) {
-  return entry?.type === 'api_key' ? 'api_key' : 'login';
+  return normalizeEntryType(entry?.type);
 }
 
 function entryTypeLabel(type) {
-  return type === 'api_key' ? 'Clé API' : 'Connexion';
+  const t = normalizeEntryType(type);
+  if (t === 'api_key') return 'Clé API';
+  if (t === 'ssh_key') return 'SSH / stockage';
+  return 'Connexion';
+}
+
+/** Type prérempli selon le filtre actif (Tous → connexion). */
+function defaultEntryTypeFromFilter() {
+  return ENTRY_TYPES.includes(state.typeFilter) ? state.typeFilter : 'login';
+}
+
+function addEntryModalTitle(type) {
+  const t = normalizeEntryType(type);
+  if (t === 'api_key') return 'Ajouter une clé API';
+  if (t === 'ssh_key') return 'Ajouter une clé SSH';
+  return 'Ajouter une clé de connexion';
+}
+
+function addEntryActionLabel(type = null) {
+  const filter = type ?? state.typeFilter;
+  if (filter === 'api_key') return 'Ajouter une clé API';
+  if (filter === 'ssh_key') return 'Ajouter une clé SSH';
+  if (filter === 'login') return 'Ajouter une clé de connexion';
+  return 'Ajouter une clé';
+}
+
+function addEntryTileLabel(type = null) {
+  const filter = type ?? state.typeFilter;
+  if (filter === 'api_key') return 'Nouvelle clé API';
+  if (filter === 'ssh_key') return 'Nouvelle clé SSH';
+  if (filter === 'login') return 'Nouvelle connexion';
+  return 'Nouvelle clé';
+}
+
+function syncAddEntryButtonLabels() {
+  const label = addEntryActionLabel();
+  const short = state.typeFilter === 'api_key'
+    ? 'Clé API'
+    : state.typeFilter === 'ssh_key'
+      ? 'Clé SSH'
+      : state.typeFilter === 'login'
+        ? 'Connexion'
+        : 'Nouveau';
+  $$('.add-entry-label').forEach((el) => {
+    if (el.closest('#btn-dash-add')) el.textContent = short;
+    else el.textContent = label;
+  });
 }
 
 function entryTypeBadgeMarkup(entry) {
@@ -349,57 +415,154 @@ function entryTypeBadgeMarkup(entry) {
   return `<span class="entry-type-badge entry-type-badge-${type}">${esc(entryTypeLabel(type))}</span>`;
 }
 
+function entrySecretRequiredLabel(type) {
+  const t = normalizeEntryType(type);
+  if (t === 'api_key') return 'Le secret / API key est requis';
+  if (t === 'ssh_key') return 'La clé privée / secret de stockage est requis';
+  return 'Le mot de passe est requis';
+}
+
+function entryTitleRequiredLabel(type) {
+  return normalizeEntryType(type) === 'login' ? 'Le titre est requis' : 'Le nom est requis';
+}
+
 function applyEntryFormLabels(type = 'login') {
-  const isApi = type === 'api_key';
+  const t = normalizeEntryType(type);
+  const isApi = t === 'api_key';
+  const isSsh = t === 'ssh_key';
   const titleLabel = $('#label-entry-title');
   const userLabel = $('#label-entry-username');
   const passLabel = $('#label-entry-password');
   const urlLabel = $('#label-entry-url');
   const notesLabel = $('#label-entry-notes');
-  if (titleLabel) titleLabel.textContent = isApi ? 'Nom' : 'Titre';
+  if (titleLabel) titleLabel.textContent = isApi || isSsh ? 'Nom' : 'Titre';
   if (userLabel) {
-    userLabel.innerHTML = isApi
-      ? 'Client ID / Identifiant <span class="optional">(optionnel)</span>'
-      : 'Identifiant <span class="optional">(optionnel)</span>';
+    if (isSsh) {
+      userLabel.innerHTML = 'Commentaire / utilisateur <span class="optional">(optionnel)</span>';
+    } else if (isApi) {
+      userLabel.innerHTML = 'Client ID / Identifiant <span class="optional">(optionnel)</span>';
+    } else {
+      userLabel.innerHTML = 'Identifiant <span class="optional">(optionnel)</span>';
+    }
   }
-  if (passLabel) passLabel.textContent = isApi ? 'Secret / API key' : 'Mot de passe';
+  if (passLabel) {
+    if (isSsh) passLabel.textContent = 'Clé privée / secret';
+    else if (isApi) passLabel.textContent = 'Secret / API key';
+    else passLabel.textContent = 'Mot de passe';
+    passLabel.setAttribute('for', isSsh ? 'entry-secret-block' : 'entry-password');
+  }
   if (urlLabel) {
-    urlLabel.innerHTML = isApi
-      ? 'Console / endpoint <span class="optional">(optionnel)</span>'
-      : 'URL <span class="optional">(optionnel)</span>';
+    if (isSsh) {
+      urlLabel.innerHTML = 'Hôte / alias <span class="optional">(optionnel)</span>';
+    } else if (isApi) {
+      urlLabel.innerHTML = 'Console / endpoint <span class="optional">(optionnel)</span>';
+    } else {
+      urlLabel.innerHTML = 'URL <span class="optional">(optionnel)</span>';
+    }
   }
   if (notesLabel) {
-    notesLabel.innerHTML = isApi
-      ? 'Scopes / notes <span class="optional">(optionnel)</span>'
-      : 'Notes <span class="optional">(optionnel)</span>';
+    if (isSsh) {
+      notesLabel.innerHTML = 'Clé publique / fingerprint <span class="optional">(optionnel)</span>';
+    } else if (isApi) {
+      notesLabel.innerHTML = 'Scopes / notes <span class="optional">(optionnel)</span>';
+    } else {
+      notesLabel.innerHTML = 'Notes <span class="optional">(optionnel)</span>';
+    }
   }
   const titleInput = $('#entry-title');
   const userInput = $('#entry-username');
   const passInput = $('#entry-password');
+  const secretBlock = $('#entry-secret-block');
+  const passRow = $('#entry-password-row');
   const urlInput = $('#entry-url');
   const notesInput = $('#entry-notes');
-  if (titleInput) titleInput.placeholder = isApi ? 'OpenAI, Stripe, AWS…' : 'Netflix, Gmail, Banque...';
-  if (userInput) userInput.placeholder = isApi ? 'client_id ou account id' : 'email ou nom d\'utilisateur';
+  if (titleInput) {
+    titleInput.placeholder = isSsh
+      ? 'GitHub, VPS, NAS, disque…'
+      : isApi
+        ? 'OpenAI, Stripe, AWS…'
+        : 'Netflix, Gmail, Banque...';
+  }
+  if (userInput) {
+    userInput.placeholder = isSsh
+      ? 'user@host ou commentaire de clé'
+      : isApi
+        ? 'client_id ou account id'
+        : 'email ou nom d\'utilisateur';
+  }
   if (passInput) passInput.placeholder = isApi ? 'sk-… / secret' : 'Mot de passe';
-  if (urlInput) urlInput.placeholder = isApi ? 'https://console.exemple.com' : 'exemple.com ou https://...';
-  if (notesInput) notesInput.placeholder = isApi ? 'Scopes, environnement, JSON…' : 'Informations supplémentaires';
-  $('#btn-generate')?.classList.toggle('hidden', isApi);
+  if (secretBlock) {
+    secretBlock.placeholder = isSsh
+      ? '-----BEGIN OPENSSH PRIVATE KEY-----\n…\n-----END OPENSSH PRIVATE KEY-----'
+      : '';
+  }
+  if (urlInput) {
+    urlInput.placeholder = isSsh
+      ? 'git@github.com ou serveur.exemple.com'
+      : isApi
+        ? 'https://console.exemple.com'
+        : 'exemple.com ou https://...';
+  }
+  if (notesInput) {
+    notesInput.placeholder = isSsh
+      ? 'ssh-ed25519 AAAA… fingerprint…'
+      : isApi
+        ? 'Scopes, environnement, JSON…'
+        : 'Informations supplémentaires';
+  }
+
+  if (passRow && secretBlock && passInput) {
+    if (isSsh) {
+      passRow.classList.add('hidden');
+      secretBlock.classList.remove('hidden');
+      passInput.required = false;
+      passInput.value = '';
+      secretBlock.required = true;
+    } else {
+      passRow.classList.remove('hidden');
+      secretBlock.classList.add('hidden');
+      secretBlock.required = false;
+      secretBlock.value = '';
+      passInput.required = true;
+    }
+  }
+  $('#btn-generate')?.classList.toggle('hidden', isApi || isSsh);
+  $('#btn-generate-ssh')?.classList.toggle('hidden', !isSsh);
+  $('#entry-ssh-hint')?.classList.toggle('hidden', !isSsh);
 }
 
 function applyDetailTypeLabels(entry) {
-  const isApi = entryType(entry) === 'api_key';
+  const type = entryType(entry);
+  const isApi = type === 'api_key';
+  const isSsh = type === 'ssh_key';
   const badge = $('#detail-type-badge');
   if (badge) {
-    badge.textContent = entryTypeLabel(entryType(entry));
-    badge.className = `entry-type-badge entry-type-badge-${entryType(entry)}`;
+    badge.textContent = entryTypeLabel(type);
+    badge.className = `entry-type-badge entry-type-badge-${type}`;
     badge.classList.remove('hidden');
   }
   const userLabel = $('#detail-username-label');
   const passLabel = $('#detail-password-label');
   const urlLabel = $('#detail-url-label');
-  if (userLabel) userLabel.textContent = isApi ? 'Client ID / Identifiant' : 'Identifiant';
-  if (passLabel) passLabel.textContent = isApi ? 'Secret / API key' : 'Mot de passe';
-  if (urlLabel) urlLabel.textContent = isApi ? 'Console / endpoint' : 'URL';
+  const passEl = $('#detail-password');
+  if (userLabel) {
+    userLabel.textContent = isSsh
+      ? 'Commentaire / utilisateur'
+      : isApi
+        ? 'Client ID / Identifiant'
+        : 'Identifiant';
+  }
+  if (passLabel) {
+    passLabel.textContent = isSsh
+      ? 'Clé privée / secret'
+      : isApi
+        ? 'Secret / API key'
+        : 'Mot de passe';
+  }
+  if (urlLabel) {
+    urlLabel.textContent = isSsh ? 'Hôte / alias' : isApi ? 'Console / endpoint' : 'URL';
+  }
+  passEl?.classList.toggle('detail-secret-block', isSsh);
 }
 
 function syncTypeFilterButtons() {
@@ -410,10 +573,8 @@ function syncTypeFilterButtons() {
 
 function filterEntriesByQuery(list, query) {
   let filtered = list;
-  if (state.typeFilter === 'login') {
-    filtered = filtered.filter((e) => entryType(e) === 'login');
-  } else if (state.typeFilter === 'api_key') {
-    filtered = filtered.filter((e) => entryType(e) === 'api_key');
+  if (ENTRY_TYPES.includes(state.typeFilter)) {
+    filtered = filtered.filter((e) => entryType(e) === state.typeFilter);
   }
   if (!query) return filtered;
   const q = query.toLowerCase();
@@ -431,6 +592,9 @@ function entryLetter(entry) {
 
 function dashTileIconMarkup(entry) {
   const letter = entryLetter(entry);
+  if (entryType(entry) === 'ssh_key') {
+    return `<span class="dash-tile-letter">${letter}</span>`;
+  }
   const siteUrl = normalizeEntryUrl(entry.url);
   const faviconUrl = getFaviconUrl(siteUrl);
   if (!faviconUrl) return `<span class="dash-tile-letter">${letter}</span>`;
@@ -451,12 +615,13 @@ function dashTileIconMarkup(entry) {
 }
 
 function dashTileClassName(entry) {
+  if (entryType(entry) === 'ssh_key') return 'dash-tile';
   return getSiteDomain(entry.url) ? 'dash-tile dash-tile-branded' : 'dash-tile';
 }
 
 function dashTileStyle(entry, index) {
   const delay = `animation-delay:${index * 0.03}s`;
-  if (getSiteDomain(entry.url)) return delay;
+  if (entryType(entry) !== 'ssh_key' && getSiteDomain(entry.url)) return delay;
   const [c1, c2] = getAvatarColor(entry.title);
   return `background:linear-gradient(160deg,${c1},${c2});${delay}`;
 }
@@ -464,6 +629,9 @@ function dashTileStyle(entry, index) {
 function entryAvatarMarkup(entry) {
   const letter = entryLetter(entry);
   const [c1, c2] = getAvatarColor(entry.title);
+  if (entryType(entry) === 'ssh_key') {
+    return `<div class="entry-avatar" style="background:linear-gradient(135deg,${c1},${c2})">${letter}</div>`;
+  }
   const siteUrl = normalizeEntryUrl(entry.url);
   const faviconUrl = getFaviconUrl(siteUrl);
   if (!faviconUrl) {
@@ -479,6 +647,12 @@ function entryAvatarMarkup(entry) {
 function setEntryAvatar(el, entry) {
   const letter = entryLetter(entry);
   const [c1, c2] = getAvatarColor(entry.title);
+  if (entryType(entry) === 'ssh_key') {
+    el.className = 'entry-avatar lg';
+    el.style.background = `linear-gradient(135deg,${c1},${c2})`;
+    el.textContent = (entry.title?.[0] || '?').toUpperCase();
+    return;
+  }
   const faviconUrl = getFaviconUrl(normalizeEntryUrl(entry.url));
   el.className = 'entry-avatar lg entry-icon entry-icon-branded';
   el.style.background = '';
@@ -1446,7 +1620,7 @@ function renderDashboard() {
     grid.innerHTML = `
       <button type="button" class="dash-tile dash-tile-add" id="dash-tile-add-only">
         <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
-        <span class="dash-tile-name">Nouvelle clé</span>
+        <span class="dash-tile-name">${esc(addEntryTileLabel())}</span>
       </button>`;
     empty.classList.add('hidden');
     $('#dash-tile-add-only')?.addEventListener('click', openAddModal);
@@ -1458,21 +1632,24 @@ function renderDashboard() {
     grid.innerHTML = '';
     empty.classList.remove('hidden');
     empty.querySelector('p').textContent = 'Aucun résultat pour cette recherche';
+    syncAddEntryButtonLabels();
     refreshIcons(empty);
     return;
   }
 
   empty.classList.add('hidden');
   empty.querySelector('p').textContent = 'Aucune clé pour le moment';
+  syncAddEntryButtonLabels();
   grid.innerHTML = entries.map((e, i) => `
       <button type="button" class="${dashTileClassName(e)}" style="${dashTileStyle(e, i)}" data-action="show-entry" data-id="${esc(e.id)}">
         ${dashTileIconMarkup(e)}
         <span class="dash-tile-name">${esc(e.title)}</span>
         ${entryType(e) === 'api_key' ? '<span class="dash-tile-badge">API</span>' : ''}
+        ${entryType(e) === 'ssh_key' ? '<span class="dash-tile-badge dash-tile-badge-ssh">SSH</span>' : ''}
       </button>`).join('') + `
     <button type="button" class="dash-tile dash-tile-add" data-action="add-entry">
       <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
-      <span class="dash-tile-name">Nouvelle clé</span>
+      <span class="dash-tile-name">${esc(addEntryTileLabel())}</span>
     </button>`;
 
   refreshIcons(grid);
@@ -1665,6 +1842,7 @@ function renderEntries() {
 
   updateEntryCounts();
   syncTypeFilterButtons();
+  syncAddEntryButtonLabels();
 
   empty.classList.add('hidden');
   noResults.classList.add('hidden');
@@ -1689,7 +1867,13 @@ function renderEntries() {
           <div class="entry-title">${esc(e.title)}</div>
           ${entryTypeBadgeMarkup(e)}
         </div>
-        <div class="entry-username">${esc(entryType(e) === 'api_key' && displayUsername(e.username) === 'none' ? 'Secret API' : displayUsername(e.username))}</div>
+        <div class="entry-username">${esc(
+          entryType(e) === 'api_key' && displayUsername(e.username) === 'none'
+            ? 'Secret API'
+            : entryType(e) === 'ssh_key' && displayUsername(e.username) === 'none'
+              ? 'Clé SSH / stockage'
+              : displayUsername(e.username)
+        )}</div>
       </div>
       <div class="entry-actions">
         <button type="button" class="btn-icon" title="Copier" data-action="copy-password" data-id="${esc(e.id)}">
@@ -1939,7 +2123,15 @@ $('#btn-toggle-pwd').addEventListener('click', () => {
 
 $('#btn-copy-detail').addEventListener('click', async () => {
   if (!(await copyText($('#detail-password').dataset.real, $('#btn-copy-detail')))) return;
-  toast('Mot de passe copié', 'success');
+  const entry = state.entries.find((x) => x.id === state.detailEntryId)
+    || state.sharesReceived.find((x) => x.id === state.detailEntryId);
+  const type = entry ? entryType(entry) : 'login';
+  const msg = type === 'ssh_key'
+    ? 'Clé copiée'
+    : type === 'api_key'
+      ? 'Secret copié'
+      : 'Mot de passe copié';
+  toast(msg, 'success');
 });
 
 $$('.btn-copy-field[data-copy]').forEach(btn => {
@@ -1971,8 +2163,13 @@ window.copyPassword = async function(id) {
 function openAddModal() {
   resetEntryFormModal();
   $('#form-entry').reset();
-  if ($('#entry-type')) $('#entry-type').value = 'login';
-  applyEntryFormLabels('login');
+  if ($('#entry-secret-block')) $('#entry-secret-block').value = '';
+  const type = defaultEntryTypeFromFilter();
+  if ($('#entry-type')) $('#entry-type').value = type;
+  applyEntryFormLabels(type);
+  $('#modal-entry-title').textContent = ENTRY_TYPES.includes(state.typeFilter)
+    ? addEntryModalTitle(type)
+    : 'Ajouter une clé';
   $('#entry-generated').classList.add('hidden');
   openModal($('#modal-add'));
   refreshIcons($('#modal-add'));
@@ -1990,7 +2187,11 @@ function openEditModal(entryId) {
   applyEntryFormLabels(type);
   $('#entry-title').value = e.title;
   $('#entry-username').value = e.username || '';
-  $('#entry-password').value = e.password || '';
+  if (type === 'ssh_key') {
+    if ($('#entry-secret-block')) $('#entry-secret-block').value = e.password || '';
+  } else {
+    $('#entry-password').value = e.password || '';
+  }
   $('#entry-url').value = e.url || '';
   $('#entry-notes').value = e.notes || '';
   $('#entry-generated').classList.add('hidden');
@@ -2003,21 +2204,25 @@ function openEditModal(entryId) {
 }
 
 function readEntryFormData() {
-  const type = $('#entry-type')?.value === 'api_key' ? 'api_key' : 'login';
+  const type = normalizeEntryType($('#entry-type')?.value);
   const title = $('#entry-title').value.trim();
   const username = $('#entry-username').value.trim();
-  const password = $('#entry-password').value;
-  const url = normalizeEntryUrl($('#entry-url').value);
+  const password = type === 'ssh_key'
+    ? ($('#entry-secret-block')?.value || '').trim()
+    : $('#entry-password').value;
+  const urlRaw = $('#entry-url').value.trim();
+  const url = type === 'ssh_key' ? urlRaw : normalizeEntryUrl(urlRaw);
   const notes = $('#entry-notes').value.trim();
 
   if (!title) {
-    toast(type === 'api_key' ? 'Le nom est requis' : 'Le titre est requis', 'error');
+    toast(entryTitleRequiredLabel(type), 'error');
     $('#entry-title').focus();
     return null;
   }
   if (!password) {
-    toast(type === 'api_key' ? 'Le secret / API key est requis' : 'Le mot de passe est requis', 'error');
-    $('#entry-password').focus();
+    toast(entrySecretRequiredLabel(type), 'error');
+    if (type === 'ssh_key') $('#entry-secret-block')?.focus();
+    else $('#entry-password').focus();
     return null;
   }
 
@@ -2041,15 +2246,38 @@ $('#btn-generate').addEventListener('click', () => {
   $('#entry-generated').classList.remove('hidden');
 });
 
+$('#btn-generate-ssh')?.addEventListener('click', async () => {
+  const btn = $('#btn-generate-ssh');
+  if (btn) btn.disabled = true;
+  try {
+    const comment = ($('#entry-username')?.value || '').trim()
+      || ($('#entry-title')?.value || '').trim()
+      || 'gardefort';
+    const pair = await generateSshEd25519KeyPair(comment);
+    if ($('#entry-secret-block')) $('#entry-secret-block').value = pair.privateKey;
+    $('#entry-generated')?.classList.add('hidden');
+    toast('Clé Ed25519 générée', 'success');
+  } catch (err) {
+    toast(err.message || 'Génération SSH impossible', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
 $('#entry-type')?.addEventListener('change', (e) => {
-  applyEntryFormLabels(e.target.value === 'api_key' ? 'api_key' : 'login');
+  const type = normalizeEntryType(e.target.value);
+  applyEntryFormLabels(type);
   $('#entry-generated').classList.add('hidden');
+  if (!state.editingEntryId) {
+    $('#modal-entry-title').textContent = addEntryModalTitle(type);
+  }
 });
 
 $$('.type-filter').forEach((btn) => {
   btn.addEventListener('click', () => {
     state.typeFilter = btn.dataset.typeFilter || 'all';
     syncTypeFilterButtons();
+    syncAddEntryButtonLabels();
     refreshCurrentView();
   });
 });

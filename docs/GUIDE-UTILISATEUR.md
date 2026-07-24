@@ -30,11 +30,11 @@ Sur `localhost` uniquement : laisser les champs **vides** charge un mode démo (
 
 ### 4. Dashboard
 
-Tuiles des clés (populaires, récents, A à Z), recherche, ajout rapide. Filtres **Tous**, **Connexions**, **Clés API**.
+Tuiles des clés (populaires, récents, A à Z), recherche, ajout rapide. Filtres **Tous**, **Connexions**, **Clés API**, **SSH / stockage**.
 
 ### 5. Toutes les clés
 
-Liste complète, recherche (raccourci **Ctrl+K**), ouverture du détail. Chaque entrée affiche un badge selon son type (connexion ou clé API).
+Liste complète, recherche (raccourci **Ctrl+K**), ouverture du détail. Chaque entrée affiche un badge selon son type (connexion, clé API ou SSH / stockage).
 
 ### 6. Profil
 
@@ -46,8 +46,9 @@ Infos compte (édition inline), tags techniques, **Verrouiller le coffre** (soft
 |------|--------|
 | Connexion | Site web : URL, identifiant, mot de passe |
 | Clé API | Secret technique : titre, clé, URL optionnelle, notes |
+| Clé SSH / stockage | Clé privée (PEM / OpenSSH) ou secret de stockage ; hôte optionnel (`git@…`, serveur). Bouton **Générer une clé Ed25519** remplit uniquement le champ secret avec la clé privée. |
 
-Les deux types sont chiffrés de la même façon ; seul le contenu JSON côté navigateur change.
+Les trois types sont chiffrés de la même façon ; seul le contenu JSON côté navigateur change.
 
 ## Actions courantes
 

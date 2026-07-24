@@ -33,7 +33,10 @@ export function getFaviconUrl(url) {
 export function prepareEntry(entry) {
   if (!entry) return entry;
   const prepared = { ...entry };
-  if (prepared.url) prepared.url = normalizeEntryUrl(prepared.url);
+  // Les hôtes SSH (git@…, user@host) ne sont pas des URLs web.
+  if (prepared.url && prepared.type !== 'ssh_key') {
+    prepared.url = normalizeEntryUrl(prepared.url);
+  }
   return prepared;
 }
 

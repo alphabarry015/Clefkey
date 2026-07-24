@@ -413,7 +413,7 @@
             </div>
             <button type="button" class="btn btn-primary btn-sm dash-toolbar-add" id="btn-dash-add">
               <i data-lucide="plus"></i>
-              <span>Nouveau</span>
+              <span class="add-entry-label">Nouveau</span>
             </button>
           </div>
 
@@ -426,6 +426,7 @@
             <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
             <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
             <button type="button" class="type-filter" data-type-filter="api_key">Clés API</button>
+            <button type="button" class="type-filter" data-type-filter="ssh_key">SSH / stockage</button>
           </div>
 
           <div id="dash-tiles-grid" class="dash-tiles-grid"></div>
@@ -434,7 +435,7 @@
             <p>Aucune clé pour le moment</p>
             <button type="button" class="btn btn-primary btn-sm" id="btn-dash-add-empty">
               <i data-lucide="plus"></i>
-              Ajouter une clé
+              <span class="add-entry-label">Ajouter une clé</span>
             </button>
           </div>
         </div>
@@ -450,6 +451,7 @@
             <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
             <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
             <button type="button" class="type-filter" data-type-filter="api_key">Clés API</button>
+            <button type="button" class="type-filter" data-type-filter="ssh_key">SSH / stockage</button>
           </div>
         </div>
 
@@ -463,7 +465,7 @@
             <p>Commencez par ajouter votre première clé sécurisée</p>
             <button type="button" class="btn btn-primary" id="btn-entries-empty-add">
               <i data-lucide="plus"></i>
-              Ajouter une clé
+              <span class="add-entry-label">Ajouter une clé</span>
             </button>
           </div>
           <div id="entries-no-results" class="entries-empty hidden">
@@ -822,6 +824,7 @@
             <select id="entry-type" class="entry-type-select">
               <option value="login">Connexion</option>
               <option value="api_key">Clé API / credential</option>
+              <option value="ssh_key">Clé SSH / stockage</option>
             </select>
           </div>
           <div class="form-group">
@@ -834,13 +837,29 @@
           </div>
           <div class="form-group">
             <label for="entry-password" id="label-entry-password">Mot de passe</label>
-            <div class="password-input-row">
+            <div class="password-input-row" id="entry-password-row">
               <input type="text" id="entry-password" required placeholder="Mot de passe">
               <button type="button" id="btn-generate" class="btn btn-secondary">
                 <i data-lucide="dices"></i>
                 Générer
               </button>
             </div>
+            <textarea
+              id="entry-secret-block"
+              class="entry-secret-block hidden"
+              rows="8"
+              placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;…&#10;-----END OPENSSH PRIVATE KEY-----"
+              autocomplete="off"
+              spellcheck="false"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-bwignore="true"
+            ></textarea>
+            <button type="button" id="btn-generate-ssh" class="btn btn-secondary btn-generate-ssh hidden">
+              <i data-lucide="key-round"></i>
+              Générer une clé Ed25519
+            </button>
+            <p id="entry-ssh-hint" class="entry-ssh-hint hidden">Remplit uniquement le champ ci-dessus avec une clé privée OpenSSH Ed25519.</p>
             <div id="entry-generated" class="generated-preview hidden"></div>
           </div>
           <div class="form-group">
