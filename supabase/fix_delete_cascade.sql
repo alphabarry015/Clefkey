@@ -1,5 +1,5 @@
 -- =============================================================================
--- Gardefort — Forcer ON DELETE CASCADE sur les FK vers users
+-- Clefkey. — Forcer ON DELETE CASCADE sur les FK vers users
 -- À exécuter dans Supabase → SQL Editor si la suppression d'un compte échoue.
 -- =============================================================================
 

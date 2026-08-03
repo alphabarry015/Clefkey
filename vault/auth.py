@@ -1,4 +1,4 @@
-"""JWT et helpers base64 pour l'API auth Gardefort."""
+"""JWT et helpers base64 pour l'API auth Clefkey."""
 
 import base64
 from datetime import datetime, timedelta, timezone

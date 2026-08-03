@@ -40,7 +40,7 @@ class FaviconSsrfTests(SimpleTestCase):
         pinned, headers = _pinned_request_target("https://example.com/path", "93.184.216.34")
         self.assertEqual(pinned, "https://example.com/path")
         self.assertEqual(headers["Host"], "example.com")
-        self.assertEqual(headers["X-Gardefort-Pinned-IP"], "93.184.216.34")
+        self.assertEqual(headers["X-Clefkey-Pinned-IP"], "93.184.216.34")
 
     def test_resolve_global_ips_rejects_localhost(self):
         self.assertIsNone(_resolve_global_ips("localhost"))

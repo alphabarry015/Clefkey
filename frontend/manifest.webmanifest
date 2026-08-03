@@ -1,13 +1,13 @@
 {
-  "name": "Gardefort",
-  "short_name": "Gardefort",
+  "name": "Clefkey.",
+  "short_name": "Clefkey.",
   "description": "Gestionnaire de mots de passe chiffré de bout en bout",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f0f2f7",
-  "theme_color": "#2563eb",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "lang": "fr",
   "icons": [
     {

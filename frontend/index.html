@@ -2,14 +2,27 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <script>
+    (function () {
+      try {
+        var key = 'clefkey_theme';
+        var pref = localStorage.getItem(key) || 'system';
+        if (pref !== 'light' && pref !== 'dark' && pref !== 'system') pref = 'system';
+        var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var resolved = pref === 'system' ? (dark ? 'dark' : 'light') : pref;
+        document.documentElement.setAttribute('data-theme-pref', pref);
+        document.documentElement.setAttribute('data-theme', resolved);
+      } catch (e) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Gestionnaire de mots de passe chiffré de bout en bout">
-  <meta name="theme-color" content="#2563eb">
+  <meta name="theme-color" content="#000000">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Gardefort">
-  <title>Gardefort</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Clefkey.">
+  <title>Clefkey.</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
@@ -17,7 +30,8 @@
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -25,39 +39,187 @@
   <div id="screen-landing" class="screen active">
     <div class="lp">
       <header class="lp-header">
-        <a href="/" class="lp-header-brand">
-          <img src="/icons/logo-chevalier.png" alt="" class="brand-mark" width="28" height="28">
-          <span>Gardefort</span>
-        </a>
-        <a
-          id="btn-landing-github"
-          class="lp-github"
-          href="https://github.com/alphabarry015/Gardefort"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Code source Gardefort sur GitHub"
-        >
-          <svg class="lp-github-icon" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18">
-            <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/>
-          </svg>
-          <span class="lp-github-label">GitHub</span>
-        </a>
+        <a href="/" class="lp-header-brand">Clefkey<span class="lp-brand-dot">.</span></a>
+        <nav class="lp-nav" aria-label="Navigation">
+          <a href="#lp-produit">Produit</a>
+          <a href="#lp-securite">Sécurité</a>
+          <a href="/docs/">Docs</a>
+        </nav>
+        <div class="lp-header-social">
+          <a
+            id="btn-landing-github"
+            class="lp-github"
+            href="https://github.com/alphabarry015/Gardefort"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Code source Clefkey. sur GitHub"
+          >
+            <svg class="lp-github-icon" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18">
+              <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/>
+            </svg>
+          </a>
+          <div class="theme-switch-host" data-theme-switch></div>
+        </div>
       </header>
 
-      <section class="lp-hero">
-        <div class="lp-hero-bottom">
+      <section id="lp-hero" class="lp-hero" aria-label="Présentation Clefkey.">
+        <div class="lp-hero-content">
+          <h1 class="lp-headline">
+            <span class="lp-headline-accent">Coffre zero-knowledge.</span>
+            <span class="lp-headline-main">Clés sous contrôle.</span>
+          </h1>
+          <p class="lp-desc">
+            Open-source. Vos secrets restent chiffrés sur votre appareil
+            avec AES-256 et Argon2id. Le serveur ne voit jamais votre clé maître.
+          </p>
           <div class="lp-actions">
-            <button type="button" id="btn-landing-start" class="lp-btn lp-btn-primary">Créer un compte</button>
+            <button type="button" id="btn-landing-start" class="lp-btn lp-btn-primary">Commencer</button>
             <button type="button" id="btn-landing-login" class="lp-btn lp-btn-secondary">Se connecter</button>
           </div>
-          <div class="lp-security" aria-label="Fonctionnalités de sécurité">
-            <span>Zero knowledge</span>
-            <span>Chiffrement AES-256</span>
-            <span>Argon2id</span>
-            <span>Données sur votre appareil</span>
+        </div>
+        <div class="lp-hero-visual" aria-hidden="true">
+          <img
+            class="lp-looper"
+            src="/assets/looper-bg.png"
+            alt=""
+            width="1600"
+            height="900"
+            decoding="async"
+          >
+        </div>
+      </section>
+
+      <section id="lp-produit" class="lp-section" aria-labelledby="lp-produit-title">
+        <div class="lp-section-inner lp-split-grid">
+          <div class="lp-split-copy">
+            <p class="lp-kicker">Produit</p>
+            <h2 id="lp-produit-title" class="lp-section-title">
+              Un coffre complet.<span class="lp-section-title-accent"> Open-source.</span>
+            </h2>
+            <p class="lp-section-lead">
+              Clefkey. regroupe vos identifiants, notes et projets dans un espace clair.
+              Le code est public, auditable, et sans verrou propriétaire.
+            </p>
+            <ul class="lp-feature-list lp-feature-list-stack">
+              <li>
+                <strong>Coffre zero-knowledge</strong>
+                <span>Stockez mots de passe, identifiants et notes. Tout est chiffré avant d’atteindre le serveur.</span>
+              </li>
+              <li>
+                <strong>Projets organisés</strong>
+                <span>Rangez vos clés par projet, transférez-les en un clic, gardez le coffre lisible.</span>
+              </li>
+              <li>
+                <strong>Générateur intégré</strong>
+                <span>Créez des mots de passe robustes ou des clés SSH directement dans le navigateur.</span>
+              </li>
+              <li>
+                <strong>Open-source</strong>
+                <span>Le dépôt est public. Vous pouvez lire, vérifier et contribuer au code de Clefkey.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="lp-split-visual" aria-hidden="true">
+            <div class="lp-icon-panel" title="Produit">
+              <i data-lucide="key-round"></i>
+            </div>
           </div>
         </div>
       </section>
+
+      <section id="lp-securite" class="lp-section lp-section-alt" aria-labelledby="lp-securite-title">
+        <div class="lp-section-inner lp-split-grid">
+          <div class="lp-split-copy">
+            <p class="lp-kicker">Sécurité</p>
+            <h2 id="lp-securite-title" class="lp-section-title">
+              Votre clé maître<span class="lp-section-title-accent"> ne quitte jamais votre appareil.</span>
+            </h2>
+            <p class="lp-section-lead">
+              La sécurité n’est pas une boîte noire. Les protections crypto sont
+              documentées et le code open-source reste inspectable.
+            </p>
+            <ul class="lp-feature-list lp-feature-list-stack">
+              <li>
+                <strong>Zero knowledge</strong>
+                <span>Le serveur stocke uniquement des blobs chiffrés. Il ne peut pas lire votre coffre.</span>
+              </li>
+              <li>
+                <strong>AES-256-GCM</strong>
+                <span>Chaque entrée est chiffrée côté client avant l’envoi et le stockage.</span>
+              </li>
+              <li>
+                <strong>Argon2id</strong>
+                <span>Votre mot de passe maître dérive la clé locale avec un algorithme résistant au brute-force.</span>
+              </li>
+              <li>
+                <strong>Récupération maîtrisée</strong>
+                <span>Des clés de récupération exportables uniquement par vous. Personne d’autre ne peut les régénérer.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="lp-split-visual" aria-hidden="true">
+            <div class="lp-icon-panel" title="Sécurité">
+              <i data-lucide="shield-check"></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="lp-docs" class="lp-section" aria-labelledby="lp-docs-title">
+        <div class="lp-section-inner lp-split-grid">
+          <div class="lp-split-copy">
+            <p class="lp-kicker">Docs</p>
+            <h2 id="lp-docs-title" class="lp-section-title">
+              Ouvert, documenté<span class="lp-section-title-accent"> et open-source.</span>
+            </h2>
+            <p class="lp-section-lead">
+              Consultez le code, l’architecture et les guides. Clefkey. est un projet
+              transparent : open-source, avec un dépôt public.
+            </p>
+            <ul class="lp-docs-list lp-feature-list-stack">
+              <li>
+                <a href="/docs/">
+                  <strong>Documentation</strong>
+                  <span>Guides, architecture et référence dans une page dédiée.</span>
+                </a>
+              </li>
+              <li>
+                <a href="/docs/securite/">
+                  <strong>Sécurité</strong>
+                  <span>Comprenez le modèle zero-knowledge et le chiffrement client.</span>
+                </a>
+              </li>
+              <li>
+                <a href="/docs/guide-utilisateur/">
+                  <strong>Guide utilisateur</strong>
+                  <span>Démarrez, organisez vos projets et récupérez votre accès.</span>
+                </a>
+              </li>
+              <li>
+                <a href="/docs/architecture/">
+                  <strong>Architecture</strong>
+                  <span>Vue d’ensemble technique du coffre et de l’API.</span>
+                </a>
+              </li>
+            </ul>
+            <div class="lp-section-cta">
+              <button type="button" id="btn-landing-start-footer" class="lp-btn lp-btn-primary">Créer un compte</button>
+            </div>
+          </div>
+
+          <div class="lp-split-visual" aria-hidden="true">
+            <div class="lp-icon-panel" title="Docs">
+              <i data-lucide="book-open"></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="lp-footer">
+        <span>Clefkey<span class="lp-brand-dot">.</span> Open-source. Zero knowledge.</span>
+      </footer>
     </div>
   </div>
 
@@ -75,10 +237,7 @@
       <div class="auth-card">
         <div class="auth-card-side">
           <div class="auth-logo">
-            <div class="logo-shield">
-              <img src="/icons/logo-chevalier.png" alt="" class="brand-mark" width="40" height="40">
-            </div>
-            <h1>Gardefort</h1>
+            <h1 class="auth-brand">Clefkey<span class="lp-brand-dot">.</span></h1>
             <p class="subtitle">Vos mots de passe, chiffrés et sécurisés</p>
           </div>
         </div>
@@ -97,7 +256,7 @@
               <input
                 type="text"
                 id="login-email"
-                name="gardefort-login-email"
+                name="clefkey-login-email"
                 placeholder="vous@email.com"
                 autocomplete="off"
                 spellcheck="false"
@@ -115,7 +274,7 @@
               <input
                 type="password"
                 id="login-password"
-                name="gardefort-master-login"
+                name="clefkey-master-login"
                 placeholder="••••••••"
                 autocomplete="off"
                 data-lpignore="true"
@@ -147,7 +306,7 @@
               <input
                 type="password"
                 id="unlock-password"
-                name="gardefort-master-unlock"
+                name="clefkey-master-unlock"
                 placeholder="••••••••"
                 autocomplete="off"
                 data-lpignore="true"
@@ -239,21 +398,21 @@
             <label for="register-first-name">Prénom</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="user"></i></span>
-              <input type="text" id="register-first-name" name="gardefort-first-name" required placeholder="Pierre" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
+              <input type="text" id="register-first-name" name="clefkey-first-name" required placeholder="Pierre" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
             </div>
           </div>
           <div class="form-group">
             <label for="register-middle-name">Deuxième prénom <span class="optional">(optionnel)</span></label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="user"></i></span>
-              <input type="text" id="register-middle-name" name="gardefort-middle-name" placeholder="Jean" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
+              <input type="text" id="register-middle-name" name="clefkey-middle-name" placeholder="Jean" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
             </div>
           </div>
           <div class="form-group">
             <label for="register-last-name">Nom</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="user"></i></span>
-              <input type="text" id="register-last-name" name="gardefort-last-name" required placeholder="Dupont" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
+              <input type="text" id="register-last-name" name="clefkey-last-name" required placeholder="Dupont" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
             </div>
           </div>
           <div class="form-group">
@@ -263,7 +422,7 @@
               <input
                 type="email"
                 id="register-email"
-                name="gardefort-register-email"
+                name="clefkey-register-email"
                 required
                 placeholder="vous@email.com"
                 autocomplete="off"
@@ -281,7 +440,7 @@
               <input
                 type="password"
                 id="register-password"
-                name="gardefort-master-register"
+                name="clefkey-master-register"
                 required
                 placeholder="Min. 12 caractères"
                 autocomplete="off"
@@ -304,7 +463,7 @@
               <input
                 type="password"
                 id="register-password-confirm"
-                name="gardefort-master-confirm"
+                name="clefkey-master-confirm"
                 required
                 placeholder="••••••••"
                 autocomplete="off"
@@ -335,7 +494,7 @@
           <img src="/icons/logo-chevalier.png" alt="" class="brand-mark" width="22" height="22">
         </div>
         <div class="sidebar-brand-text">
-          <div class="sidebar-title">Gardefort</div>
+          <div class="sidebar-title">Clefkey.</div>
           <div class="sidebar-subtitle">Gestionnaire sécurisé</div>
         </div>
       </div>
@@ -373,6 +532,11 @@
           <span class="sidebar-text">Envoyé</span>
           <span class="nav-badge" id="nav-count-sent">0</span>
         </button>
+        <button class="nav-item nav-item-sub" data-page="contacts" title="Contacts">
+          <i data-lucide="id-card"></i>
+          <span class="sidebar-text">Contacts</span>
+          <span class="nav-badge" id="nav-count-contacts">0</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -399,10 +563,13 @@
           <h1 id="page-title">Dashboard</h1>
           <p id="page-subtitle" class="topbar-subtitle"></p>
         </div>
-        <div class="topbar-total" id="topbar-total">
-          <i data-lucide="layers"></i>
-          <span class="topbar-total-label">Total</span>
-          <strong id="entry-count">0</strong>
+        <div class="topbar-actions">
+          <div class="topbar-total" id="topbar-total">
+            <i data-lucide="layers"></i>
+            <span class="topbar-total-label">Total</span>
+            <strong id="entry-count">0</strong>
+          </div>
+          <div class="theme-switch-host topbar-theme" data-theme-switch></div>
         </div>
       </header>
 
@@ -633,6 +800,77 @@
           </div>
         </div>
 
+        <div id="contacts-view" class="shares-view contacts-view hidden">
+          <div id="contacts-list-panel">
+            <div class="shares-toolbar">
+              <p class="shares-hint">Personnes à qui vous avez déjà partagé une clé. Reprenez un contact pour partager plus vite.</p>
+            </div>
+            <div id="contacts-list" class="contacts-grid"></div>
+            <div id="contacts-empty" class="entries-empty hidden">
+              <div class="empty-illustration empty-illustration-sm">
+                <i data-lucide="id-card"></i>
+              </div>
+              <h3>Aucun contact</h3>
+              <p>Partagez une clé : le destinataire apparaîtra ici pour les prochains envois.</p>
+            </div>
+          </div>
+          <div id="contacts-detail-panel" class="contacts-detail hidden">
+            <button type="button" id="btn-contacts-back" class="btn btn-secondary btn-sm contacts-back">
+              <i data-lucide="arrow-left"></i>
+              <span>Contacts</span>
+            </button>
+
+            <div class="contacts-bento" aria-label="Profil du contact">
+              <section class="contacts-bento-tile contacts-bento-identity">
+                <div id="contacts-detail-avatar" class="contacts-detail-avatar" aria-hidden="true"></div>
+                <div class="contacts-bento-identity-copy">
+                  <p class="contacts-bento-kicker">Contact</p>
+                  <h2 id="contacts-detail-name">…</h2>
+                  <p id="contacts-detail-email" class="contacts-detail-email">…</p>
+                </div>
+              </section>
+
+              <section class="contacts-bento-tile contacts-bento-stat">
+                <span class="contacts-bento-stat-label">Clés partagées</span>
+                <strong id="contacts-detail-share-count" class="contacts-bento-stat-value">0</strong>
+                <span id="contacts-detail-share-label" class="contacts-bento-stat-hint">actives</span>
+              </section>
+
+              <section class="contacts-bento-tile contacts-bento-stat">
+                <span class="contacts-bento-stat-label">Dernier partage</span>
+                <strong id="contacts-detail-last-share" class="contacts-bento-stat-value contacts-bento-stat-value-sm">—</strong>
+                <span class="contacts-bento-stat-hint">historique</span>
+              </section>
+
+              <section class="contacts-bento-tile contacts-bento-actions">
+                <p class="contacts-bento-kicker">Actions</p>
+                <div class="contacts-detail-actions">
+                  <button type="button" id="btn-contact-share" class="btn btn-primary btn-sm">
+                    <i data-lucide="user-plus"></i>
+                    <span>Partager une clé</span>
+                  </button>
+                  <button type="button" id="btn-contact-remove" class="btn btn-secondary btn-sm">
+                    <i data-lucide="trash-2"></i>
+                    <span>Retirer</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="contacts-bento-tile contacts-bento-shares">
+                <div class="contacts-bento-shares-head">
+                  <h3 class="contacts-detail-section-title">Clés partagées</h3>
+                  <p id="contacts-detail-meta" class="shares-hint"></p>
+                </div>
+                <div id="contacts-detail-shares" class="entries-grid contacts-bento-shares-list"></div>
+                <div id="contacts-detail-shares-empty" class="contacts-bento-empty hidden">
+                  <i data-lucide="key-round"></i>
+                  <p>Aucune clé active partagée avec ce contact.</p>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
         <div id="profile-view" class="profile-view hidden">
           <section class="profile-banner">
             <div class="profile-banner-decor" aria-hidden="true">
@@ -793,6 +1031,16 @@
                 </ul>
               </section>
 
+              <section class="profile-card">
+                <div class="profile-card-header">
+                  <h3><i data-lucide="eye"></i> Apparence</h3>
+                </div>
+                <div class="profile-theme-row">
+                  <span>Clair ou sombre. Sans choix, le site suit automatiquement le mode de votre système.</span>
+                  <div class="theme-switch-host" data-theme-switch data-theme-switch-class="theme-switch-wide"></div>
+                </div>
+              </section>
+
               <section class="profile-card profile-security-card">
                 <div class="profile-card-header">
                   <h3><i data-lucide="shield-check"></i> Sécurité</h3>
@@ -932,6 +1180,10 @@
         </div>
         <form id="form-share" class="modal-body">
           <p class="shares-hint" id="share-entry-title">…</p>
+          <div id="share-contacts" class="share-contacts hidden">
+            <p class="share-contacts-label">Contacts</p>
+            <div id="share-contacts-chips" class="share-contacts-chips" role="list"></div>
+          </div>
           <div class="form-group">
             <label for="share-email">Email du destinataire</label>
             <input type="email" id="share-email" required placeholder="personne@exemple.com" autocomplete="off">
@@ -940,12 +1192,35 @@
             <label for="share-note">Note <span class="optional">(optionnel)</span></label>
             <textarea id="share-note" rows="3" maxlength="500" placeholder="Ex. : compte du foyer, à ne pas modifier…"></textarea>
           </div>
-          <p class="shares-hint">Le destinataire doit avoir un compte Gardefort. Seule une copie chiffrée pour lui est envoyée.</p>
+          <p class="shares-hint">Le destinataire doit avoir un compte Clefkey. Seule une copie chiffrée pour lui est envoyée.</p>
           <button type="submit" id="btn-share-submit" class="btn btn-primary btn-full">
             <span>Envoyer le partage</span>
             <i data-lucide="user-plus"></i>
           </button>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal choisir une clé à partager ───────────── -->
+  <div id="modal-share-pick-entry" class="modal">
+    <div class="modal-overlay">
+      <div class="modal-content modal-content-sm">
+        <div class="modal-header">
+          <h2>Choisir une clé</h2>
+          <button type="button" id="btn-close-share-pick" class="btn-close"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <p class="shares-hint" id="share-pick-hint">Sélectionnez la clé à partager.</p>
+          <div class="search-box share-pick-search">
+            <span class="search-icon"><i data-lucide="search"></i></span>
+            <input type="text" id="share-pick-search" placeholder="Rechercher une clé…">
+          </div>
+          <div id="share-pick-entry-list" class="share-pick-list"></div>
+          <div id="share-pick-empty" class="entries-empty hidden">
+            <p>Aucune clé à partager.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1128,7 +1403,7 @@
         <div class="modal-body">
           <p class="shares-hint recovery-keys-warning">
             Sauvegardez ces clés <strong>maintenant</strong> (papier, coffre, USB).
-            Elles ne seront plus réaffichées. Gardefort ne peut pas les récupérer pour vous.
+            Elles ne seront plus réaffichées. Clefkey. ne peut pas les récupérer pour vous.
             Une seule suffit pour réinitialiser le mot de passe maître.
           </p>
           <ol id="recovery-keys-list" class="recovery-keys-list"></ol>
@@ -1258,7 +1533,7 @@
       var el = document.getElementById('compat-banner');
       var text = document.getElementById('compat-banner-text');
       if (!el || !text) return;
-      text.textContent = 'Ce navigateur ne prend pas en charge les modules JavaScript modernes requis par Gardefort.';
+      text.textContent = 'Ce navigateur ne prend pas en charge les modules JavaScript modernes requis par Clefkey.';
       el.classList.remove('hidden');
     })();
   </script>

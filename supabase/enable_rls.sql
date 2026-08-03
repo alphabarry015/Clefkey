@@ -1,5 +1,5 @@
 -- =============================================================================
--- Gardefort — Activer RLS deny-all sur les tables applicatives (bases existantes)
+-- Clefkey. — Activer RLS deny-all sur les tables applicatives (bases existantes)
 -- =============================================================================
 -- Où exécuter : Supabase Dashboard → SQL Editor → Run
 --

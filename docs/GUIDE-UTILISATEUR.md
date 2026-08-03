@@ -1,14 +1,14 @@
-# Guide utilisateur — Gardefort
+# Guide utilisateur — Clefkey.
 
-## À quoi sert Gardefort ?
+## À quoi sert Clefkey. ?
 
-Gardefort stocke vos identifiants (sites, emails, mots de passe, notes, clés API) de façon chiffrée. Seul **votre mot de passe maître** permet de les lire, dans votre navigateur. Voir aussi la [cartographie](./CARTOGRAPHIE-COFFRE.md) pour le fonctionnement détaillé.
+Clefkey. stocke vos identifiants (sites, emails, mots de passe, notes, clés API) de façon chiffrée. Seul **votre mot de passe maître** permet de les lire, dans votre navigateur. Voir aussi la [cartographie](./CARTOGRAPHIE-COFFRE.md) pour le fonctionnement détaillé.
 
 ## Écrans principaux
 
 ### 1. Landing
 
-Page d’accueil avec le nom **Gardefort**, un lien vers le dépôt GitHub public du projet, et les actions **Créer un compte** / **Se connecter**.
+Page d’accueil avec le nom **Clefkey.**, un lien vers le dépôt GitHub public du projet, et les actions **Créer un compte** / **Se connecter**.
 
 ### 2. Inscription
 
@@ -69,7 +69,7 @@ Les clés peuvent être rangées dans un **projet**. La liste des projets et l�
 
 ## PWA
 
-Gardefort peut s’installer comme application (manifest + service worker). Après une mise à jour du site, un rechargement peut être nécessaire pour vider l’ancien cache.
+Clefkey. peut s’installer comme application (manifest + service worker). Après une mise à jour du site, un rechargement peut être nécessaire pour vider l’ancien cache.
 
 ## Vie privée (dépôt public)
 

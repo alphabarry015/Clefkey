@@ -16,7 +16,7 @@ from httpcore._backends.sync import SyncBackend
 from httpx._config import DEFAULT_LIMITS, create_ssl_context
 
 
-USER_AGENT = "Gardefort/1.0 (+favicon; usage personnel)"
+USER_AGENT = "Clefkey/1.0 (+favicon; usage personnel)"
 # Timeouts courts : un favicon lent ne doit pas bloquer le dashboard.
 TIMEOUT = httpx.Timeout(2.5, connect=1.2)
 MAX_ICON_BYTES = 128_000
@@ -167,7 +167,7 @@ def _pinned_request_target(url: str, ip: str) -> tuple[str, dict[str, str]]:
     if not parsed.hostname:
         raise ValueError("hostname requis")
     host_header = parsed.netloc
-    return url, {"Host": host_header, "X-Gardefort-Pinned-IP": ip}
+    return url, {"Host": host_header, "X-Clefkey-Pinned-IP": ip}
 
 
 class _PinIPBackend(httpcore.NetworkBackend):

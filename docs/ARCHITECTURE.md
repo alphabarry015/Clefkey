@@ -1,4 +1,4 @@
-# Architecture — Gardefort
+# Architecture — Clefkey.
 
 ## Vue d’ensemble
 

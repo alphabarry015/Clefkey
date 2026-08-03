@@ -1,4 +1,4 @@
-"""Vues HTTP de Gardefort (auth, entrées chiffrées, favicons, PWA)."""
+"""Vues HTTP de Clefkey (auth, entrées chiffrées, favicons, PWA)."""
 
 import hashlib
 import hmac
@@ -191,6 +191,12 @@ def _share_sent_response(share: VaultShare) -> dict:
 def index(request):
     index_path = settings.BASE_DIR / "frontend" / "index.html"
     return FileResponse(index_path.open("rb"), content_type="text/html; charset=utf-8")
+
+
+@require_GET
+def docs_app(request, slug=None):
+    docs_path = settings.BASE_DIR / "frontend" / "docs.html"
+    return FileResponse(docs_path.open("rb"), content_type="text/html; charset=utf-8")
 
 
 @require_GET

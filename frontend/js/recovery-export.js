@@ -17,7 +17,7 @@ function downloadBlob(filename, blob) {
 
 export function recoveryCodesAsText(codes, email = '') {
   const header = [
-    'Gardefort — Clés de récupération',
+    'Clefkey. — Clés de récupération',
     email ? `Compte : ${email}` : '',
     `Nombre : ${codes.length}`,
     'Une seule clé suffit pour réinitialiser le mot de passe maître.',
@@ -95,7 +95,7 @@ export function buildRecoveryKeysCanvas(codes, email = '') {
   let y = pad + 8;
   ctx.fillStyle = '#f8fafc';
   ctx.font = '700 28px "Segoe UI", system-ui, sans-serif';
-  ctx.fillText('Gardefort', pad, y);
+  ctx.fillText('Clefkey.', pad, y);
   y += 32;
 
   ctx.fillStyle = '#94a3b8';
@@ -143,7 +143,7 @@ export function buildRecoveryKeysCanvas(codes, email = '') {
   ctx.fillStyle = '#64748b';
   ctx.font = '400 11px "Segoe UI", system-ui, sans-serif';
   ctx.fillText(
-    'Ne partagez ces clés avec personne. Gardefort ne peut pas les récupérer.',
+    'Ne partagez ces clés avec personne. Clefkey. ne peut pas les récupérer.',
     pad,
     height - pad,
   );
@@ -163,7 +163,7 @@ function canvasToBlob(canvas, type, quality) {
 export async function downloadRecoveryKeysPng(codes, email = '') {
   const canvas = buildRecoveryKeysCanvas(codes, email);
   const blob = await canvasToBlob(canvas, 'image/png');
-  downloadBlob('gardefort-recovery-keys.png', blob);
+  downloadBlob('clefkey-recovery-keys.png', blob);
 }
 
 /** PDF une page contenant l'image JPEG du canvas (sans lib externe). */
@@ -195,7 +195,7 @@ export async function downloadRecoveryKeysPdf(codes, email = '') {
     drawW,
     drawH,
   });
-  downloadBlob('gardefort-recovery-keys.pdf', new Blob([pdf], { type: 'application/pdf' }));
+  downloadBlob('clefkey-recovery-keys.pdf', new Blob([pdf], { type: 'application/pdf' }));
 }
 
 function buildJpegPdf({ jpegBytes, imgW, imgH, pageW, pageH, x, y, drawW, drawH }) {
@@ -256,5 +256,5 @@ function buildJpegPdf({ jpegBytes, imgW, imgH, pageW, pageH, x, y, drawW, drawH 
 
 export function downloadRecoveryKeysTxt(codes, email = '') {
   const blob = new Blob([recoveryCodesAsText(codes, email)], { type: 'text/plain;charset=utf-8' });
-  downloadBlob('gardefort-recovery-keys.txt', blob);
+  downloadBlob('clefkey-recovery-keys.txt', blob);
 }

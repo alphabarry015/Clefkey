@@ -1,5 +1,5 @@
 [project]
-name = "gardefort"
+name = "clefkey"
 version = "1.0.0"
 requires-python = ">=3.12"
 description = "Gestionnaire de mots de passe chiffré de bout en bout"

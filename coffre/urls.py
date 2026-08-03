@@ -6,6 +6,8 @@ from vault import views
 
 urlpatterns = [
     path("", views.index, name="index"),
+    path("docs/", views.docs_app, name="docs"),
+    path("docs/<slug:slug>/", views.docs_app, name="docs-page"),
     path("favicon.ico", views.favicon, name="favicon"),
     path("health/", views.health, name="health"),
     path("manifest.webmanifest", views.manifest, name="manifest"),
@@ -36,5 +38,15 @@ urlpatterns = [
         r"^data/(?P<path>.*)$",
         serve,
         {"document_root": settings.BASE_DIR / "frontend" / "data"},
+    ),
+    re_path(
+        r"^assets/(?P<path>.*)$",
+        serve,
+        {"document_root": settings.BASE_DIR / "frontend" / "assets"},
+    ),
+    re_path(
+        r"^docs-content/(?P<path>.*)$",
+        serve,
+        {"document_root": settings.BASE_DIR / "docs"},
     ),
 ]

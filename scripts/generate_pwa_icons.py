@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Génère les icônes PNG PWA Gardefort à partir du logo chevalier."""
+"""Génère les icônes PNG PWA Clefkey à partir du logo chevalier."""
 
 from pathlib import Path
 

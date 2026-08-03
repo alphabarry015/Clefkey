@@ -1,5 +1,5 @@
 -- =============================================================================
--- Gardefort — Schéma PostgreSQL (Supabase)
+-- Clefkey. — Schéma PostgreSQL (Supabase)
 -- =============================================================================
 -- Où exécuter : Supabase Dashboard → SQL Editor → New query → Run
 --

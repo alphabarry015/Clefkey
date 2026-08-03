@@ -7,8 +7,13 @@
  * Après F5 / verrouillage : écran « mot de passe maître » uniquement (pas de reconnect email).
  */
 
-const STORAGE_KEY = 'gardefort_vault_session';
-const LEGACY_STORAGE_KEYS = ['binalph93_vault_session', 'gardefort_persist_session'];
+const STORAGE_KEY = 'clefkey_vault_session';
+const LEGACY_STORAGE_KEYS = [
+  'binalph93_vault_session',
+  'gardefort_vault_session',
+  'gardefort_persist_session',
+  'clefkey_persist_session',
+];
 
 /** Durée sans action avant verrouillage soft (alignée sous le JWT ~60 min). */
 export const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
@@ -110,7 +115,7 @@ export function loadSessionIfFresh() {
     let raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) {
       for (const key of LEGACY_STORAGE_KEYS) {
-        if (key === 'gardefort_persist_session') continue;
+        if (key === 'gardefort_persist_session' || key === 'clefkey_persist_session') continue;
         raw = sessionStorage.getItem(key);
         if (raw) {
           sessionStorage.setItem(STORAGE_KEY, raw);

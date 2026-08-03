@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    (function () {
+      try {
+        var key = 'clefkey_theme';
+        var pref = localStorage.getItem(key) || 'system';
+        if (pref !== 'light' && pref !== 'dark' && pref !== 'system') pref = 'system';
+        var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var resolved = pref === 'system' ? (dark ? 'dark' : 'light') : pref;
+        document.documentElement.setAttribute('data-theme-pref', pref);
+        document.documentElement.setAttribute('data-theme', resolved);
+      } catch (e) {}
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Documentation Clefkey. — guides, architecture, sécurité et API">
+  <meta name="theme-color" content="#000000">
+  <title>Documentation — Clefkey.</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/docs.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="docs-body">
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docs-sidebar" aria-label="Navigation documentation">
+      <div class="docs-sidebar-top">
+        <a href="/" class="docs-brand">Clefkey<span class="docs-brand-dot">.</span></a>
+        <button type="button" class="docs-sidebar-close" id="docs-sidebar-close" aria-label="Fermer le menu">×</button>
+      </div>
+      <p class="docs-sidebar-label">Documentation</p>
+      <nav class="docs-nav" id="docs-nav"></nav>
+      <div class="docs-sidebar-foot">
+        <a href="/" class="docs-back">← Retour au site</a>
+        <a
+          href="https://github.com/alphabarry015/Gardefort"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="docs-github"
+        >GitHub</a>
+      </div>
+    </aside>
+
+    <div class="docs-main">
+      <header class="docs-topbar">
+        <button type="button" class="docs-menu-btn" id="docs-menu-btn" aria-label="Ouvrir le menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="docs-topbar-meta">
+          <span class="docs-topbar-kicker">Docs</span>
+          <span class="docs-topbar-title" id="docs-topbar-title">Introduction</span>
+        </div>
+        <div class="theme-switch-host docs-topbar-theme" data-theme-switch></div>
+      </header>
+
+      <div class="docs-layout">
+        <article class="docs-article" id="docs-article" aria-live="polite">
+          <div class="docs-loading" id="docs-loading">Chargement…</div>
+          <div class="docs-content markdown-body" id="docs-content" hidden></div>
+          <div class="docs-error" id="docs-error" hidden></div>
+        </article>
+
+        <aside class="docs-toc" id="docs-toc" aria-label="Sur cette page" hidden>
+          <p class="docs-toc-label">Sur cette page</p>
+          <nav class="docs-toc-nav" id="docs-toc-nav"></nav>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <div class="docs-backdrop" id="docs-backdrop" hidden></div>
+  <script type="module" src="/js/docs-app.js"></script>
+</body>
+</html>

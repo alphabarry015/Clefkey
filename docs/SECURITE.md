@@ -1,4 +1,4 @@
-# Sécurité — Gardefort
+# Sécurité — Clefkey.
 
 ## Modèle zero-knowledge
 

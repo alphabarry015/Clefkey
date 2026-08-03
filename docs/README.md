@@ -1,6 +1,6 @@
-# Documentation Gardefort
+# Documentation Clefkey.
 
-**Gardefort** est un gestionnaire de mots de passe web **zero-knowledge** : le serveur ne voit jamais les mots de passe en clair. Le chiffrement et le déchiffrement se font dans le navigateur.
+**Clefkey.** est un gestionnaire de mots de passe web **zero-knowledge** : le serveur ne voit jamais les mots de passe en clair. Le chiffrement et le déchiffrement se font dans le navigateur.
 
 Le dépôt GitHub est **public**. Ne committez jamais `.env`, clés API, jetons Supabase/Upstash, dumps de base ni données personnelles réelles. Les fichiers `*.example` ne contiennent que des placeholders.
 
@@ -14,4 +14,4 @@ Le dépôt GitHub est **public**. Ne committez jamais `.env`, clés API, jetons 
 | [SECURITE.md](./SECURITE.md) | Modèle de menace et bonnes pratiques |
 | [AUDIT.md](./AUDIT.md) | Audit sécurité / performance / maintenance |
 
-Repo : [Gardefort](https://github.com/alphabarry015/Gardefort)
+Repo : [Clefkey.](https://github.com/alphabarry015/Gardefort)

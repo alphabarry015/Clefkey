@@ -18,7 +18,7 @@ import {
   Plus, LayoutDashboard, KeySquare, LogOut, Menu, Layers, Search, X, KeyRound,
   SearchX, Calendar, IdCard, Pencil, UserRound, Users, Copy, Fingerprint,
   CalendarCheck, ChevronRight, ExternalLink, Trash2, Dices, Save,
-  CheckCircle, XCircle, Info
+  CheckCircle, XCircle, Info, BookOpen
 } from 'lucide';
 
 export const icons = {
@@ -26,14 +26,14 @@ export const icons = {
   Plus, LayoutDashboard, KeySquare, LogOut, Menu, Layers, Search, X, KeyRound,
   SearchX, Calendar, IdCard, Pencil, UserRound, Users, Copy, Fingerprint,
   CalendarCheck, ChevronRight, ExternalLink, Trash2, Dices, Save,
-  CheckCircle, XCircle, Info,
+  CheckCircle, XCircle, Info, BookOpen,
 };
 """
 
 
 def main() -> None:
     VENDOR.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="gardefort-vendor-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="clefkey-vendor-") as tmp:
         tmp_path = Path(tmp)
         subprocess.check_call(["npm", "init", "-y"], cwd=tmp_path, stdout=subprocess.DEVNULL)
         subprocess.check_call(

@@ -1,4 +1,4 @@
-# Déploiement — Gardefort
+# Déploiement — Clefkey.
 
 Dépôt **public** : ne versionnez jamais un `.env` rempli, ni collage de secrets dans la doc ou les issues. Utilisez uniquement les placeholders des fichiers `*.example`.
 

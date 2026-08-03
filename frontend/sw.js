@@ -1,11 +1,13 @@
-const CACHE_VERSION = 'v125';
-const CACHE_STATIC = `gardefort-static-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v151';
+const CACHE_STATIC = `clefkey-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
 const PRECACHE = [
   '/',
+  '/docs/',
   '/favicon.ico',
   '/css/style.css',
+  '/css/docs.css',
   '/js/app.js',
   '/js/api.js',
   '/js/crypto.js',
@@ -17,12 +19,15 @@ const PRECACHE = [
   '/js/folders.js',
   '/js/icons.js',
   '/js/pwa.js',
+  '/js/theme.js',
   '/js/common-passwords.js',
   '/js/master-password.js',
   '/js/auth-secrets.js',
   '/js/recovery-export.js',
   '/js/recovery-input.js',
   '/js/auth-screens.js',
+  '/js/docs-app.js',
+  '/js/markdown.js',
   '/vendor/hash-wasm.esm.min.js',
   '/vendor/noble-ed25519.bundle.js',
   '/vendor/lucide.bundle.js',
@@ -64,7 +69,8 @@ self.addEventListener('activate', (event) => {
       .then((keys) => Promise.all(
         keys
           .filter((key) => (
-            key.startsWith('gardefort-')
+            key.startsWith('clefkey-')
+            || key.startsWith('gardefort-')
             || key.startsWith('binalph93-')
             || key.startsWith('binalph-')
             || key.startsWith('coffre-fort-')
@@ -85,7 +91,12 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/') || caches.match('/index.html')),
+      fetch(request).catch(async () => {
+        if (url.pathname.startsWith('/docs')) {
+          return (await caches.match('/docs/')) || caches.match('/');
+        }
+        return caches.match('/') || caches.match('/index.html');
+      }),
     );
     return;
   }

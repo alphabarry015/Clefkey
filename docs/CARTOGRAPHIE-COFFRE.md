@@ -1,10 +1,10 @@
-# Cartographie du coffre Gardefort
+# Cartographie du coffre Clefkey.
 
 Ce document décrit le produit tel qu’il existe aujourd’hui : à quoi sert chaque pièce, comment les flux s’enchaînent, et pourquoi certaines décisions techniques importent. Il est rédigé pour être lu comme un récit d’architecture, sans jargon inutile. Le dépôt GitHub est public : aucune clé réelle, jeton de production, URL de base de données complète ni donnée personnelle réelle ne doit y figurer. Les exemples ci-dessous sont fictifs ou anonymisés.
 
 ## L’idée centrale
 
-Gardefort est un gestionnaire de mots de passe web dit zero knowledge. En pratique, le serveur reçoit et stocke uniquement des données déjà rendues inutilisables sans le mot de passe maître. Les secrets en clair existent seulement dans le navigateur, pendant une session déverrouillée. Si quelqu’un copie la base de données, il obtient des blobs, des sels et un vérificateur, pas le contenu des coffres.
+Clefkey est un gestionnaire de mots de passe web dit zero knowledge. En pratique, le serveur reçoit et stocke uniquement des données déjà rendues inutilisables sans le mot de passe maître. Les secrets en clair existent seulement dans le navigateur, pendant une session déverrouillée. Si quelqu’un copie la base de données, il obtient des blobs, des sels et un vérificateur, pas le contenu des coffres.
 
 Le mot de passe maître joue donc deux rôles à la fois : il authentifie la personne auprès de l’API (via un dérivé), et il déverrouille le matériel cryptographique nécessaire pour lire ou écrire les entrées. Le serveur ne connaît jamais ce mot de passe.
 

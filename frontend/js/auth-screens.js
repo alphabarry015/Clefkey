@@ -97,6 +97,7 @@ export function createAuthScreens({
     const goLogin = () => openAuthTab('login');
 
     $('#btn-landing-start')?.addEventListener('click', goRegister);
+    $('#btn-landing-start-footer')?.addEventListener('click', goRegister);
     $('#btn-landing-login')?.addEventListener('click', goLogin);
     $('#btn-back-landing')?.addEventListener('click', () => {
       const onUnlock = !$('#form-unlock')?.classList.contains('hidden');
