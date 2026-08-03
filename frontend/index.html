@@ -356,6 +356,11 @@
           <span class="sidebar-text">Toutes les clés</span>
           <span class="nav-badge" id="nav-count-all">0</span>
         </button>
+        <button class="nav-item" data-page="projects" title="Projets">
+          <i data-lucide="layers"></i>
+          <span class="sidebar-text">Projets</span>
+          <span class="nav-badge" id="nav-count-projects">0</span>
+        </button>
 
         <div class="sidebar-section-label">Partage</div>
         <button class="nav-item nav-item-sub" data-page="shares-received" title="Partages reçus">
@@ -403,36 +408,65 @@
 
       <main class="vault-main">
         <div id="dashboard-view" class="dashboard-view">
-          <div class="dash-toolbar">
-            <div class="search-box dash-search">
-              <span class="search-icon"><i data-lucide="search"></i></span>
-              <input type="text" id="dash-search-input" placeholder="Rechercher dans le coffre...">
-              <button type="button" id="btn-clear-dash-search" class="btn-clear hidden" aria-label="Effacer la recherche">
-                <i data-lucide="x"></i>
-              </button>
+          <section class="dash-hero-panel" aria-label="Coffre">
+            <div class="dash-toolbar">
+              <div class="search-box dash-search">
+                <span class="search-icon"><i data-lucide="search"></i></span>
+                <input type="text" id="dash-search-input" placeholder="Rechercher une clé, un site, un projet…">
+                <button type="button" id="btn-clear-dash-search" class="btn-clear hidden" aria-label="Effacer la recherche">
+                  <i data-lucide="x"></i>
+                </button>
+              </div>
+              <div class="dash-toolbar-actions">
+                <button type="button" class="btn btn-secondary btn-sm dash-toolbar-project" id="btn-dash-create-project" title="Créer un projet">
+                  <i data-lucide="layers"></i>
+                  <span>Projet</span>
+                </button>
+                <button type="button" class="btn btn-primary btn-sm dash-toolbar-add" id="btn-dash-add">
+                  <i data-lucide="plus"></i>
+                  <span class="add-entry-label">Nouveau</span>
+                </button>
+              </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm dash-toolbar-add" id="btn-dash-add">
-              <i data-lucide="plus"></i>
-              <span class="add-entry-label">Nouveau</span>
-            </button>
-          </div>
 
-          <div class="dash-tabs" role="tablist" aria-label="Trier les clés">
-            <button type="button" class="dash-tab active" data-dash-tab="popular" role="tab">Populaires</button>
-            <button type="button" class="dash-tab" data-dash-tab="recent" role="tab">Récents</button>
-            <button type="button" class="dash-tab" data-dash-tab="az" role="tab">A à Z</button>
-          </div>
-          <div class="type-filters dash-type-filters" role="group" aria-label="Filtrer par type">
-            <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
-            <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
-            <button type="button" class="type-filter" data-type-filter="api_key">Clés API</button>
-            <button type="button" class="type-filter" data-type-filter="ssh_key">SSH / stockage</button>
-          </div>
+            <div class="dash-filters" aria-label="Filtres du coffre">
+              <div class="dash-filter-row dash-filter-sort">
+                <span class="dash-filter-caption">Tri</span>
+                <div class="dash-tabs" role="tablist" aria-label="Trier les clés">
+                  <button type="button" class="dash-tab active" data-dash-tab="recent" role="tab">Récents</button>
+                  <button type="button" class="dash-tab" data-dash-tab="popular" role="tab">Populaires</button>
+                  <button type="button" class="dash-tab" data-dash-tab="az" role="tab">A–Z</button>
+                </div>
+              </div>
+              <div class="dash-filter-divider" aria-hidden="true"></div>
+              <div class="dash-filter-row dash-filter-combo">
+                <div class="dash-filter-group">
+                  <span class="dash-filter-caption">Type</span>
+                  <div class="type-filters dash-type-filters" role="group" aria-label="Filtrer par type">
+                    <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
+                    <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
+                    <button type="button" class="type-filter" data-type-filter="api_key">API</button>
+                    <button type="button" class="type-filter" data-type-filter="ssh_key">SSH</button>
+                  </div>
+                </div>
+                <div class="dash-filter-sep" aria-hidden="true"></div>
+                <div class="dash-filter-group">
+                  <span class="dash-filter-caption">Projet</span>
+                  <div class="folder-filters dash-folder-filters" role="group" aria-label="Filtrer par projet">
+                    <button type="button" class="folder-filter active" data-folder-filter="all">Tous</button>
+                    <button type="button" class="folder-filter" data-folder-filter="none">Sans</button>
+                    <span id="dash-folder-filter-list" class="folder-filter-list"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
 
           <div id="dash-tiles-grid" class="dash-tiles-grid"></div>
           <div id="dash-tiles-empty" class="dash-tiles-empty hidden">
-            <i data-lucide="key-round"></i>
-            <p>Aucune clé pour le moment</p>
+            <div class="dash-empty-icon"><i data-lucide="key-round"></i></div>
+            <h3 id="dash-empty-title">Aucune clé</h3>
+            <p id="dash-empty-text">Ajoutez votre première clé pour commencer.</p>
             <button type="button" class="btn btn-primary btn-sm" id="btn-dash-add-empty">
               <i data-lucide="plus"></i>
               <span class="add-entry-label">Ajouter une clé</span>
@@ -447,11 +481,25 @@
             <input type="text" id="search-input" placeholder="Rechercher un site, identifiant...  (Ctrl+K)">
             <button id="btn-clear-search" class="btn-clear hidden" aria-label="Effacer"><i data-lucide="x"></i></button>
           </div>
-          <div class="type-filters" role="group" aria-label="Filtrer par type">
-            <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
-            <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
-            <button type="button" class="type-filter" data-type-filter="api_key">Clés API</button>
-            <button type="button" class="type-filter" data-type-filter="ssh_key">SSH / stockage</button>
+          <div class="vault-filter-combo dash-filter-combo" aria-label="Filtres">
+            <div class="dash-filter-group">
+              <span class="dash-filter-caption">Type</span>
+              <div class="type-filters dash-type-filters" role="group" aria-label="Filtrer par type">
+                <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
+                <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
+                <button type="button" class="type-filter" data-type-filter="api_key">API</button>
+                <button type="button" class="type-filter" data-type-filter="ssh_key">SSH</button>
+              </div>
+            </div>
+            <div class="dash-filter-sep" aria-hidden="true"></div>
+            <div class="dash-filter-group">
+              <span class="dash-filter-caption">Projet</span>
+              <div class="folder-filters dash-folder-filters" role="group" aria-label="Filtrer par projet">
+                <button type="button" class="folder-filter active" data-folder-filter="all">Tous</button>
+                <button type="button" class="folder-filter" data-folder-filter="none">Sans</button>
+                <span id="vault-folder-filter-list" class="folder-filter-list"></span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -476,6 +524,85 @@
             <p>Essayez un autre terme de recherche</p>
           </div>
         </div>
+        </div>
+
+        <div id="projects-view" class="projects-view hidden">
+          <form id="form-project-page-create" class="projects-create" autocomplete="off">
+            <label class="sr-only" for="project-page-new-name">Nom du projet</label>
+            <input type="text" id="project-page-new-name" maxlength="80" placeholder="Nom du projet (ex. Perso, Travail…)" required>
+            <button type="submit" class="btn btn-primary" id="btn-project-page-create">
+              <i data-lucide="plus"></i>
+              <span>Créer</span>
+            </button>
+          </form>
+
+          <div class="projects-section">
+            <div class="projects-section-head">
+              <h2 class="projects-section-title">Projets</h2>
+              <span id="projects-count-label" class="projects-section-count">0</span>
+            </div>
+            <div id="projects-grid" class="projects-list" role="list"></div>
+            <div id="projects-empty" class="projects-empty hidden">
+              <div class="projects-empty-icon"><i data-lucide="layers"></i></div>
+              <h3>Aucun projet pour l’instant</h3>
+              <p>Créez un projet ci-dessus pour regrouper vos clés.</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="project-detail-view" class="project-detail-view hidden">
+          <div class="project-detail-top">
+            <button type="button" id="btn-project-detail-back" class="btn btn-ghost btn-sm project-detail-back">
+              <i data-lucide="arrow-left"></i>
+              <span>Projets</span>
+            </button>
+            <div class="project-detail-heading">
+              <span id="project-detail-avatar" class="project-detail-avatar" aria-hidden="true">P</span>
+              <div class="project-detail-heading-text">
+                <h2 id="project-detail-name">Projet</h2>
+                <p id="project-detail-meta" class="project-detail-meta">0 clé</p>
+              </div>
+              <div class="project-detail-heading-actions">
+                <button type="button" id="btn-project-detail-transfer" class="btn btn-secondary btn-sm" title="Transférer des clés">
+                  <i data-lucide="layers"></i>
+                  <span>Transférer</span>
+                </button>
+                <button type="button" id="btn-project-detail-add" class="btn btn-primary btn-sm">
+                  <i data-lucide="plus"></i>
+                  <span>Ajouter</span>
+                </button>
+              </div>
+            </div>
+            <div id="project-detail-select-bar" class="project-detail-select-bar hidden">
+              <label class="project-detail-select-all">
+                <input type="checkbox" id="project-detail-select-all">
+                <span>Tout sélectionner</span>
+              </label>
+              <span id="project-detail-selection-count" class="project-detail-selection-count">0 sélectionnée</span>
+              <button type="button" id="btn-project-detail-move" class="btn btn-primary btn-sm" disabled>
+                <i data-lucide="layers"></i>
+                <span>Transférer</span>
+              </button>
+              <button type="button" id="btn-project-detail-select-clear" class="btn btn-ghost btn-sm">Annuler</button>
+            </div>
+            <div class="search-box project-detail-search">
+              <span class="search-icon"><i data-lucide="search"></i></span>
+              <input type="text" id="project-detail-search-input" placeholder="Rechercher dans ce projet…">
+              <button type="button" id="btn-clear-project-detail-search" class="btn-clear hidden" aria-label="Effacer">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          </div>
+          <div id="project-detail-list" class="entries-grid"></div>
+          <div id="project-detail-empty" class="projects-empty hidden">
+            <div class="projects-empty-icon"><i data-lucide="key-round"></i></div>
+            <h3 id="project-detail-empty-title">Aucune clé</h3>
+            <p id="project-detail-empty-text">Ajoutez une clé à ce projet pour commencer.</p>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-project-detail-add-empty">
+              <i data-lucide="plus"></i>
+              <span>Ajouter une clé</span>
+            </button>
+          </div>
         </div>
 
         <div id="shares-received-view" class="shares-view hidden">
@@ -748,6 +875,19 @@
               </button>
             </div>
           </div>
+          <div class="detail-field" id="detail-project-field">
+            <label for="detail-move-folder">Projet</label>
+            <div class="detail-move-row">
+              <select id="detail-move-folder" class="field-select" aria-label="Projet de la clé">
+                <option value="">Sans projet</option>
+              </select>
+              <button type="button" id="btn-detail-move-folder" class="btn btn-secondary btn-sm" disabled>
+                <i data-lucide="layers"></i>
+                Déplacer
+              </button>
+            </div>
+            <p id="detail-project-hint" class="entry-ssh-hint">Assignez cette clé à un projet pour l’organiser.</p>
+          </div>
           <div class="detail-field" id="detail-url-field">
             <label id="detail-url-label">URL</label>
             <div class="copyable-field">
@@ -813,68 +953,166 @@
   <!-- ── Modal Ajouter ──────────────────────────────── -->
   <div id="modal-add" class="modal">
     <div class="modal-overlay">
-      <div class="modal-content">
+      <div class="modal-content modal-content-wide">
         <div class="modal-header">
           <h2 id="modal-entry-title">Nouvelle clé</h2>
           <button id="btn-close-add" class="btn-close"><i data-lucide="x"></i></button>
         </div>
-        <form id="form-entry" class="modal-body">
-          <div class="form-group">
-            <label for="entry-type">Type</label>
-            <select id="entry-type" class="entry-type-select">
-              <option value="login">Connexion</option>
-              <option value="api_key">Clé API / credential</option>
-              <option value="ssh_key">Clé SSH / stockage</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="entry-title" id="label-entry-title">Titre</label>
-            <input type="text" id="entry-title" required placeholder="Netflix, Gmail, Banque...">
-          </div>
-          <div class="form-group">
-            <label for="entry-username" id="label-entry-username">Identifiant <span class="optional">(optionnel)</span></label>
-            <input type="text" id="entry-username" placeholder="email ou nom d'utilisateur">
-          </div>
-          <div class="form-group">
-            <label for="entry-password" id="label-entry-password">Mot de passe</label>
-            <div class="password-input-row" id="entry-password-row">
-              <input type="text" id="entry-password" required placeholder="Mot de passe">
-              <button type="button" id="btn-generate" class="btn btn-secondary">
-                <i data-lucide="dices"></i>
-                Générer
-              </button>
+        <form id="form-entry" class="modal-body entry-form">
+          <section class="entry-form-block" aria-label="Organisation">
+            <p class="entry-form-heading">Organisation</p>
+            <div class="form-group">
+              <label id="label-entry-type">Type</label>
+              <input type="hidden" id="entry-type" value="login">
+              <div class="entry-type-pills" role="group" aria-labelledby="label-entry-type">
+                <button type="button" class="entry-type-pill active" data-entry-type="login">Connexion</button>
+                <button type="button" class="entry-type-pill" data-entry-type="api_key">Clé API</button>
+                <button type="button" class="entry-type-pill" data-entry-type="ssh_key">SSH</button>
+              </div>
             </div>
-            <textarea
-              id="entry-secret-block"
-              class="entry-secret-block hidden"
-              rows="8"
-              placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;…&#10;-----END OPENSSH PRIVATE KEY-----"
-              autocomplete="off"
-              spellcheck="false"
-              data-lpignore="true"
-              data-1p-ignore="true"
-              data-bwignore="true"
-            ></textarea>
-            <button type="button" id="btn-generate-ssh" class="btn btn-secondary btn-generate-ssh hidden">
-              <i data-lucide="key-round"></i>
-              Générer une clé Ed25519
-            </button>
-            <p id="entry-ssh-hint" class="entry-ssh-hint hidden">Remplit uniquement le champ ci-dessus avec une clé privée OpenSSH Ed25519.</p>
-            <div id="entry-generated" class="generated-preview hidden"></div>
-          </div>
-          <div class="form-group">
-            <label for="entry-url" id="label-entry-url">URL <span class="optional">(optionnel)</span></label>
-            <input type="text" id="entry-url" placeholder="exemple.com ou https://...">
-          </div>
-          <div class="form-group">
-            <label for="entry-notes" id="label-entry-notes">Notes <span class="optional">(optionnel)</span></label>
-            <textarea id="entry-notes" rows="2" placeholder="Informations supplémentaires"></textarea>
-          </div>
+            <div class="form-group entry-folder-group">
+              <label for="entry-folder">Projet</label>
+              <div class="field-control">
+                <select id="entry-folder" class="field-select">
+                  <option value="">Sans projet</option>
+                </select>
+                <button type="button" id="btn-entry-folder-toggle" class="btn btn-secondary field-control-action" title="Créer un projet" aria-expanded="false" aria-controls="entry-folder-create">
+                  <i data-lucide="plus"></i>
+                  <span>Créer</span>
+                </button>
+              </div>
+              <div id="entry-folder-create" class="entry-folder-create hidden">
+                <input type="text" id="entry-folder-new-name" maxlength="80" placeholder="Nom du nouveau projet" autocomplete="off">
+                <div class="entry-folder-create-actions">
+                  <button type="button" id="btn-entry-folder-create" class="btn btn-primary btn-sm">Créer</button>
+                  <button type="button" id="btn-entry-folder-cancel" class="btn btn-ghost btn-sm">Annuler</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="entry-form-block" aria-label="Identifiants">
+            <p class="entry-form-heading">Identifiants</p>
+            <div class="form-group">
+              <label for="entry-title" id="label-entry-title">Titre</label>
+              <input type="text" id="entry-title" class="field-input" required placeholder="Netflix, Gmail, Banque…">
+            </div>
+            <div class="form-group">
+              <label for="entry-username" id="label-entry-username">Identifiant <span class="optional">(optionnel)</span></label>
+              <input type="text" id="entry-username" class="field-input" placeholder="email ou nom d'utilisateur">
+            </div>
+            <div class="form-group">
+              <label for="entry-password" id="label-entry-password">Mot de passe</label>
+              <div class="field-control" id="entry-password-row">
+                <input type="text" id="entry-password" class="field-input" required placeholder="Mot de passe">
+                <button type="button" id="btn-generate" class="btn btn-secondary field-control-action">
+                  <i data-lucide="dices"></i>
+                  <span>Générer</span>
+                </button>
+              </div>
+              <textarea
+                id="entry-secret-block"
+                class="entry-secret-block field-input hidden"
+                rows="7"
+                placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;…&#10;-----END OPENSSH PRIVATE KEY-----"
+                autocomplete="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+              ></textarea>
+              <button type="button" id="btn-generate-ssh" class="btn btn-secondary btn-generate-ssh hidden">
+                <i data-lucide="key-round"></i>
+                Générer une clé Ed25519
+              </button>
+              <p id="entry-ssh-hint" class="entry-ssh-hint hidden">Remplit uniquement le champ ci-dessus avec une clé privée OpenSSH Ed25519.</p>
+              <div id="entry-generated" class="generated-preview hidden"></div>
+            </div>
+            <div class="form-group">
+              <label for="entry-url" id="label-entry-url">URL <span class="optional">(optionnel)</span></label>
+              <input type="text" id="entry-url" class="field-input" placeholder="exemple.com ou https://…">
+            </div>
+          </section>
+
+          <section class="entry-form-block entry-form-block-last" aria-label="Notes">
+            <p class="entry-form-heading" id="entry-notes-heading">Notes <span class="optional">optionnel</span></p>
+            <div class="form-group">
+              <label for="entry-notes" id="label-entry-notes" class="sr-only">Notes</label>
+              <textarea id="entry-notes" class="field-input" rows="2" placeholder="Informations supplémentaires"></textarea>
+            </div>
+          </section>
+
           <button type="submit" id="btn-save-entry" class="btn btn-primary btn-full">
             <i data-lucide="check-circle"></i>
             Enregistrer
           </button>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Projets ──────────────────────────────── -->
+  <div id="modal-folders" class="modal">
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Projets</h2>
+          <button type="button" id="btn-close-folders" class="btn-close" aria-label="Fermer">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="shares-hint">Organisez vos clés par projet. Les partages restent hors des projets.</p>
+          <form id="form-folder-create" class="folder-create-row" autocomplete="off">
+            <input type="text" id="folder-new-name" maxlength="80" placeholder="Nom du projet" required>
+            <button type="submit" class="btn btn-primary btn-sm" id="btn-folder-create">
+              <i data-lucide="plus"></i>
+              Créer
+            </button>
+          </form>
+          <button type="button" id="btn-folders-transfer" class="btn btn-secondary btn-sm btn-folders-transfer">
+            <i data-lucide="layers"></i>
+            Transférer des clés sans projet
+          </button>
+          <ul id="folders-manage-list" class="folders-manage-list"></ul>
+          <p id="folders-manage-empty" class="folders-manage-empty">Aucun projet pour le moment.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Transférer vers un projet ───────────── -->
+  <div id="modal-transfer" class="modal">
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Transférer vers un projet</h2>
+          <button type="button" id="btn-close-transfer" class="btn-close" aria-label="Fermer">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="transfer-hint" class="shares-hint">Sélectionnez les clés sans projet, puis choisissez le projet de destination.</p>
+          <div class="transfer-toolbar">
+            <label class="transfer-select-all">
+              <input type="checkbox" id="transfer-select-all">
+              <span>Tout sélectionner</span>
+            </label>
+            <span id="transfer-selection-count" class="transfer-selection-count">0 sélectionnée</span>
+          </div>
+          <ul id="transfer-entry-list" class="transfer-entry-list" role="list"></ul>
+          <p id="transfer-empty" class="folders-manage-empty hidden">Aucune clé sans projet.</p>
+          <div class="form-group">
+            <label for="transfer-folder">Projet de destination</label>
+            <select id="transfer-folder" class="field-select" required>
+              <option value="">Choisir un projet…</option>
+            </select>
+          </div>
+          <button type="button" id="btn-transfer-submit" class="btn btn-primary btn-full" disabled>
+            <i data-lucide="layers"></i>
+            Transférer
+          </button>
+        </div>
       </div>
     </div>
   </div>

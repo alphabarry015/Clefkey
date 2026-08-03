@@ -42,6 +42,7 @@ import {
   IDLE_TIMEOUT_MS,
   wipeUnlockedSecrets,
   wipeStateSecrets,
+  wipeKeyBytes,
 } from './session.js';
 import { showCompatBannerIfNeeded, copyToClipboard } from './compat.js';
 import {
@@ -50,6 +51,18 @@ import {
   downloadRecoveryKeysPdf,
   downloadRecoveryKeysTxt,
 } from './recovery-export.js';
+import {
+  isFoldersMetaEntry,
+  isVaultMetaEntry,
+  newFolderId,
+  normalizeFolderName,
+  normalizeFoldersList,
+  foldersFromMetaEntry,
+  createFoldersMetaPayload,
+  entryFolderId,
+  entryInKnownFolder,
+  folderNameById,
+} from './folders.js';
 import { createAuthScreens } from './auth-screens.js';
 import {
   bindRecoveryCodeInput,
@@ -68,9 +81,21 @@ const state = {
   devMode: false,
   page: 'dashboard',
   search: '',
-  dashTab: 'popular',
+  dashTab: 'recent',
   dashSearch: '',
   typeFilter: 'all',
+  /** @type {'all' | 'none' | string} */
+  folderFilter: 'all',
+  /** @type {string | null} */
+  activeProjectId: null,
+  projectDetailSearch: '',
+  /** @type {string[]} */
+  projectDetailSelectedIds: [],
+  transferAllowUnassign: false,
+  transferExcludeFolderId: '',
+  /** @type {{ id: string, name: string }[]} */
+  folders: [],
+  foldersMetaEntryId: null,
   confirmCallback: null,
   confirmDeleteName: null,
   detailEntryId: null,
@@ -85,7 +110,7 @@ const state = {
 };
 
 const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
+const $$ = (sel) => [...document.querySelectorAll(sel)];
 const EMPTY_VALUE = '…';
 
 function formatEntryDateTime(iso) {
@@ -151,6 +176,24 @@ function fillEntryDetailCommon(e) {
   setEntryAvatar($('#detail-avatar'), e);
   applyDetailTypeLabels(e);
   $('#detail-title').textContent = e.title;
+  const folderLabel = folderNameById(state.folders, entryFolderId(e));
+  const badge = $('#detail-type-badge');
+  // applyDetailTypeLabels already set type badge; append project hint on title area via notes of badge sibling
+  let folderBadge = $('#detail-folder-badge');
+  if (!folderBadge && badge?.parentElement) {
+    folderBadge = document.createElement('span');
+    folderBadge.id = 'detail-folder-badge';
+    folderBadge.className = 'entry-folder-badge';
+    badge.parentElement.appendChild(folderBadge);
+  }
+  if (folderBadge) {
+    if (folderLabel && !e.isShare) {
+      folderBadge.textContent = folderLabel;
+      folderBadge.classList.remove('hidden');
+    } else {
+      folderBadge.classList.add('hidden');
+    }
+  }
   $('#detail-username').textContent = displayUsername(e.username);
   $('#detail-password').textContent = '••••••••••••';
   $('#detail-password').dataset.real = e.password || '';
@@ -196,6 +239,47 @@ function resetEntryFormModal() {
     : 'Ajouter une clé';
   const btn = $('#btn-save-entry');
   if (btn) btn.innerHTML = '<i data-lucide="check-circle"></i> Enregistrer';
+  hideEntryFolderCreate();
+}
+
+function hideEntryFolderCreate() {
+  const panel = $('#entry-folder-create');
+  const toggle = $('#btn-entry-folder-toggle');
+  const input = $('#entry-folder-new-name');
+  panel?.classList.add('hidden');
+  if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  if (input) input.value = '';
+}
+
+function showEntryFolderCreate() {
+  const panel = $('#entry-folder-create');
+  const toggle = $('#btn-entry-folder-toggle');
+  panel?.classList.remove('hidden');
+  if (toggle) toggle.setAttribute('aria-expanded', 'true');
+  setTimeout(() => $('#entry-folder-new-name')?.focus(), 40);
+}
+
+async function createFolderByName(rawName, { selectInEntryForm = false } = {}) {
+  const name = normalizeFolderName(rawName);
+  if (!name) {
+    toast('Nom du projet requis', 'error');
+    return null;
+  }
+  if (state.folders.some((f) => f.name.toLowerCase() === name.toLowerCase())) {
+    toast('Ce projet existe déjà', 'error');
+    return null;
+  }
+  const folder = { id: newFolderId(), name };
+  state.folders = normalizeFoldersList([...state.folders, folder]);
+  await persistFoldersMeta();
+  syncFolderFilterButtons();
+  populateFolderSelect(selectInEntryForm ? folder.id : undefined);
+  populateTransferFolderSelect(folder.id);
+  syncTransferEntryButtons();
+  renderFoldersManageList();
+  refreshCurrentView();
+  toast('Projet créé', 'success');
+  return folder;
 }
 
 function authMaterialFromPayload(payload) {
@@ -227,13 +311,18 @@ async function getAuthMaterialForVerification() {
 
 async function verifyMasterPasswordForCurrentVault(masterPassword) {
   if (!masterPassword || !state.vaultKey) return false;
+  let derived = null;
+  let vaultKey = null;
   try {
     const material = await getAuthMaterialForVerification();
-    const derived = await deriveKey(masterPassword, fromB64(material.salt));
-    const vaultKey = await decryptBytes(fromB64(material.encrypted_vault_key), derived);
+    derived = await deriveKey(masterPassword, fromB64(material.salt));
+    vaultKey = await decryptBytes(fromB64(material.encrypted_vault_key), derived);
     return sameBytes(vaultKey, state.vaultKey);
   } catch {
     return false;
+  } finally {
+    wipeKeyBytes(derived);
+    wipeKeyBytes(vaultKey);
   }
 }
 
@@ -426,6 +515,25 @@ function entryTitleRequiredLabel(type) {
   return normalizeEntryType(type) === 'login' ? 'Le titre est requis' : 'Le nom est requis';
 }
 
+function syncEntryTypePills(type = 'login') {
+  const t = normalizeEntryType(type);
+  const input = $('#entry-type');
+  if (input) input.value = t;
+  $$('.entry-type-pill').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.entryType === t);
+  });
+}
+
+function setEntryFormType(type) {
+  const t = normalizeEntryType(type);
+  syncEntryTypePills(t);
+  applyEntryFormLabels(t);
+  $('#entry-generated')?.classList.add('hidden');
+  if (!state.editingEntryId) {
+    $('#modal-entry-title').textContent = addEntryModalTitle(t);
+  }
+}
+
 function applyEntryFormLabels(type = 'login') {
   const t = normalizeEntryType(type);
   const isApi = t === 'api_key';
@@ -462,11 +570,21 @@ function applyEntryFormLabels(type = 'login') {
   }
   if (notesLabel) {
     if (isSsh) {
-      notesLabel.innerHTML = 'Clé publique / fingerprint <span class="optional">(optionnel)</span>';
+      notesLabel.textContent = 'Clé publique / fingerprint (optionnel)';
     } else if (isApi) {
-      notesLabel.innerHTML = 'Scopes / notes <span class="optional">(optionnel)</span>';
+      notesLabel.textContent = 'Scopes / notes (optionnel)';
     } else {
-      notesLabel.innerHTML = 'Notes <span class="optional">(optionnel)</span>';
+      notesLabel.textContent = 'Notes (optionnel)';
+    }
+  }
+  const notesHeading = $('#entry-notes-heading');
+  if (notesHeading) {
+    if (isSsh) {
+      notesHeading.innerHTML = 'Clé publique / fingerprint <span class="optional">optionnel</span>';
+    } else if (isApi) {
+      notesHeading.innerHTML = 'Scopes / notes <span class="optional">optionnel</span>';
+    } else {
+      notesHeading.innerHTML = 'Notes <span class="optional">optionnel</span>';
     }
   }
   const titleInput = $('#entry-title');
@@ -571,10 +689,650 @@ function syncTypeFilterButtons() {
   });
 }
 
+function syncFolderFilterButtons() {
+  const renderList = (containerId) => {
+    const el = $(containerId);
+    if (!el) return;
+    el.innerHTML = state.folders.map((f) => `
+      <button type="button" class="folder-filter${state.folderFilter === f.id ? ' active' : ''}" data-folder-filter="${esc(f.id)}">${esc(f.name)}</button>
+    `).join('');
+  };
+  renderList('#dash-folder-filter-list');
+  renderList('#vault-folder-filter-list');
+  $$('.folder-filters > .folder-filter[data-folder-filter="all"]').forEach((btn) => {
+    btn.classList.toggle('active', state.folderFilter === 'all');
+  });
+  $$('.folder-filters > .folder-filter[data-folder-filter="none"]').forEach((btn) => {
+    btn.classList.toggle('active', state.folderFilter === 'none');
+  });
+}
+
+function populateFolderSelect(selectedId = '') {
+  const sel = $('#entry-folder');
+  if (!sel) return;
+  const current = selectedId || sel.value || '';
+  sel.innerHTML = `<option value="">Sans projet</option>` + state.folders.map((f) =>
+    `<option value="${esc(f.id)}">${esc(f.name)}</option>`
+  ).join('');
+  if (current && state.folders.some((f) => f.id === current)) sel.value = current;
+  else sel.value = '';
+}
+
+function defaultFolderIdFromFilter() {
+  if (state.page === 'project-detail' && state.activeProjectId
+      && state.folders.some((f) => f.id === state.activeProjectId)) {
+    return state.activeProjectId;
+  }
+  if (state.folderFilter && state.folderFilter !== 'all' && state.folderFilter !== 'none'
+      && state.folders.some((f) => f.id === state.folderFilter)) {
+    return state.folderFilter;
+  }
+  return '';
+}
+
+function entryEncryptedPayload(data) {
+  const payload = {
+    type: normalizeEntryType(data.type),
+    title: data.title,
+    username: data.username || '',
+    password: data.password || '',
+    url: data.url || '',
+    notes: data.notes || '',
+  };
+  const folderId = typeof data.folderId === 'string' ? data.folderId.trim() : '';
+  if (folderId && state.folders.some((f) => f.id === folderId)) {
+    payload.folderId = folderId;
+  }
+  return payload;
+}
+
+async function persistFoldersMeta() {
+  const payload = createFoldersMetaPayload(state.folders);
+  if (state.devMode) {
+    // Meta hors liste visible : stockée à part en mémoire via foldersMetaEntryId factice
+    state.foldersMetaEntryId = state.foldersMetaEntryId || 'dev-folders-meta';
+    return;
+  }
+  const encrypted = await encryptData(payload, state.vaultKey);
+  const b64 = toB64(encrypted);
+  if (state.foldersMetaEntryId) {
+    await api.updateEntry(state.token, state.foldersMetaEntryId, b64);
+  } else {
+    const created = await api.createEntry(state.token, b64);
+    state.foldersMetaEntryId = created?.id || state.foldersMetaEntryId;
+    // Recharger pour récupérer l’id si la réponse ne le donne pas
+    if (!state.foldersMetaEntryId) await loadEntries();
+  }
+}
+
+async function clearFolderIdOnEntries(folderId) {
+  const affected = state.entries.filter((e) => entryFolderId(e) === folderId);
+  for (const e of affected) {
+    const payload = { ...entryEncryptedPayload({ ...e, folderId: '' }), folderId: '' };
+    if (state.devMode) {
+      updateDevEntry(state.entries, e.id, payload);
+    } else {
+      const encrypted = await encryptData(payload, state.vaultKey);
+      await api.updateEntry(state.token, e.id, toB64(encrypted));
+    }
+  }
+  if (!state.devMode && affected.length) await loadEntries();
+}
+
+function getUnassignedEntries() {
+  return state.entries
+    .filter((e) => !e.isShare && !isVaultMetaEntry(e) && !entryInKnownFolder(e, state.folders))
+    .sort((a, b) => a.title.localeCompare(b.title, 'fr', { sensitivity: 'base' }));
+}
+
+async function setEntryFolder(entryId, folderId, { reload = true } = {}) {
+  const entry = state.entries.find((e) => e.id === entryId);
+  if (!entry || entry.isShare) throw new Error('Clé introuvable');
+  const nextId = typeof folderId === 'string' ? folderId.trim() : '';
+  if (nextId && !state.folders.some((f) => f.id === nextId)) {
+    throw new Error('Projet invalide');
+  }
+  const payload = nextId
+    ? entryEncryptedPayload({ ...entry, folderId: nextId })
+    : { ...entryEncryptedPayload({ ...entry, folderId: '' }), folderId: '' };
+  if (state.devMode) {
+    updateDevEntry(state.entries, entryId, payload);
+  } else {
+    const encrypted = await encryptData(payload, state.vaultKey);
+    await api.updateEntry(state.token, entryId, toB64(encrypted));
+    if (reload) await loadEntries();
+  }
+}
+
+async function assignEntriesToFolder(entryIds, folderId) {
+  const targetFolderId = typeof folderId === 'string' ? folderId.trim() : '';
+  if (targetFolderId && !state.folders.some((f) => f.id === targetFolderId)) {
+    throw new Error('Choisissez un projet valide');
+  }
+  const idSet = new Set(entryIds.map(String));
+  const targets = state.entries.filter(
+    (e) => idSet.has(String(e.id)) && !e.isShare && !isVaultMetaEntry(e),
+  );
+  if (!targets.length) return 0;
+
+  for (const e of targets) {
+    await setEntryFolder(e.id, targetFolderId, { reload: false });
+  }
+  if (!state.devMode) await loadEntries();
+  return targets.length;
+}
+
+function syncTransferEntryButtons() {
+  const unassignedCount = getUnassignedEntries().length;
+  const foldersBtn = $('#btn-folders-transfer');
+  if (foldersBtn) {
+    foldersBtn.disabled = unassignedCount === 0;
+    foldersBtn.classList.toggle('is-disabled', unassignedCount === 0);
+    foldersBtn.title = unassignedCount === 0
+      ? 'Aucune clé sans projet'
+      : `${unassignedCount} clé${unassignedCount > 1 ? 's' : ''} sans projet`;
+  }
+}
+
+function populateTransferFolderSelect(selectedId = '', {
+  excludeFolderId = '',
+  allowUnassign = false,
+} = {}) {
+  const sel = $('#transfer-folder');
+  if (!sel) return;
+  const folders = state.folders.filter((f) => f.id !== excludeFolderId);
+  let html = `<option value="">Choisir une destination…</option>`;
+  if (allowUnassign) {
+    html += `<option value="__unassign__">Sans projet</option>`;
+  }
+  html += folders.map((f) =>
+    `<option value="${esc(f.id)}">${esc(f.name)}</option>`
+  ).join('');
+  sel.innerHTML = html;
+  let pick = selectedId || '';
+  if (!pick) {
+    if (folders.length === 1) pick = folders[0].id;
+    else if (folders.length === 0 && allowUnassign) pick = '__unassign__';
+  }
+  if (pick === '__unassign__' && allowUnassign) sel.value = '__unassign__';
+  else if (pick && folders.some((f) => f.id === pick)) sel.value = pick;
+  else sel.value = '';
+}
+
+function populateDetailFolderSelect(selectedId = '') {
+  const sel = $('#detail-move-folder');
+  if (!sel) return;
+  const current = selectedId || '';
+  sel.innerHTML = `<option value="">Sans projet</option>` + state.folders.map((f) =>
+    `<option value="${esc(f.id)}">${esc(f.name)}</option>`
+  ).join('');
+  if (current && state.folders.some((f) => f.id === current)) sel.value = current;
+  else sel.value = '';
+  syncDetailMoveButton();
+}
+
+function syncDetailMoveButton() {
+  const sel = $('#detail-move-folder');
+  const btn = $('#btn-detail-move-folder');
+  const entry = state.entries.find((e) => e.id === state.detailEntryId);
+  if (!sel || !btn || !entry) {
+    if (btn) btn.disabled = true;
+    return;
+  }
+  const current = entryFolderId(entry) || '';
+  const next = (sel.value || '').trim();
+  btn.disabled = next === current || (next !== '' && !state.folders.some((f) => f.id === next));
+}
+
+function syncDetailProjectField(entry, { editable = false } = {}) {
+  const field = $('#detail-project-field');
+  const hint = $('#detail-project-hint');
+  if (!field) return;
+  if (!editable || entry?.isShare) {
+    field.classList.add('hidden');
+    return;
+  }
+  field.classList.remove('hidden');
+  populateDetailFolderSelect(entryFolderId(entry) || '');
+  const hasFolder = !!folderNameById(state.folders, entryFolderId(entry));
+  hint?.classList.toggle('hidden', hasFolder || state.folders.length === 0);
+  if (hint && !hasFolder && state.folders.length === 0) {
+    hint.textContent = 'Créez d’abord un projet pour y ranger cette clé.';
+  } else if (hint && !hasFolder) {
+    hint.textContent = 'Assignez cette clé à un projet pour l’organiser.';
+  }
+}
+
+function updateTransferSelectionUi() {
+  const boxes = Array.from(document.querySelectorAll('#transfer-entry-list input[type="checkbox"]'));
+  const checked = boxes.filter((b) => b.checked);
+  const countEl = $('#transfer-selection-count');
+  const n = checked.length;
+  if (countEl) {
+    countEl.textContent = n <= 1 ? `${n} sélectionnée` : `${n} sélectionnées`;
+  }
+  const all = $('#transfer-select-all');
+  if (all) {
+    all.checked = boxes.length > 0 && checked.length === boxes.length;
+    all.indeterminate = checked.length > 0 && checked.length < boxes.length;
+  }
+  const folderVal = ($('#transfer-folder')?.value || '').trim();
+  const submit = $('#btn-transfer-submit');
+  // Destination valide : projet choisi OU « Sans projet »
+  const destOk = folderVal === '__unassign__' || (folderVal !== '' && folderVal !== '__unassign__');
+  if (submit) submit.disabled = n === 0 || !destOk;
+}
+
+function renderTransferEntryList(entries) {
+  const list = $('#transfer-entry-list');
+  const empty = $('#transfer-empty');
+  if (!list) return;
+  const items = Array.isArray(entries) ? entries : getUnassignedEntries();
+  if (items.length === 0) {
+    list.innerHTML = '';
+    empty?.classList.remove('hidden');
+    if (empty) {
+      empty.textContent = state.transferAllowUnassign
+        ? 'Aucune clé à transférer.'
+        : 'Aucune clé sans projet.';
+    }
+    updateTransferSelectionUi();
+    return;
+  }
+  empty?.classList.add('hidden');
+  list.innerHTML = items.map((e) => `
+    <li class="transfer-entry-item">
+      <label class="transfer-entry-item-label">
+        <input type="checkbox" value="${esc(e.id)}" checked>
+        <span class="transfer-entry-info">
+          <span class="transfer-entry-title">${esc(e.title)}</span>
+          <span class="transfer-entry-meta">${esc(entryTypeLabel(entryType(e)))}</span>
+        </span>
+      </label>
+    </li>
+  `).join('');
+  updateTransferSelectionUi();
+}
+
+function openTransferModal({
+  preselectIds = null,
+  preferredFolderId = '',
+  entries = null,
+  allowUnassign = false,
+  excludeFolderId = '',
+  hint = '',
+  emptyMessage = '',
+} = {}) {
+  try {
+    const listEntries = Array.isArray(entries) ? entries : getUnassignedEntries();
+    state.transferAllowUnassign = !!allowUnassign;
+    state.transferExcludeFolderId = excludeFolderId || '';
+
+    if (!allowUnassign && state.folders.length === 0) {
+      toast('Créez d’abord un projet', 'info');
+      openProjectsPage();
+      return;
+    }
+
+    if (listEntries.length === 0) {
+      toast(
+        allowUnassign
+          ? 'Aucune clé à transférer'
+          : 'Toutes vos clés sont déjà dans un projet',
+        'info',
+      );
+      return;
+    }
+
+    const destFolders = state.folders.filter((f) => f.id !== excludeFolderId);
+    if (!allowUnassign && destFolders.length === 0) {
+      toast('Aucun projet de destination disponible', 'info');
+      return;
+    }
+
+    const hintEl = $('#transfer-hint');
+    if (hintEl) {
+      hintEl.textContent = hint
+        || (allowUnassign
+          ? 'Sélectionnez les clés, puis choisissez le projet de destination (ou Sans projet).'
+          : 'Sélectionnez les clés sans projet, puis choisissez le projet de destination.');
+    }
+    const empty = $('#transfer-empty');
+    if (empty && emptyMessage) empty.textContent = emptyMessage;
+
+    const modal = $('#modal-transfer');
+    if (!modal) {
+      toast('Modale de transfert introuvable — rechargez la page (Ctrl+Shift+R)', 'error');
+      return;
+    }
+
+    populateTransferFolderSelect(preferredFolderId, { excludeFolderId, allowUnassign });
+    renderTransferEntryList(listEntries);
+    if (Array.isArray(preselectIds) && preselectIds.length) {
+      const set = new Set(preselectIds.map(String));
+      Array.from(document.querySelectorAll('#transfer-entry-list input[type="checkbox"]')).forEach((box) => {
+        box.checked = set.has(String(box.value));
+      });
+    }
+    updateTransferSelectionUi();
+    closeModal($('#modal-folders'));
+    openModal(modal);
+    refreshIcons(modal);
+  } catch (err) {
+    console.error('openTransferModal', err);
+    toast(err?.message || 'Impossible d’ouvrir le transfert', 'error');
+  }
+}
+
+function openProjectDetailTransfer() {
+  try {
+    const folderId = state.activeProjectId;
+    if (!folderId) {
+      toast('Ouvrez d’abord un projet', 'error');
+      return;
+    }
+    const selected = (state.projectDetailSelectedIds || []).map(String);
+    const inProject = getProjectDetailEntries();
+    const sourceEntries = selected.length
+      ? inProject.filter((e) => selected.includes(String(e.id)))
+      : inProject;
+    if (!sourceEntries.length) {
+      toast('Aucune clé à transférer dans ce projet', 'info');
+      return;
+    }
+    openTransferModal({
+      entries: sourceEntries,
+      preselectIds: sourceEntries.map((e) => String(e.id)),
+      allowUnassign: true,
+      excludeFolderId: folderId,
+      hint: 'Choisissez le projet de destination (ou Sans projet), puis validez.',
+      emptyMessage: 'Aucune clé dans ce projet.',
+    });
+  } catch (err) {
+    console.error('openProjectDetailTransfer', err);
+    toast(err?.message || 'Transfert impossible', 'error');
+  }
+}
+
+
+function renderFoldersManageList() {
+  const list = $('#folders-manage-list');
+  const empty = $('#folders-manage-empty');
+  if (!list) return;
+  if (state.folders.length === 0) {
+    list.innerHTML = '';
+    empty?.classList.remove('hidden');
+    return;
+  }
+  empty?.classList.add('hidden');
+  list.innerHTML = state.folders.map((f) => `
+    <li class="folders-manage-item" data-folder-id="${esc(f.id)}">
+      <input type="text" class="folder-rename-input" value="${esc(f.name)}" maxlength="80" aria-label="Nom du projet">
+      <button type="button" class="btn btn-ghost btn-sm folder-rename-save" title="Enregistrer">OK</button>
+      <button type="button" class="btn btn-ghost btn-sm btn-danger folder-delete-btn" title="Supprimer">
+        <i data-lucide="trash-2"></i>
+      </button>
+    </li>
+  `).join('');
+  refreshIcons(list);
+}
+
+function openFoldersModal() {
+  renderFoldersManageList();
+  syncTransferEntryButtons();
+  const input = $('#folder-new-name');
+  if (input) input.value = '';
+  openModal($('#modal-folders'));
+  refreshIcons($('#modal-folders'));
+  setTimeout(() => input?.focus(), 50);
+}
+
+function openProjectsPage() {
+  closeModal($('#modal-folders'));
+  switchPage('projects');
+  if (isMobileLayout()) collapseSidebar();
+}
+
+function countEntriesInFolder(folderId) {
+  return state.entries.filter(
+    (e) => !e.isShare && !isVaultMetaEntry(e) && entryFolderId(e) === folderId,
+  ).length;
+}
+
+function openProjectPage(folderId) {
+  if (!folderId || !state.folders.some((f) => f.id === folderId)) {
+    toast('Projet introuvable', 'error');
+    switchPage('projects');
+    return;
+  }
+  state.activeProjectId = folderId;
+  state.projectDetailSearch = '';
+  state.projectDetailSelectedIds = [];
+  const input = $('#project-detail-search-input');
+  if (input) input.value = '';
+  $('#btn-clear-project-detail-search')?.classList.add('hidden');
+  switchPage('project-detail');
+  if (isMobileLayout()) collapseSidebar();
+}
+
+function getProjectDetailEntries() {
+  const folderId = state.activeProjectId;
+  let list = state.entries.filter(
+    (e) => !e.isShare && !isVaultMetaEntry(e) && entryFolderId(e) === folderId,
+  );
+  const q = state.projectDetailSearch.trim().toLowerCase();
+  if (q) {
+    list = list.filter((e) =>
+      e.title.toLowerCase().includes(q)
+      || (e.username || '').toLowerCase().includes(q)
+      || (e.url && e.url.toLowerCase().includes(q))
+      || (e.notes && e.notes.toLowerCase().includes(q)),
+    );
+  }
+  return list.sort((a, b) => a.title.localeCompare(b.title, 'fr', { sensitivity: 'base' }));
+}
+
+function entryListCardMarkup(e, i, { selectable = false, selected = false } = {}) {
+  const selectMarkup = selectable ? `
+      <label class="entry-card-select" data-action="toggle-select" data-id="${esc(e.id)}" title="Sélectionner">
+        <input type="checkbox" data-action="toggle-select" data-id="${esc(e.id)}" ${selected ? 'checked' : ''} aria-label="Sélectionner ${esc(e.title)}">
+      </label>` : '';
+  return `
+    <div class="entry-card${selectable ? ' entry-card-selectable' : ''}${selected ? ' is-selected' : ''}" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-entry">
+      ${selectMarkup}
+      ${entryAvatarMarkup(e)}
+      <div class="entry-info">
+        <div class="entry-title-row">
+          <div class="entry-title">${esc(e.title)}</div>
+          ${entryTypeBadgeMarkup(e)}
+        </div>
+        <div class="entry-username">${esc(
+          entryType(e) === 'api_key' && displayUsername(e.username) === 'none'
+            ? 'Secret API'
+            : entryType(e) === 'ssh_key' && displayUsername(e.username) === 'none'
+              ? 'Clé SSH / stockage'
+              : displayUsername(e.username)
+        )}</div>
+      </div>
+      <div class="entry-actions">
+        <button type="button" class="btn-icon" title="Copier" data-action="copy-password" data-id="${esc(e.id)}">
+          <i data-lucide="copy"></i>
+        </button>
+        <button type="button" class="btn-icon btn-danger" title="Supprimer" data-action="delete-entry" data-id="${esc(e.id)}">
+          <i data-lucide="trash-2"></i>
+        </button>
+      </div>
+    </div>`;
+}
+
+function clearProjectDetailSelection() {
+  state.projectDetailSelectedIds = [];
+  syncProjectDetailSelectionUi();
+}
+
+function syncProjectDetailSelectionUi() {
+  const visibleIds = new Set(getProjectDetailEntries().map((e) => e.id));
+  state.projectDetailSelectedIds = state.projectDetailSelectedIds.filter((id) => visibleIds.has(id));
+  const n = state.projectDetailSelectedIds.length;
+  const bar = $('#project-detail-select-bar');
+  const countEl = $('#project-detail-selection-count');
+  const moveBtn = $('#btn-project-detail-move');
+  const all = $('#project-detail-select-all');
+  const transferBtn = $('#btn-project-detail-transfer');
+
+  bar?.classList.toggle('hidden', n === 0);
+  if (countEl) {
+    countEl.textContent = n <= 1 ? `${n} sélectionnée` : `${n} sélectionnées`;
+  }
+  if (moveBtn) moveBtn.disabled = n === 0;
+  if (all) {
+    const total = visibleIds.size;
+    all.checked = total > 0 && n === total;
+    all.indeterminate = n > 0 && n < total;
+  }
+  if (transferBtn) {
+    transferBtn.disabled = visibleIds.size === 0;
+    transferBtn.classList.toggle('is-disabled', visibleIds.size === 0);
+  }
+
+  $$('#project-detail-list .entry-card[data-id]').forEach((card) => {
+    const id = card.dataset.id;
+    const on = state.projectDetailSelectedIds.includes(id);
+    card.classList.toggle('is-selected', on);
+    const box = card.querySelector('input[data-action="toggle-select"]');
+    if (box) box.checked = on;
+  });
+}
+
+function toggleProjectDetailSelection(id, force) {
+  if (!id) return;
+  const set = new Set(state.projectDetailSelectedIds);
+  const next = typeof force === 'boolean' ? force : !set.has(id);
+  if (next) set.add(id);
+  else set.delete(id);
+  state.projectDetailSelectedIds = [...set];
+  syncProjectDetailSelectionUi();
+}
+
+function renderProjectDetailPage() {
+  const folder = state.folders.find((f) => f.id === state.activeProjectId);
+  if (!folder) {
+    state.activeProjectId = null;
+    switchPage('projects');
+    return;
+  }
+
+  updateEntryCounts();
+  const allInProject = state.entries.filter(
+    (e) => !e.isShare && !isVaultMetaEntry(e) && entryFolderId(e) === folder.id,
+  );
+  const entries = getProjectDetailEntries();
+  const list = $('#project-detail-list');
+  const empty = $('#project-detail-empty');
+  const avatar = $('#project-detail-avatar');
+  const nameEl = $('#project-detail-name');
+  const metaEl = $('#project-detail-meta');
+  const emptyTitle = $('#project-detail-empty-title');
+  const emptyText = $('#project-detail-empty-text');
+
+  if (avatar) avatar.textContent = (folder.name?.[0] || '?').toUpperCase();
+  if (nameEl) nameEl.textContent = folder.name;
+  if (metaEl) {
+    const n = allInProject.length;
+    metaEl.textContent = n <= 1 ? `${n} clé` : `${n} clés`;
+  }
+
+  updatePageTitle();
+
+  if (!list) return;
+  if (entries.length === 0) {
+    list.innerHTML = '';
+    clearProjectDetailSelection();
+    empty?.classList.remove('hidden');
+    if (state.projectDetailSearch.trim()) {
+      if (emptyTitle) emptyTitle.textContent = 'Aucun résultat';
+      if (emptyText) emptyText.textContent = 'Essayez un autre terme de recherche.';
+      $('#btn-project-detail-add-empty')?.classList.add('hidden');
+    } else {
+      if (emptyTitle) emptyTitle.textContent = 'Aucune clé dans ce projet';
+      if (emptyText) emptyText.textContent = 'Ajoutez une clé pour l’organiser ici.';
+      $('#btn-project-detail-add-empty')?.classList.remove('hidden');
+    }
+    refreshIcons($('#project-detail-view'));
+    return;
+  }
+
+  empty?.classList.add('hidden');
+  const selected = new Set(state.projectDetailSelectedIds);
+  list.innerHTML = entries.map((e, i) => entryListCardMarkup(e, i, {
+    selectable: true,
+    selected: selected.has(e.id),
+  })).join('');
+  refreshIcons(list);
+  setupFaviconImages(list);
+  syncProjectDetailSelectionUi();
+}
+
+function openProjectFilter(folderId) {
+  openProjectPage(folderId);
+}
+
+function renderProjectsPage() {
+  updateEntryCounts();
+  syncTransferEntryButtons();
+  const grid = $('#projects-grid');
+  const empty = $('#projects-empty');
+  const countLabel = $('#projects-count-label');
+
+  if (countLabel) {
+    const n = state.folders.length;
+    countLabel.textContent = n === 0 ? '0' : String(n);
+  }
+
+  if (!grid) return;
+  if (state.folders.length === 0) {
+    grid.innerHTML = '';
+    empty?.classList.remove('hidden');
+    refreshIcons($('#projects-view'));
+    return;
+  }
+  empty?.classList.add('hidden');
+  grid.innerHTML = state.folders.map((f) => {
+    const count = countEntriesInFolder(f.id);
+    const countLabelText = count <= 1 ? `${count} clé` : `${count} clés`;
+    const initial = esc((f.name?.[0] || '?').toUpperCase());
+    return `
+      <article class="project-row" data-folder-id="${esc(f.id)}" role="listitem">
+        <button type="button" class="project-row-main" data-action="open-project" title="Ouvrir ${esc(f.name)}">
+          <span class="project-row-avatar" aria-hidden="true">${initial}</span>
+          <span class="project-row-body">
+            <span class="project-row-name">${esc(f.name)}</span>
+            <span class="project-row-meta">${esc(countLabelText)}</span>
+          </span>
+          <span class="project-row-open">Ouvrir</span>
+        </button>
+        <div class="project-row-actions">
+          <button type="button" class="project-row-btn" data-action="rename-project" title="Renommer" aria-label="Renommer">
+            <i data-lucide="pencil"></i>
+          </button>
+          <button type="button" class="project-row-btn project-row-btn-danger" data-action="delete-project" title="Supprimer" aria-label="Supprimer">
+            <i data-lucide="trash-2"></i>
+          </button>
+        </div>
+      </article>`;
+  }).join('');
+  refreshIcons($('#projects-view'));
+}
+
 function filterEntriesByQuery(list, query) {
-  let filtered = list;
+  let filtered = list.filter((e) => !isVaultMetaEntry(e));
   if (ENTRY_TYPES.includes(state.typeFilter)) {
     filtered = filtered.filter((e) => entryType(e) === state.typeFilter);
+  }
+  if (state.folderFilter === 'none') {
+    filtered = filtered.filter((e) => !entryInKnownFolder(e, state.folders));
+  } else if (state.folderFilter && state.folderFilter !== 'all') {
+    filtered = filtered.filter((e) => entryFolderId(e) === state.folderFilter);
   }
   if (!query) return filtered;
   const q = query.toLowerCase();
@@ -691,6 +1449,7 @@ function syncBodyModalLock() {
 }
 
 function openModal(modal) {
+  if (!modal) return;
   modal.classList.add('open');
   const body = modal.querySelector('.modal-body');
   if (body) body.scrollTop = 0;
@@ -698,6 +1457,7 @@ function openModal(modal) {
 }
 
 function closeModal(modal) {
+  if (!modal) return;
   modal.classList.remove('open');
   syncBodyModalLock();
 }
@@ -720,10 +1480,16 @@ const {
 });
 
 function clearEntrySecretsInMemory() {
-  if (!Array.isArray(state.entries)) return;
-  state.entries.forEach((e) => {
-    if (e && typeof e.password === 'string') e.password = '';
-  });
+  const wipeEntry = (e) => {
+    if (!e || typeof e !== 'object') return;
+    if (typeof e.password === 'string') e.password = '';
+    if (typeof e.notes === 'string') e.notes = '';
+    if (typeof e.username === 'string') e.username = '';
+    if (typeof e.encrypted_data === 'string') e.encrypted_data = '';
+  };
+  if (Array.isArray(state.entries)) state.entries.forEach(wipeEntry);
+  if (Array.isArray(state.sharesReceived)) state.sharesReceived.forEach(wipeEntry);
+  if (Array.isArray(state.sharesSent)) state.sharesSent.forEach(wipeEntry);
 }
 
 /** Déconnexion complète : efface JWT + authMaterial + stockage. */
@@ -753,9 +1519,17 @@ function hardLogout(reason = 'manual') {
     devMode: false,
     page: 'dashboard',
     search: '',
-    dashTab: 'popular',
+    dashTab: 'recent',
     dashSearch: '',
     typeFilter: 'all',
+    folderFilter: 'all',
+    activeProjectId: null,
+    projectDetailSearch: '',
+    projectDetailSelectedIds: [],
+    transferAllowUnassign: false,
+    transferExcludeFolderId: '',
+    folders: [],
+    foldersMetaEntryId: null,
   });
   $('#modal-recovery-keys')?.classList.remove('open');
   closeAllModals();
@@ -792,6 +1566,8 @@ function softLockVault(reason = 'manual') {
   wipeUnlockedSecrets(state);
   clearEntrySecretsInMemory();
   state.entries = [];
+  state.folders = [];
+  state.foldersMetaEntryId = null;
   state.sharesReceived = [];
   state.sharesSent = [];
   state.shareEntryId = null;
@@ -886,6 +1662,8 @@ function showDeleteConfirm(entry, onConfirm, options = {}) {
   $('#confirm-message').textContent = options.message
     || 'Cette action est irréversible. Toutes les informations de cette clé seront définitivement supprimées.';
   $('#confirm-name-expected').textContent = entry.title;
+  const input = $('#confirm-name-input');
+  if (input) input.placeholder = options.placeholder || 'Nom de la clé';
   state.confirmDeleteName = entry.title;
   state.confirmCallback = onConfirm;
   $('#confirm-name-input').value = '';
@@ -893,6 +1671,46 @@ function showDeleteConfirm(entry, onConfirm, options = {}) {
   openModal($('#modal-confirm'));
   refreshIcons($('#modal-confirm'));
   setTimeout(() => $('#confirm-name-input')?.focus(), 50);
+}
+
+async function performDeleteFolder(folderId) {
+  const folder = state.folders.find((f) => f.id === folderId);
+  if (!folder) return;
+  showLoading('Mise à jour des projets...');
+  try {
+    await clearFolderIdOnEntries(folderId);
+    state.folders = state.folders.filter((f) => f.id !== folderId);
+    await persistFoldersMeta();
+    if (state.folderFilter === folderId) state.folderFilter = 'all';
+    if (state.activeProjectId === folderId) state.activeProjectId = null;
+    syncFolderFilterButtons();
+    populateFolderSelect();
+    renderFoldersManageList();
+    refreshCurrentView();
+    toast('Projet supprimé — les clés sont passées en « Sans projet »', 'info');
+  } finally {
+    hideLoading();
+  }
+}
+
+function deleteFolder(folderId) {
+  const folder = state.folders.find((f) => f.id === folderId);
+  if (!folder) return;
+  showDeleteConfirm(
+    { title: folder.name },
+    async () => {
+      try {
+        await performDeleteFolder(folderId);
+      } catch (err) {
+        toast(err.message || 'Suppression impossible', 'error');
+      }
+    },
+    {
+      title: 'Supprimer le projet',
+      message: 'Cette action est irréversible. Les clés de ce projet passeront en « Sans projet ».',
+      placeholder: 'Nom du projet',
+    },
+  );
 }
 
 $('#confirm-name-input').addEventListener('input', (e) => {
@@ -1001,28 +1819,52 @@ $('#register-password').addEventListener('input', (e) => {
 const PAGE_TITLES = {
   dashboard: { title: 'Accueil', subtitle: 'Vos connexions en un coup d\'œil' },
   vault: { title: 'Toutes les clés', subtitle: 'Votre coffre complet' },
+  projects: { title: 'Projets', subtitle: 'Organisez vos clés par dossier' },
+  'project-detail': { title: 'Projet', subtitle: 'Clés de ce projet' },
   'shares-received': { title: 'Partage · Reçu', subtitle: 'Clés partagées avec vous' },
   'shares-sent': { title: 'Partage · Envoyé', subtitle: 'Clés que vous avez partagées' },
   profile: { title: 'Mon profil', subtitle: 'Informations de votre compte' },
 };
 
 function updatePageTitle() {
+  if (state.page === 'project-detail') {
+    const folder = state.folders.find((f) => f.id === state.activeProjectId);
+    $('#page-title').textContent = folder?.name || 'Projet';
+    const n = folder
+      ? state.entries.filter((e) => !e.isShare && !isVaultMetaEntry(e) && entryFolderId(e) === folder.id).length
+      : 0;
+    $('#page-subtitle').textContent = n <= 1 ? `${n} clé dans ce projet` : `${n} clés dans ce projet`;
+    $('#topbar-total').classList.add('hidden');
+    $('#fab-add').classList.remove('hidden');
+    return;
+  }
   const page = PAGE_TITLES[state.page] || PAGE_TITLES.dashboard;
   $('#page-title').textContent = page.title;
   $('#page-subtitle').textContent = page.subtitle;
   const onProfile = state.page === 'profile';
   const onShares = state.page === 'shares-received' || state.page === 'shares-sent';
+  const onProjects = state.page === 'projects';
   $('#topbar-total').classList.toggle('hidden', onProfile || onShares);
-  $('#fab-add').classList.toggle('hidden', onProfile || onShares);
+  $('#fab-add').classList.toggle('hidden', onProfile || onShares || onProjects);
 }
 
 function switchPage(page) {
   if (!PAGE_TITLES[page]) page = 'dashboard';
   if (page !== 'profile') closeAllProfileFieldEdits();
+  if (page !== 'project-detail') {
+    state.activeProjectId = null;
+    state.projectDetailSelectedIds = [];
+  }
   state.page = page;
-  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  $$('.nav-item').forEach((b) => {
+    const active = b.dataset.page === page
+      || (page === 'project-detail' && b.dataset.page === 'projects');
+    b.classList.toggle('active', active);
+  });
   $('#dashboard-view').classList.toggle('hidden', page !== 'dashboard');
   $('#vault-view').classList.toggle('hidden', page !== 'vault');
+  $('#projects-view')?.classList.toggle('hidden', page !== 'projects');
+  $('#project-detail-view')?.classList.toggle('hidden', page !== 'project-detail');
   $('#shares-received-view')?.classList.toggle('hidden', page !== 'shares-received');
   $('#shares-sent-view')?.classList.toggle('hidden', page !== 'shares-sent');
   $('#profile-view').classList.toggle('hidden', page !== 'profile');
@@ -1032,6 +1874,8 @@ function switchPage(page) {
   try {
     if (page === 'dashboard') renderDashboard();
     else if (page === 'vault') renderEntries();
+    else if (page === 'projects') renderProjectsPage();
+    else if (page === 'project-detail') renderProjectDetailPage();
     else if (page === 'shares-received') renderSharesReceived();
     else if (page === 'shares-sent') renderSharesSent();
     else if (page === 'profile') renderProfile();
@@ -1121,6 +1965,8 @@ $('#form-login').addEventListener('submit', async (e) => {
   if (shouldUseDevBypass(email, master)) {
     clearAuthSecrets();
     enterDevMode(state);
+    syncFolderFilterButtons();
+    populateFolderSelect();
     showVault();
     return;
   }
@@ -1366,6 +2212,10 @@ async function loadEntries() {
   const raw = await api.getEntries(state.token);
   if (!raw.length) {
     state.entries = [];
+    state.folders = [];
+    state.foldersMetaEntryId = null;
+    syncFolderFilterButtons();
+    populateFolderSelect();
     return;
   }
   const concurrency = 6;
@@ -1390,7 +2240,17 @@ async function loadEntries() {
   await Promise.all(
     Array.from({ length: Math.min(concurrency, raw.length) }, () => worker()),
   );
-  state.entries = decrypted.filter(Boolean);
+  const all = decrypted.filter(Boolean);
+  const meta = all.find((e) => isFoldersMetaEntry(e));
+  state.foldersMetaEntryId = meta?.id || null;
+  state.folders = meta ? foldersFromMetaEntry(meta) : [];
+  state.entries = all.filter((e) => !isVaultMetaEntry(e));
+  if (state.folderFilter !== 'all' && state.folderFilter !== 'none'
+      && !state.folders.some((f) => f.id === state.folderFilter)) {
+    state.folderFilter = 'all';
+  }
+  syncFolderFilterButtons();
+  populateFolderSelect();
 }
 
 function getFilteredEntries() {
@@ -1400,6 +2260,8 @@ function getFilteredEntries() {
 function refreshCurrentView() {
   if (state.page === 'dashboard') renderDashboard();
   else if (state.page === 'vault') renderEntries();
+  else if (state.page === 'projects') renderProjectsPage();
+  else if (state.page === 'project-detail') renderProjectDetailPage();
   else if (state.page === 'shares-received') renderSharesReceived();
   else if (state.page === 'shares-sent') renderSharesSent();
   else if (state.page === 'profile') renderProfile();
@@ -1408,6 +2270,8 @@ function refreshCurrentView() {
 function updateEntryCounts() {
   $('#entry-count').textContent = state.entries.length;
   $('#nav-count-all').textContent = state.entries.length;
+  const projectsCount = $('#nav-count-projects');
+  if (projectsCount) projectsCount.textContent = state.folders.length;
   const recv = $('#nav-count-received');
   const sent = $('#nav-count-sent');
   if (recv) recv.textContent = state.sharesReceived.length;
@@ -1549,6 +2413,7 @@ window.showShareReceived = function(id) {
   if (!e) return;
   state.detailEntryId = null;
   fillEntryDetailCommon(e);
+  syncDetailProjectField(e, { editable: false });
   const shareNoteField = $('#detail-share-note-field');
   if (e.share_note) {
     shareNoteField?.classList.remove('hidden');
@@ -1600,14 +2465,38 @@ function getDashboardEntries() {
   if (state.dashTab === 'az') {
     return [...list].sort((a, b) => a.title.localeCompare(b.title, 'fr', { sensitivity: 'base' }));
   }
+  if (state.dashTab === 'popular') {
+    // Sites avec URL / favicon d’abord, puis récents
+    return [...list].sort((a, b) => {
+      const score = (e) => (getSiteDomain(e.url) ? 2 : 0) + (entryType(e) === 'login' ? 1 : 0);
+      const diff = score(b) - score(a);
+      if (diff) return diff;
+      return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+    });
+  }
   return [...list].sort(
     (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)
   );
 }
 
+function dashTileMetaMarkup(entry) {
+  const badges = [];
+  if (entryType(entry) === 'api_key') badges.push('<span class="dash-tile-badge">API</span>');
+  if (entryType(entry) === 'ssh_key') badges.push('<span class="dash-tile-badge dash-tile-badge-ssh">SSH</span>');
+  const folder = folderNameById(state.folders, entryFolderId(entry));
+  const project = folder
+    ? `<span class="dash-tile-meta"><span class="dash-tile-project">${esc(folder)}</span></span>`
+    : '';
+  // Badges en absolute (coin) — le bandeau meta ne porte que le projet
+  return `${badges.join('')}${project}`;
+}
+
 function renderDashboard() {
   updateEntryCounts();
   syncTypeFilterButtons();
+  syncFolderFilterButtons();
+  syncAddEntryButtonLabels();
+  syncTransferEntryButtons();
   const entries = getDashboardEntries();
   const grid = $('#dash-tiles-grid');
   const empty = $('#dash-tiles-empty');
@@ -1618,9 +2507,10 @@ function renderDashboard() {
 
   if (entries.length === 0 && state.entries.length === 0) {
     grid.innerHTML = `
-      <button type="button" class="dash-tile dash-tile-add" id="dash-tile-add-only">
+      <button type="button" class="dash-tile dash-tile-add dash-tile-add-hero" id="dash-tile-add-only">
         <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
         <span class="dash-tile-name">${esc(addEntryTileLabel())}</span>
+        <span class="dash-tile-add-hint">Connexion, API ou SSH</span>
       </button>`;
     empty.classList.add('hidden');
     $('#dash-tile-add-only')?.addEventListener('click', openAddModal);
@@ -1631,21 +2521,30 @@ function renderDashboard() {
   if (entries.length === 0) {
     grid.innerHTML = '';
     empty.classList.remove('hidden');
-    empty.querySelector('p').textContent = 'Aucun résultat pour cette recherche';
+    const title = $('#dash-empty-title');
+    const text = $('#dash-empty-text');
+    if (state.dashSearch.trim()) {
+      if (title) title.textContent = 'Aucun résultat';
+      if (text) text.textContent = 'Essayez un autre terme, ou élargissez type / projet.';
+    } else if (state.typeFilter !== 'all' || state.folderFilter !== 'all') {
+      if (title) title.textContent = 'Aucune clé ici';
+      if (text) text.textContent = 'Rien ne correspond à ces filtres. Changez de type ou de projet.';
+    } else {
+      if (title) title.textContent = 'Aucune clé';
+      if (text) text.textContent = 'Ajoutez votre première clé pour commencer.';
+    }
     syncAddEntryButtonLabels();
     refreshIcons(empty);
     return;
   }
 
   empty.classList.add('hidden');
-  empty.querySelector('p').textContent = 'Aucune clé pour le moment';
   syncAddEntryButtonLabels();
   grid.innerHTML = entries.map((e, i) => `
-      <button type="button" class="${dashTileClassName(e)}" style="${dashTileStyle(e, i)}" data-action="show-entry" data-id="${esc(e.id)}">
+      <button type="button" class="${dashTileClassName(e)}" style="${dashTileStyle(e, i)}" data-action="show-entry" data-id="${esc(e.id)}" title="${esc(e.title)}">
         ${dashTileIconMarkup(e)}
         <span class="dash-tile-name">${esc(e.title)}</span>
-        ${entryType(e) === 'api_key' ? '<span class="dash-tile-badge">API</span>' : ''}
-        ${entryType(e) === 'ssh_key' ? '<span class="dash-tile-badge dash-tile-badge-ssh">SSH</span>' : ''}
+        ${dashTileMetaMarkup(e)}
       </button>`).join('') + `
     <button type="button" class="dash-tile dash-tile-add" data-action="add-entry">
       <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
@@ -1842,7 +2741,9 @@ function renderEntries() {
 
   updateEntryCounts();
   syncTypeFilterButtons();
+  syncFolderFilterButtons();
   syncAddEntryButtonLabels();
+  syncTransferEntryButtons();
 
   empty.classList.add('hidden');
   noResults.classList.add('hidden');
@@ -1866,6 +2767,9 @@ function renderEntries() {
         <div class="entry-title-row">
           <div class="entry-title">${esc(e.title)}</div>
           ${entryTypeBadgeMarkup(e)}
+          ${folderNameById(state.folders, entryFolderId(e))
+            ? `<span class="entry-folder-badge">${esc(folderNameById(state.folders, entryFolderId(e)))}</span>`
+            : ''}
         </div>
         <div class="entry-username">${esc(
           entryType(e) === 'api_key' && displayUsername(e.username) === 'none'
@@ -1904,8 +2808,10 @@ function handleEntryClick(event) {
   const target = resolveEventElement(event);
   if (!target) return;
 
-  const root = target.closest('#dash-tiles-grid, #entries-list, #shares-received-list, #shares-sent-list');
+  const root = target.closest('#dash-tiles-grid, #entries-list, #project-detail-list, #shares-received-list, #shares-sent-list');
   if (!root) return;
+
+  if (target.closest('.entry-card-select')) return;
 
   const actionEl = target.closest('[data-action]');
   if (!actionEl || !root.contains(actionEl)) return;
@@ -2041,6 +2947,7 @@ window.showEntry = function(id) {
 
   state.detailEntryId = id;
   fillEntryDetailCommon(e);
+  syncDetailProjectField(e, { editable: true });
   $('#detail-share-note-field')?.classList.add('hidden');
   setDetailDateMeta(e, { visible: true });
   setDetailActionButtonsVisible({ edit: true, share: true, delete: true });
@@ -2080,12 +2987,14 @@ $('#form-share')?.addEventListener('submit', async (e) => {
   try {
     const recipient = await api.lookupUser(state.token, email);
     const shareNote = ($('#share-note')?.value || '').trim().slice(0, 500);
-    const payload = {
+  const payload = {
       title: entry.title,
       username: entry.username || '',
       password: entry.password || '',
       url: entry.url || '',
       notes: entry.notes || '',
+      type: entryType(entry),
+      // Pas de folderId : les partages restent hors projets
       share_note: shareNote,
       shared_by: state.user.display_name,
       shared_by_email: state.user.email,
@@ -2160,13 +3069,16 @@ window.copyPassword = async function(id) {
 
 // ── Ajouter clé ──────────────────────────────────────────
 
-function openAddModal() {
+function openAddModal(options = {}) {
   resetEntryFormModal();
   $('#form-entry').reset();
   if ($('#entry-secret-block')) $('#entry-secret-block').value = '';
   const type = defaultEntryTypeFromFilter();
-  if ($('#entry-type')) $('#entry-type').value = type;
-  applyEntryFormLabels(type);
+  setEntryFormType(type);
+  const folderId = options.folderId !== undefined
+    ? options.folderId
+    : defaultFolderIdFromFilter();
+  populateFolderSelect(folderId || '');
   $('#modal-entry-title').textContent = ENTRY_TYPES.includes(state.typeFilter)
     ? addEntryModalTitle(type)
     : 'Ajouter une clé';
@@ -2181,10 +3093,11 @@ function openEditModal(entryId) {
   if (!e) return;
 
   state.editingEntryId = entryId;
+  hideEntryFolderCreate();
   $('#form-entry').reset();
   const type = entryType(e);
-  if ($('#entry-type')) $('#entry-type').value = type;
-  applyEntryFormLabels(type);
+  setEntryFormType(type);
+  populateFolderSelect(entryFolderId(e) || '');
   $('#entry-title').value = e.title;
   $('#entry-username').value = e.username || '';
   if (type === 'ssh_key') {
@@ -2213,6 +3126,7 @@ function readEntryFormData() {
   const urlRaw = $('#entry-url').value.trim();
   const url = type === 'ssh_key' ? urlRaw : normalizeEntryUrl(urlRaw);
   const notes = $('#entry-notes').value.trim();
+  const folderId = ($('#entry-folder')?.value || '').trim();
 
   if (!title) {
     toast(entryTitleRequiredLabel(type), 'error');
@@ -2226,7 +3140,7 @@ function readEntryFormData() {
     return null;
   }
 
-  return { type, title, username, password, url, notes };
+  return entryEncryptedPayload({ type, title, username, password, url, notes, folderId });
 }
 
 $('#btn-add-sidebar').addEventListener('click', () => {
@@ -2264,13 +3178,10 @@ $('#btn-generate-ssh')?.addEventListener('click', async () => {
   }
 });
 
-$('#entry-type')?.addEventListener('change', (e) => {
-  const type = normalizeEntryType(e.target.value);
-  applyEntryFormLabels(type);
-  $('#entry-generated').classList.add('hidden');
-  if (!state.editingEntryId) {
-    $('#modal-entry-title').textContent = addEntryModalTitle(type);
-  }
+document.querySelector('.entry-type-pills')?.addEventListener('click', (e) => {
+  const pill = e.target.closest('.entry-type-pill[data-entry-type]');
+  if (!pill) return;
+  setEntryFormType(pill.dataset.entryType);
 });
 
 $$('.type-filter').forEach((btn) => {
@@ -2280,6 +3191,291 @@ $$('.type-filter').forEach((btn) => {
     syncAddEntryButtonLabels();
     refreshCurrentView();
   });
+});
+
+document.addEventListener('click', (e) => {
+  const folderBtn = e.target.closest('.folder-filter[data-folder-filter]');
+  if (!folderBtn || folderBtn.classList.contains('folder-filter-manage')) return;
+  if (!folderBtn.closest('.folder-filters')) return;
+  state.folderFilter = folderBtn.dataset.folderFilter || 'all';
+  syncFolderFilterButtons();
+  refreshCurrentView();
+});
+
+$('#btn-dash-create-project')?.addEventListener('click', openProjectsPage);
+$('#btn-close-folders')?.addEventListener('click', () => closeModal($('#modal-folders')));
+
+$('#form-project-page-create')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('#btn-project-page-create');
+  if (btn) btn.disabled = true;
+  try {
+    const folder = await createFolderByName($('#project-page-new-name')?.value);
+    if (folder && $('#project-page-new-name')) $('#project-page-new-name').value = '';
+  } catch (err) {
+    toast(err.message || 'Impossible de créer le projet', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+$('#btn-project-detail-back')?.addEventListener('click', () => switchPage('projects'));
+$('#btn-project-detail-add')?.addEventListener('click', () => {
+  openAddModal({ folderId: state.activeProjectId || '' });
+});
+$('#btn-project-detail-add-empty')?.addEventListener('click', () => {
+  openAddModal({ folderId: state.activeProjectId || '' });
+});
+
+// Délégation : résiste au re-render / cache SW partiel
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('#btn-project-detail-transfer, #btn-project-detail-move');
+  if (!btn || btn.disabled) return;
+  e.preventDefault();
+  openProjectDetailTransfer();
+});
+
+$('#btn-project-detail-select-clear')?.addEventListener('click', clearProjectDetailSelection);
+$('#project-detail-select-all')?.addEventListener('change', (e) => {
+  const checked = !!e.target.checked;
+  const ids = getProjectDetailEntries().map((entry) => entry.id);
+  state.projectDetailSelectedIds = checked ? ids : [];
+  syncProjectDetailSelectionUi();
+});
+
+$('#project-detail-list')?.addEventListener('change', (e) => {
+  const box = e.target.closest('input[data-action="toggle-select"]');
+  if (!box) return;
+  toggleProjectDetailSelection(box.dataset.id, box.checked);
+});
+
+$('#project-detail-search-input')?.addEventListener('input', (e) => {
+  state.projectDetailSearch = e.target.value;
+  $('#btn-clear-project-detail-search')?.classList.toggle('hidden', !e.target.value);
+  if (state.page === 'project-detail') renderProjectDetailPage();
+});
+
+$('#btn-clear-project-detail-search')?.addEventListener('click', () => {
+  state.projectDetailSearch = '';
+  const input = $('#project-detail-search-input');
+  if (input) input.value = '';
+  $('#btn-clear-project-detail-search')?.classList.add('hidden');
+  if (state.page === 'project-detail') renderProjectDetailPage();
+});
+
+$('#projects-grid')?.addEventListener('click', async (e) => {
+  const card = e.target.closest('.project-row[data-folder-id], .project-card[data-folder-id]');
+  if (!card) return;
+  const folderId = card.dataset.folderId;
+  const folder = state.folders.find((f) => f.id === folderId);
+  if (!folder) return;
+
+  const action = e.target.closest('[data-action]')?.dataset.action;
+  if (!action || action === 'open-project') {
+    openProjectPage(folderId);
+    return;
+  }
+
+  if (action === 'delete-project') {
+    deleteFolder(folderId);
+    return;
+  }
+
+  if (action === 'rename-project') {
+    const name = normalizeFolderName(
+      window.prompt('Nouveau nom du projet', folder.name) || '',
+    );
+    if (!name) return;
+    if (state.folders.some((f) => f.id !== folderId && f.name.toLowerCase() === name.toLowerCase())) {
+      toast('Ce projet existe déjà', 'error');
+      return;
+    }
+    try {
+      state.folders = normalizeFoldersList(
+        state.folders.map((f) => (f.id === folderId ? { ...f, name } : f)),
+      );
+      await persistFoldersMeta();
+      syncFolderFilterButtons();
+      populateFolderSelect();
+      renderFoldersManageList();
+      refreshCurrentView();
+      toast('Projet renommé', 'success');
+    } catch (err) {
+      toast(err.message || 'Renommage impossible', 'error');
+    }
+  }
+});
+
+$('#btn-folders-transfer')?.addEventListener('click', () => openTransferModal());
+$('#btn-close-transfer')?.addEventListener('click', () => closeModal($('#modal-transfer')));
+
+$('#transfer-select-all')?.addEventListener('change', (e) => {
+  const checked = !!e.target.checked;
+  $$('#transfer-entry-list input[type="checkbox"]').forEach((box) => {
+    box.checked = checked;
+  });
+  updateTransferSelectionUi();
+});
+
+$('#transfer-entry-list')?.addEventListener('change', (e) => {
+  if (e.target.matches('input[type="checkbox"]')) updateTransferSelectionUi();
+});
+
+$('#transfer-folder')?.addEventListener('change', updateTransferSelectionUi);
+
+$('#btn-transfer-submit')?.addEventListener('click', async () => {
+  const ids = $$('#transfer-entry-list input[type="checkbox"]:checked').map((b) => b.value);
+  const rawDest = ($('#transfer-folder')?.value || '').trim();
+  const folderId = rawDest === '__unassign__' ? '' : rawDest;
+  const btn = $('#btn-transfer-submit');
+  if (!ids.length) {
+    toast('Sélectionnez au moins une clé', 'error');
+    return;
+  }
+  if (!rawDest) {
+    toast('Choisissez une destination', 'error');
+    return;
+  }
+  if (btn) btn.disabled = true;
+  try {
+    showLoading(folderId ? 'Transfert vers le projet...' : 'Retrait du projet...');
+    const count = await assignEntriesToFolder(ids, folderId);
+    const name = folderId ? (folderNameById(state.folders, folderId) || 'projet') : null;
+    closeModal($('#modal-transfer'));
+    state.projectDetailSelectedIds = state.projectDetailSelectedIds.filter((id) => !ids.includes(id));
+    syncTransferEntryButtons();
+    refreshCurrentView();
+    toast(
+      name
+        ? (count <= 1
+          ? `1 clé déplacée vers « ${name} »`
+          : `${count} clés déplacées vers « ${name} »`)
+        : (count <= 1
+          ? '1 clé retirée du projet'
+          : `${count} clés retirées du projet`),
+      'success',
+    );
+  } catch (err) {
+    toast(err.message || 'Transfert impossible', 'error');
+  } finally {
+    hideLoading();
+    if (btn) btn.disabled = false;
+    updateTransferSelectionUi();
+  }
+});
+
+$('#detail-move-folder')?.addEventListener('change', syncDetailMoveButton);
+
+$('#btn-detail-move-folder')?.addEventListener('click', async () => {
+  const entryId = state.detailEntryId;
+  if (!entryId) return;
+  const folderId = ($('#detail-move-folder')?.value || '').trim();
+  const btn = $('#btn-detail-move-folder');
+  if (btn) btn.disabled = true;
+  try {
+    showLoading('Mise à jour du projet...');
+    await setEntryFolder(entryId, folderId);
+    refreshCurrentView();
+    const entry = state.entries.find((e) => e.id === entryId);
+    if (entry) {
+      fillEntryDetailCommon(entry);
+      syncDetailProjectField(entry, { editable: true });
+    }
+    const name = folderNameById(state.folders, folderId);
+    toast(name ? `Clé déplacée vers « ${name} »` : 'Clé retirée du projet', 'success');
+    syncTransferEntryButtons();
+  } catch (err) {
+    toast(err.message || 'Déplacement impossible', 'error');
+  } finally {
+    hideLoading();
+    syncDetailMoveButton();
+  }
+});
+
+$('#btn-entry-folder-toggle')?.addEventListener('click', () => {
+  const panel = $('#entry-folder-create');
+  if (panel?.classList.contains('hidden')) showEntryFolderCreate();
+  else hideEntryFolderCreate();
+});
+
+$('#btn-entry-folder-cancel')?.addEventListener('click', hideEntryFolderCreate);
+
+$('#btn-entry-folder-create')?.addEventListener('click', async () => {
+  const btn = $('#btn-entry-folder-create');
+  if (btn) btn.disabled = true;
+  try {
+    const folder = await createFolderByName($('#entry-folder-new-name')?.value, {
+      selectInEntryForm: true,
+    });
+    if (folder) hideEntryFolderCreate();
+  } catch (err) {
+    toast(err.message || 'Impossible de créer le projet', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+$('#entry-folder-new-name')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    $('#btn-entry-folder-create')?.click();
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    hideEntryFolderCreate();
+  }
+});
+
+$('#form-folder-create')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('#btn-folder-create');
+  if (btn) btn.disabled = true;
+  try {
+    const folder = await createFolderByName($('#folder-new-name')?.value);
+    if (folder && $('#folder-new-name')) $('#folder-new-name').value = '';
+  } catch (err) {
+    toast(err.message || 'Impossible de créer le projet', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+$('#folders-manage-list')?.addEventListener('click', async (e) => {
+  const row = e.target.closest('.folders-manage-item');
+  if (!row) return;
+  const folderId = row.dataset.folderId;
+  const folder = state.folders.find((f) => f.id === folderId);
+  if (!folder) return;
+
+  if (e.target.closest('.folder-delete-btn')) {
+    deleteFolder(folderId);
+    return;
+  }
+
+  if (e.target.closest('.folder-rename-save')) {
+    const input = row.querySelector('.folder-rename-input');
+    const name = normalizeFolderName(input?.value);
+    if (!name) {
+      toast('Nom du projet requis', 'error');
+      return;
+    }
+    if (state.folders.some((f) => f.id !== folderId && f.name.toLowerCase() === name.toLowerCase())) {
+      toast('Ce projet existe déjà', 'error');
+      return;
+    }
+    try {
+      state.folders = normalizeFoldersList(
+        state.folders.map((f) => (f.id === folderId ? { ...f, name } : f)),
+      );
+      await persistFoldersMeta();
+      syncFolderFilterButtons();
+      populateFolderSelect();
+      renderFoldersManageList();
+      refreshCurrentView();
+      toast('Projet renommé', 'success');
+    } catch (err) {
+      toast(err.message || 'Renommage impossible', 'error');
+    }
+  }
 });
 
 $('#form-entry').addEventListener('submit', async (e) => {

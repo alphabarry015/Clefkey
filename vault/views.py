@@ -12,7 +12,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
 from .auth import b64_decode, b64_encode, create_access_token
-from .crypto.password_gen import generate_password
 from .decorators import api_error, require_auth
 from .favicon import fetch_site_favicon, normalize_page_url
 from .models import VaultEntry, VaultRecoveryKey, VaultShare, VaultUser
@@ -732,21 +731,6 @@ def share_detail(request, share_id):
         return api_error("Partage introuvable", 404)
     share.delete()
     return HttpResponse(status=204)
-
-
-@csrf_exempt
-@require_http_methods(["POST"])
-@require_auth
-@rate_limit("vault-generate-password", limit=30, window_seconds=60)
-def generate_password_view(request):
-    try:
-        data = json.loads(request.body) if request.body else {}
-    except json.JSONDecodeError:
-        return api_error("Corps JSON invalide", 400)
-
-    length = int(data.get("length", 20))
-    length = max(12, min(64, length))
-    return JsonResponse({"password": generate_password(length)})
 
 
 @require_GET

@@ -30,11 +30,11 @@ Sur `localhost` uniquement : laisser les champs **vides** charge un mode démo (
 
 ### 4. Dashboard
 
-Tuiles des clés (populaires, récents, A à Z), recherche, ajout rapide. Filtres **Tous**, **Connexions**, **Clés API**, **SSH / stockage**.
+Tuiles des clés (populaires, récents, A à Z), recherche, ajout rapide. Filtres **Tous**, **Connexions**, **Clés API**, **SSH / stockage**, et **projets** (Tous les projets / Sans projet / chaque projet).
 
 ### 5. Toutes les clés
 
-Liste complète, recherche (raccourci **Ctrl+K**), ouverture du détail. Chaque entrée affiche un badge selon son type (connexion, clé API ou SSH / stockage).
+Liste complète, recherche (raccourci **Ctrl+K**), ouverture du détail. Chaque entrée affiche un badge selon son type (connexion, clé API ou SSH / stockage) et son projet le cas échéant.
 
 ### 6. Profil
 
@@ -49,6 +49,14 @@ Infos compte (édition inline), tags techniques, **Verrouiller le coffre** (soft
 | Clé SSH / stockage | Clé privée (PEM / OpenSSH) ou secret de stockage ; hôte optionnel (`git@…`, serveur). Bouton **Générer une clé Ed25519** remplit uniquement le champ secret avec la clé privée. |
 
 Les trois types sont chiffrés de la même façon ; seul le contenu JSON côté navigateur change.
+
+## Projets (dossiers)
+
+Les clés peuvent être rangées dans un **projet**. La liste des projets et l’appartenance d’une clé sont chiffrées dans le coffre (zero-knowledge). Bouton **Projets** pour créer, renommer ou supprimer.
+
+- Une clé reste dans son projet jusqu’à déplacement manuel.
+- Supprimer un projet envoie ses clés en **Sans projet** (elles ne sont pas effacées).
+- Les **partages** restent hors des projets.
 
 ## Actions courantes
 

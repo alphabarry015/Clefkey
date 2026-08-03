@@ -28,6 +28,8 @@ Une entrée est un enregistrement opaque côté serveur : un identifiant, un pro
 
 Trois types partagent le même modèle de stockage. Une connexion classique sert un site web (exemple fictif : titre « Messagerie perso », URL `https://mail.exemple.org`, email et mot de passe). Une clé API sert un secret technique (exemple fictif : titre « Clé démo OpenAI », secret du genre `demo-api-key-not-real`). Une clé SSH / stockage sert une clé privée ou un secret de volume (exemple fictif : hôte `git@github.com`, bloc PEM). Le filtre Tous / Connexions / Clés API / SSH ne fait que trier des objets déjà déchiffrés en mémoire ; le serveur ignore le type.
 
+Les **projets** (dossiers) sont aussi purement client : une entrée meta chiffrée liste les projets (`id`, `name`), et chaque clé peut porter un `folderId`. Les partages n’embarquent pas ce `folderId` : ils restent hors du système de projets.
+
 Quand l’utilisateur ajoute ou modifie une entrée, le front chiffre le JSON avec AES-GCM sous la clé de coffre, encode en base64, et appelle l’API. Pour afficher les tuiles, l’inverse se produit : téléchargement des blobs, déchiffrement un par un, rendu. Les favicons passent par un proxy serveur qui refuse les hôtes privés, afin de ne pas transformer l’app en outil de scan du réseau local.
 
 ## Partage

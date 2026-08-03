@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v100';
+const CACHE_VERSION = 'v125';
 const CACHE_STATIC = `gardefort-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
@@ -14,6 +14,7 @@ const PRECACHE = [
   '/js/session.js',
   '/js/dev.js',
   '/js/favicon.js',
+  '/js/folders.js',
   '/js/icons.js',
   '/js/pwa.js',
   '/js/common-passwords.js',

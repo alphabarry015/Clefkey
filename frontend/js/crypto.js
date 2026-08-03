@@ -266,9 +266,19 @@ export async function decryptFromSender(blob, privateKey) {
 
 export function generatePassword(length = 20) {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-  const arr = new Uint8Array(length);
-  crypto.getRandomValues(arr);
-  return Array.from(arr, b => chars[b % chars.length]).join('');
+  const n = Math.max(12, Math.min(64, Number(length) || 20));
+  const maxUnbiased = 256 - (256 % chars.length);
+  let out = '';
+  while (out.length < n) {
+    const buf = new Uint8Array(n - out.length + 8);
+    crypto.getRandomValues(buf);
+    for (const b of buf) {
+      if (b >= maxUnbiased) continue;
+      out += chars[b % chars.length];
+      if (out.length >= n) break;
+    }
+  }
+  return out;
 }
 
 // ── Générateur de clés SSH (Ed25519, format OpenSSH) ─────

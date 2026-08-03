@@ -8,6 +8,11 @@ const isLocal = window.location.hostname === 'localhost' || window.location.host
 
 export const DEV_MODE = devParam === '0' ? false : (devParam === '1' || isLocal);
 
+export const MOCK_FOLDERS = [
+  { id: 'dev-folder-perso', name: 'Perso' },
+  { id: 'dev-folder-pro', name: 'Travail' },
+];
+
 export const MOCK_ENTRIES = [
   {
     id: 'dev-1',
@@ -17,6 +22,7 @@ export const MOCK_ENTRIES = [
     password: 'Kx9#mP2$vLq8@nR4wT',
     url: 'https://netflix.com',
     notes: 'Compte familial',
+    folderId: 'dev-folder-perso',
   },
   {
     id: 'dev-2',
@@ -26,6 +32,7 @@ export const MOCK_ENTRIES = [
     password: 'MonSuperMdp2024!',
     url: 'https://mail.google.com',
     notes: '',
+    folderId: 'dev-folder-perso',
   },
   {
     id: 'dev-3',
@@ -44,6 +51,7 @@ export const MOCK_ENTRIES = [
     password: 'demo-openai-key-not-real',
     url: 'https://platform.openai.com',
     notes: 'Factice — ne jamais committer de vraie clé',
+    folderId: 'dev-folder-pro',
   },
   {
     id: 'dev-5',
@@ -53,6 +61,7 @@ export const MOCK_ENTRIES = [
     password: 'demo-stripe-key-not-real',
     url: 'https://dashboard.stripe.com',
     notes: 'Factice — environnement test',
+    folderId: 'dev-folder-pro',
   },
   {
     id: 'dev-6',
@@ -62,6 +71,7 @@ export const MOCK_ENTRIES = [
     password: '-----BEGIN OPENSSH PRIVATE KEY-----\nDEMO-NOT-A-REAL-KEY\n-----END OPENSSH PRIVATE KEY-----',
     url: 'git@github.com',
     notes: 'Factice — ssh-ed25519 AAAA… (exemple)',
+    folderId: 'dev-folder-pro',
   },
 ];
 
@@ -79,6 +89,9 @@ export function enterDevMode(state) {
   state.vaultKey = null;
   state.privateKey = null;
   state.publicKey = null;
+  state.folders = MOCK_FOLDERS.map((f) => ({ ...f }));
+  state.foldersMetaEntryId = 'dev-folders-meta';
+  state.folderFilter = 'all';
   state.entries = MOCK_ENTRIES.map((e, i) => ({
     ...e,
     url: normalizeEntryUrl(e.url),

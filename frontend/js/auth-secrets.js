@@ -6,6 +6,10 @@ const SECRET_FIELDS = [
   '#login-password',
   '#register-password',
   '#register-password-confirm',
+  '#unlock-password',
+  '#master-confirm-password',
+  '#recovery-new-password',
+  '#recovery-new-password-confirm',
 ];
 
 export function clearAuthSecrets() {

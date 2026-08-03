@@ -62,7 +62,6 @@ Profil uniquement (noms, email, `entries_count`). Le matériel crypto n’est **
 | PUT | `/vault/entries/<id>` | Oui | Remplacer le blob |
 | DELETE | `/vault/entries/<id>` | Oui | Supprimer |
 | GET | `/vault/favicon?url=` | Non* | Proxy favicon (hôtes publics) |
-| POST | `/vault/generate-password` | Oui | Génération côté serveur (le client utilise aussi WebCrypto local) |
 | POST | `/vault/shares` | Oui | Créer un partage |
 | GET | `/vault/shares/received` | Oui | Partages reçus |
 | GET | `/vault/shares/sent` | Oui | Partages envoyés |
