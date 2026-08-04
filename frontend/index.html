@@ -40,10 +40,20 @@
     <div class="lp">
       <header class="lp-header">
         <a href="/" class="lp-header-brand">Clefkey<span class="lp-brand-dot">.</span></a>
-        <nav class="lp-nav" aria-label="Navigation">
+        <button type="button" class="lp-menu-btn" id="btn-landing-menu" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="landing-nav">
+          <i data-lucide="menu"></i>
+        </button>
+        <nav class="lp-nav" id="landing-nav" aria-label="Navigation">
+          <div class="lp-nav-header">
+            <span class="lp-nav-title">Menu</span>
+            <button type="button" class="lp-nav-close" id="btn-landing-menu-close" aria-label="Fermer le menu">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
           <a href="#lp-produit">Produit</a>
           <a href="#lp-securite">Sécurité</a>
           <a href="/docs/">Docs</a>
+          <button type="button" id="btn-landing-login-menu" class="lp-btn lp-btn-secondary lp-nav-login">Se connecter</button>
         </nav>
         <div class="lp-header-social">
           <a

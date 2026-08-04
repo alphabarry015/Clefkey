@@ -1694,6 +1694,11 @@ body {
   padding: 0 0.25rem 1rem;
 }
 
+#shares-received-view,
+#shares-sent-view {
+  padding-top: 1rem;
+}
+
 .shares-hint {
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -4653,11 +4658,40 @@ body.modal-open .vault-layout {
   opacity: 1;
 }
 
+.lp-nav-header {
+  display: none;
+}
+
 .lp-header-social {
   justify-self: end;
   display: flex;
   align-items: center;
   gap: 0.55rem;
+}
+
+.lp-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--lp-white);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.lp-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.lp-menu-btn .lucide,
+.lp-menu-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .lp-hero {
@@ -5056,47 +5090,146 @@ body.modal-open .vault-layout {
 /* ── Responsive ────────────────────────────────────────── */
 @media (max-width: 900px) {
   .lp-header {
-    grid-template-columns: 1fr auto;
-    gap: 0.55rem 0.75rem;
-    padding: 0.95rem 1.15rem 0.75rem;
+    position: relative;
+    grid-template-columns: 1fr auto auto;
+    gap: 0.55rem 0.65rem;
+    padding: 0.8rem 1rem;
   }
 
-  .lp-nav {
-    grid-column: 1 / -1;
-    display: flex;
-    justify-content: flex-start;
-    gap: 1.1rem;
-    overflow-x: auto;
-    padding-bottom: 0.15rem;
-    -webkit-overflow-scrolling: touch;
+  .lp-header-brand {
+    grid-column: 1;
   }
 
-  .lp-header-social {
+  .lp-menu-btn {
+    display: inline-flex;
+    grid-column: 3;
     justify-self: end;
   }
 
-  .lp-hero {
-    padding: 2.5rem 1.15rem 0;
+  .lp-nav {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 6;
+    display: none;
+    flex-direction: column;
     justify-content: flex-start;
-    padding-top: clamp(1.75rem, 5vh, 3rem);
-    min-height: calc(100dvh - 6.5rem);
+    gap: 0.8rem;
+    width: min(82vw, 290px);
+    height: 100vh;
+    height: 100dvh;
+    padding: 4.6rem 1rem 0.55rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(10, 12, 18, 0.96);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    overflow-y: auto;
+  }
+
+  .lp-header.menu-open .lp-nav {
+    display: flex;
+  }
+
+  .lp-nav-header {
+    position: absolute;
+    top: 0.9rem;
+    left: 1rem;
+    right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0;
+  }
+
+  .lp-nav-title {
+    font-family: var(--lp-font);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--lp-white);
+    letter-spacing: -0.02em;
+  }
+
+  .lp-nav-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--lp-white);
+    cursor: pointer;
+  }
+
+  .lp-nav-close .lucide,
+  .lp-nav-close svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .lp-nav a {
+    width: 100%;
+  }
+
+  .lp-nav-login {
+    width: 100%;
+    margin-top: auto;
+  }
+
+  .lp-header-social {
+    display: flex;
+    position: static;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+    width: auto;
+    padding-top: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    justify-content: space-between;
+  }
+
+  .lp-hero {
+    padding: 1.6rem 1rem 0;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100dvh - 4.8rem);
   }
 
   .lp-hero-content {
-    margin-top: -1.5vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 34rem;
+    margin: 16vh auto 0;
+    text-align: center;
+  }
+
+  .lp-headline,
+  .lp-desc,
+  .lp-actions {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .lp-hero-visual {
-    height: min(42vh, 320px);
+    height: min(34vh, 250px);
   }
 
   .lp-actions {
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
   }
 
   .lp-btn {
-    width: 100%;
+    width: min(100%, 18rem);
     min-width: 0;
   }
 
@@ -5112,12 +5245,18 @@ body.modal-open .vault-layout {
   }
 
   .lp-split-visual {
-    order: -1;
-    min-height: 220px;
+    order: 2;
+    min-height: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
   }
 
   .lp-icon-panel {
-    width: min(100%, 220px);
+    width: 0;
+    height: 0;
+    opacity: 0;
+    visibility: hidden;
   }
 
   .lp-section-cta .lp-btn {
@@ -5163,11 +5302,11 @@ body.modal-open .vault-layout {
   }
 
   .vault-topbar .topbar-title { order: 1; flex: 1; min-width: 0; }
-  .vault-topbar .topbar-actions { order: 2; }
+  .vault-topbar .topbar-actions { order: 2; gap: 0.4rem; }
   .btn-menu { display: flex; order: 3; }
 
   .topbar-total-label { display: none; }
-  .topbar-total { padding: 0 0.65rem; gap: 0.3rem; }
+  .topbar-total { height: 34px; padding: 0 0.65rem; gap: 0.3rem; }
 
   .fab { display: flex; }
   .vault-main { padding: 0 1rem; }
@@ -5255,7 +5394,12 @@ body.modal-open .vault-layout {
   .dash-toolbar-actions .btn span { display: none; }
   .dash-toolbar-actions .btn { padding: 0.5rem; }
   .profile-fields { grid-template-columns: 1fr; }
-  .vault-topbar { padding: 0.75rem 1rem; gap: 0.5rem; }
+  .vault-topbar { padding: 0.62rem 0.8rem; gap: 0.4rem; }
+  .topbar-total { height: 34px; padding: 0 0.6rem; }
+  .theme-switch-host.topbar-theme .theme-switch {
+    transform: scale(0.94);
+    transform-origin: center;
+  }
   #toasts {
     left: 1rem;
     right: 1rem;
@@ -5379,11 +5523,33 @@ body.modal-open .vault-layout {
   }
   .auth-logo .auth-brand { font-size: 1.45rem; }
 
-  .vault-topbar { padding: 0.65rem 0.75rem; }
+  .vault-topbar { padding: 0.55rem 0.65rem; }
   .topbar-title h1 { font-size: 1rem; }
   .topbar-subtitle { display: none; }
-  .topbar-total { height: 34px; padding: 0 0.55rem; }
+  .topbar-total { display: none; }
   .topbar-total strong { font-size: 0.85rem; }
+
+  .lp-header {
+    padding: 0.72rem 0.78rem;
+  }
+
+  .lp-hero {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .lp-headline {
+    font-size: clamp(2rem, 10vw, 2.7rem);
+  }
+
+  .lp-desc {
+    margin: 1rem auto 1.45rem;
+    font-size: 0.92rem;
+  }
+
+  .lp-actions {
+    width: 100%;
+  }
 
   .vault-main { padding: 0 0.75rem; }
 

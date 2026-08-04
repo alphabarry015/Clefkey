@@ -95,16 +95,39 @@ export function createAuthScreens({
   function bindLandingNavigation({ onUnlockBack } = {}) {
     const goRegister = () => openAuthTab('register');
     const goLogin = () => openAuthTab('login');
+    const landingRoot = $('#screen-landing');
+    const landingHeader = landingRoot?.querySelector('.lp-header');
+    const landingMenuBtn = $('#btn-landing-menu');
+    const landingMenuCloseBtn = $('#btn-landing-menu-close');
+    const closeLandingMenu = () => {
+      landingHeader?.classList.remove('menu-open');
+      landingMenuBtn?.setAttribute('aria-expanded', 'false');
+    };
+    const toggleLandingMenu = () => {
+      const willOpen = !landingHeader?.classList.contains('menu-open');
+      landingHeader?.classList.toggle('menu-open', willOpen);
+      landingMenuBtn?.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    };
 
     $('#btn-landing-start')?.addEventListener('click', goRegister);
     $('#btn-landing-start-footer')?.addEventListener('click', goRegister);
     $('#btn-landing-login')?.addEventListener('click', goLogin);
+    $('#btn-landing-login-menu')?.addEventListener('click', () => {
+      closeLandingMenu();
+      goLogin();
+    });
+    landingMenuBtn?.addEventListener('click', toggleLandingMenu);
+    landingMenuCloseBtn?.addEventListener('click', closeLandingMenu);
+    landingRoot?.querySelectorAll('.lp-nav a').forEach((link) => {
+      link.addEventListener('click', closeLandingMenu);
+    });
     $('#btn-back-landing')?.addEventListener('click', () => {
       const onUnlock = !$('#form-unlock')?.classList.contains('hidden');
       if (onUnlock && typeof onUnlockBack === 'function') {
         onUnlockBack();
         return;
       }
+      closeLandingMenu();
       showScreen('landing');
       refreshIcons($('#screen-landing'));
     });

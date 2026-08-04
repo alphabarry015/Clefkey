@@ -231,11 +231,6 @@ body {
   flex: 1;
 }
 
-.docs-topbar-theme {
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
 .docs-topbar-kicker {
   font-size: 0.7rem;
   font-weight: 600;
@@ -484,11 +479,11 @@ body {
 
   .docs-sidebar {
     position: fixed;
-    left: 0;
+    right: 0;
     top: 0;
     z-index: 40;
     width: min(86vw, 320px);
-    transform: translateX(-105%);
+    transform: translateX(105%);
     transition: transform 0.25s ease;
   }
 
@@ -506,6 +501,7 @@ body {
   .docs-menu-btn {
     width: 2.25rem;
     height: 2.25rem;
+    margin-left: auto;
     flex-direction: column;
     gap: 4px;
     border: 1px solid var(--docs-border);
