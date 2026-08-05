@@ -7,6 +7,15 @@
   --docs-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --docs-sidebar-w: 280px;
   --docs-toc-w: 220px;
+  --docs-body-text: rgba(255, 255, 255, 0.82);
+  --docs-hover-bg: rgba(255, 255, 255, 0.05);
+  --docs-code-bg: rgba(255, 255, 255, 0.06);
+  --docs-code-border: rgba(255, 255, 255, 0.08);
+  --docs-pre-bg: #050505;
+  --docs-pre-text: rgba(255, 255, 255, 0.88);
+  --docs-link: #8aa7ff;
+  --docs-link-hover: #b7c7ff;
+  --docs-burger: #ffffff;
 }
 
 [data-theme="dark"] {
@@ -25,6 +34,15 @@
   --docs-border: rgba(15, 23, 42, 0.1);
   --docs-text: rgba(11, 13, 18, 0.92);
   --docs-muted: rgba(11, 13, 18, 0.55);
+  --docs-body-text: rgba(11, 13, 18, 0.82);
+  --docs-hover-bg: rgba(15, 23, 42, 0.06);
+  --docs-code-bg: rgba(15, 23, 42, 0.06);
+  --docs-code-border: rgba(15, 23, 42, 0.12);
+  --docs-pre-bg: #0f1218;
+  --docs-pre-text: rgba(255, 255, 255, 0.9);
+  --docs-link: #2a4fb5;
+  --docs-link-hover: #1b3585;
+  --docs-burger: #0b0d12;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,6 +64,15 @@
     --docs-border: rgba(15, 23, 42, 0.1);
     --docs-text: rgba(11, 13, 18, 0.92);
     --docs-muted: rgba(11, 13, 18, 0.55);
+    --docs-body-text: rgba(11, 13, 18, 0.82);
+    --docs-hover-bg: rgba(15, 23, 42, 0.06);
+    --docs-code-bg: rgba(15, 23, 42, 0.06);
+    --docs-code-border: rgba(15, 23, 42, 0.12);
+    --docs-pre-bg: #0f1218;
+    --docs-pre-text: rgba(255, 255, 255, 0.9);
+    --docs-link: #2a4fb5;
+    --docs-link-hover: #1b3585;
+    --docs-burger: #0b0d12;
   }
 }
 
@@ -149,7 +176,7 @@ body {
   display: block;
   padding: 0.45rem 0.65rem;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--docs-body-text);
   text-decoration: none;
   font-size: 0.92rem;
   transition: background 0.15s ease, color 0.15s ease;
@@ -157,7 +184,7 @@ body {
 
 .docs-nav-link:hover {
   color: var(--docs-text);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--docs-hover-bg);
 }
 
 .docs-nav-link.active {
@@ -360,7 +387,7 @@ body {
 
 .markdown-body p,
 .markdown-body li {
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--docs-body-text);
   font-size: 0.98rem;
 }
 
@@ -379,20 +406,20 @@ body {
 }
 
 .markdown-body a {
-  color: #8aa7ff;
+  color: var(--docs-link);
   text-decoration: none;
 }
 
 .markdown-body a:hover {
-  color: #b7c7ff;
+  color: var(--docs-link-hover);
   text-decoration: underline;
 }
 
 .markdown-body code {
   font-family: var(--docs-mono);
   font-size: 0.86em;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--docs-code-bg);
+  border: 1px solid var(--docs-code-border);
   border-radius: 5px;
   padding: 0.1em 0.35em;
 }
@@ -401,7 +428,7 @@ body {
   margin: 0 0 1.15rem;
   padding: 1rem 1.05rem;
   overflow: auto;
-  background: #050505;
+  background: var(--docs-pre-bg);
   border: 1px solid var(--docs-border);
   border-radius: 10px;
 }
@@ -411,7 +438,7 @@ body {
   border: none;
   padding: 0;
   font-size: 0.86rem;
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--docs-pre-text);
 }
 
 .markdown-body .md-table-wrap {
@@ -450,7 +477,7 @@ body {
   padding: 0.65rem 0.9rem;
   border-left: 3px solid var(--docs-blue);
   background: rgba(54, 98, 215, 0.08);
-  color: var(--docs-muted);
+  color: var(--docs-body-text);
 }
 
 .markdown-body hr {
@@ -517,7 +544,7 @@ body {
     display: block;
     width: 14px;
     height: 1.5px;
-    background: #fff;
+    background: var(--docs-burger);
   }
 
   .docs-backdrop {
