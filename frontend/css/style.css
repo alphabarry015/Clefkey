@@ -5126,7 +5126,7 @@ body.modal-open .vault-layout {
     width: min(82vw, 290px);
     height: 100vh;
     height: 100dvh;
-    padding: 4.6rem 1rem 0.55rem;
+    padding: calc(4.6rem + env(safe-area-inset-top)) 1rem calc(0.55rem + env(safe-area-inset-bottom));
     border-left: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(10, 12, 18, 0.96);
     box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
@@ -5141,7 +5141,7 @@ body.modal-open .vault-layout {
 
   .lp-nav-header {
     position: absolute;
-    top: 0.9rem;
+    top: calc(0.9rem + env(safe-area-inset-top));
     left: 1rem;
     right: 1rem;
     display: flex;
@@ -5284,6 +5284,8 @@ body.modal-open .vault-layout {
     height: 100dvh;
     width: var(--sidebar-width);
     min-width: var(--sidebar-width);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
     border-right: none;
     border-left: 1px solid var(--border);
     z-index: 90;
