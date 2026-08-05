@@ -112,10 +112,6 @@ export function createAuthScreens({
     $('#btn-landing-start')?.addEventListener('click', goRegister);
     $('#btn-landing-start-footer')?.addEventListener('click', goRegister);
     $('#btn-landing-login')?.addEventListener('click', goLogin);
-    $('#btn-landing-login-menu')?.addEventListener('click', () => {
-      closeLandingMenu();
-      goLogin();
-    });
     landingMenuBtn?.addEventListener('click', toggleLandingMenu);
     landingMenuCloseBtn?.addEventListener('click', closeLandingMenu);
     landingRoot?.querySelectorAll('.lp-nav a').forEach((link) => {

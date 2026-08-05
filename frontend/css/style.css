@@ -5174,11 +5174,6 @@ body.modal-open .vault-layout {
     width: 100%;
   }
 
-  .lp-nav-login {
-    width: 100%;
-    margin-top: auto;
-  }
-
   .lp-header-social {
     display: flex;
     position: static;
