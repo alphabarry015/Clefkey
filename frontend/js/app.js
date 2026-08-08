@@ -433,9 +433,12 @@ function setAvatar(el, name) {
 }
 
 function esc(str) {
-  const d = document.createElement('div');
-  d.textContent = str || '';
-  return d.innerHTML;
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function debounce(fn, delay = 250) {
@@ -618,7 +621,7 @@ function applyEntryFormLabels(type = 'login') {
   if (passInput) passInput.placeholder = isApi ? 'sk-… / secret' : 'Mot de passe';
   if (secretBlock) {
     secretBlock.placeholder = isSsh
-      ? '-----BEGIN OPENSSH PRIVATE KEY-----\n…\n-----END OPENSSH PRIVATE KEY-----'
+      ? 'Collez la clé SSH privée'
       : '';
   }
   if (urlInput) {

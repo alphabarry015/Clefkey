@@ -2,7 +2,7 @@
  * Application documentation Clefkey. — sidebar + contenu Markdown.
  */
 
-import { renderMarkdown } from './markdown.js';
+import { escapeHtml, renderMarkdown } from './markdown.js';
 import { initTheme } from './theme.js';
 
 initTheme();
@@ -80,19 +80,22 @@ function docsPath(slug) {
 
 function resolveDocLink(href) {
   if (!href) return href;
-  if (/^(https?:|mailto:|#)/i.test(href)) return href;
+  const raw = String(href).trim();
+  if (/^(javascript|data|vbscript):/i.test(raw) || raw.startsWith('//')) return '#';
+  if (/^(https?:|mailto:|#)/i.test(raw)) return raw;
 
-  const clean = href.split('#')[0].replace(/^\.\//, '').replace(/^\//, '');
+  const clean = raw.split('#')[0].replace(/^\.\//, '').replace(/^\//, '');
   const file = clean.split('/').pop()?.toLowerCase() || '';
   const slug = FILE_TO_SLUG[file];
   if (slug) {
-    const hash = href.includes('#') ? `#${href.split('#')[1]}` : '';
+    const hash = raw.includes('#') ? `#${raw.split('#')[1]}` : '';
     return `${docsPath(slug)}${hash}`;
   }
-  if (href.endsWith('.md')) {
+  if (raw.endsWith('.md')) {
     return `https://github.com/alphabarry015/Gardefort/blob/main/docs/${clean}`;
   }
-  return href;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return '#';
+  return raw;
 }
 
 function renderSidebar(activeSlug) {
@@ -141,7 +144,7 @@ function renderToc(headings) {
 
   toc.hidden = false;
   tocNav.innerHTML = items.map((item) => `
-    <a href="#${item.id}" class="docs-toc-link level-${item.level}">${item.text}</a>
+    <a href="#${escapeHtml(item.id)}" class="docs-toc-link level-${item.level}">${escapeHtml(item.text)}</a>
   `).join('');
 }
 

@@ -3,6 +3,7 @@ __pycache__/
 *.vault
 .env
 .env.local
+.django_secret
 .venv/
 venv/
 *.db

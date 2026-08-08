@@ -3,12 +3,24 @@
  * Pas de dépendance externe : titres, listes, tableaux, code, liens, gras.
  */
 
-function escapeHtml(text) {
-  return String(text)
+export function escapeHtml(text) {
+  return String(text ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Autorise https?, mailto:, ancres #, chemins relatifs ; bloque javascript:/data: etc. */
+function sanitizeHref(href) {
+  const value = String(href ?? '').trim();
+  if (!value) return '#';
+  if (value.startsWith('#')) return value;
+  if (/^(https?:|mailto:)/i.test(value)) return value;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return '#';
+  if (value.startsWith('//')) return '#';
+  return value;
 }
 
 function slugify(text) {
@@ -27,7 +39,7 @@ function inlineMarkdown(text, linkResolver) {
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   out = out.replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
   out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
-    const resolved = linkResolver ? linkResolver(href) : href;
+    const resolved = sanitizeHref(linkResolver ? linkResolver(href) : href);
     const external = /^https?:\/\//i.test(resolved);
     const attrs = external ? ' target="_blank" rel="noopener noreferrer"' : '';
     return `<a href="${escapeHtml(resolved)}"${attrs}>${label}</a>`;
@@ -136,7 +148,7 @@ export function renderMarkdown(source, options = {}) {
       const text = heading[2].replace(/\s+#*\s*$/, '').trim();
       const id = uniqueSlug(text);
       headings.push({ id, text, level });
-      parts.push(`<h${level} id="${id}">${inlineMarkdown(text, linkResolver)}</h${level}>`);
+      parts.push(`<h${level} id="${escapeHtml(id)}">${inlineMarkdown(text, linkResolver)}</h${level}>`);
       i += 1;
       continue;
     }

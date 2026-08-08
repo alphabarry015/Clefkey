@@ -1,6 +1,7 @@
 """Configuration Django — Gestionnaire de mots de passe."""
 
 import os
+import secrets
 import sys
 from pathlib import Path
 
@@ -45,16 +46,33 @@ def _default_allowed_hosts() -> list[str]:
     return list(dict.fromkeys(hosts))
 
 
-_DEFAULT_DEV_SECRET = "dev-secret-change-in-production"
-SECRET_KEY = os.getenv("SECRET_KEY", _DEFAULT_DEV_SECRET).strip() or _DEFAULT_DEV_SECRET
-
 DEBUG = os.getenv("DEBUG", "false" if IS_VERCEL else "true").lower() in ("1", "true", "yes")
 
-# En production, refuser la clé de développement (Vercel, Docker, VM, etc.).
-if not DEBUG and SECRET_KEY == _DEFAULT_DEV_SECRET:
-    raise RuntimeError(
-        "SECRET_KEY doit être défini en production (ne pas utiliser la valeur de développement)."
-    )
+
+def _resolve_secret_key() -> str:
+    """SECRET_KEY depuis l'env ; en DEBUG, fichier local gitignoré ; sinon erreur."""
+    env_key = os.getenv("SECRET_KEY", "").strip()
+    if env_key:
+        return env_key
+    if not DEBUG:
+        raise RuntimeError(
+            "SECRET_KEY doit être défini en production (variable d'environnement)."
+        )
+    secret_path = BASE_DIR / ".django_secret"
+    if secret_path.is_file():
+        stored = secret_path.read_text(encoding="utf-8").strip()
+        if stored:
+            return stored
+    generated = secrets.token_urlsafe(48)
+    secret_path.write_text(generated + "\n", encoding="utf-8")
+    try:
+        secret_path.chmod(0o600)
+    except OSError:
+        pass
+    return generated
+
+
+SECRET_KEY = _resolve_secret_key()
 
 # Rate limit partagé obligatoire sur Vercel (sauf contournement explicite).
 _RATE_ALLOW_MEMORY = os.getenv("RATE_LIMIT_ALLOW_MEMORY", "").strip().lower() in ("1", "true", "yes")
