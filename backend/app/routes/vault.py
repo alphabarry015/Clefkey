@@ -102,5 +102,8 @@ def delete_entry(
 
 
 @router.post("/generate-password", response_model=GeneratePasswordResponse)
-def generate_password_endpoint(request: GeneratePasswordRequest):
+def generate_password_endpoint(
+    request: GeneratePasswordRequest,
+    _current_user: User = Depends(get_current_user),
+):
     return GeneratePasswordResponse(password=generate_password(request.length))

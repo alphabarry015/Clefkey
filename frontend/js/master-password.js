@@ -4,11 +4,12 @@
 
 import { isCommonPassword } from './common-passwords.js';
 
-export const MASTER_PASSWORD_MIN_LENGTH = 12;
+/** Longueur minimale requise (caractères), pas un secret. */
+export const MASTER_MIN_LENGTH = 12;
 
 export function checkStrength(password) {
   let score = 0;
-  if (password.length >= MASTER_PASSWORD_MIN_LENGTH) score++;
+  if (password.length >= MASTER_MIN_LENGTH) score++;
   if (password.length >= 16) score++;
   if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
   if (/\d/.test(password)) score++;
@@ -21,8 +22,8 @@ export function checkStrength(password) {
  * @returns {Promise<string|null>} message d'erreur ou null si OK
  */
 export async function validateMasterPassword(password) {
-  if (!password || password.length < MASTER_PASSWORD_MIN_LENGTH) {
-    return `Minimum ${MASTER_PASSWORD_MIN_LENGTH} caractères`;
+  if (!password || password.length < MASTER_MIN_LENGTH) {
+    return `Minimum ${MASTER_MIN_LENGTH} caractères`;
   }
   if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) {
     return 'Ajoutez des majuscules et des minuscules';
