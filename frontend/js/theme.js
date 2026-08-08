@@ -87,10 +87,19 @@ export function themeSwitchMarkup(extraClass = '') {
   `;
 }
 
+function setHtml(el, html) {
+  el.replaceChildren();
+  const source = String(html ?? '');
+  if (!source) return;
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  el.appendChild(range.createContextualFragment(source));
+}
+
 export function mountThemeSwitches(selector = '[data-theme-switch]') {
   document.querySelectorAll(selector).forEach((host) => {
     if (host.dataset.mounted === '1') return;
-    host.innerHTML = themeSwitchMarkup(host.dataset.themeSwitchClass || '');
+    setHtml(host, themeSwitchMarkup(host.dataset.themeSwitchClass || ''));
     host.dataset.mounted = '1';
   });
 }

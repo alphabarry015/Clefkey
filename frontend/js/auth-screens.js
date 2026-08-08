@@ -18,6 +18,15 @@ export function createAuthScreens({
     vault: $('#screen-vault'),
   };
 
+  function setHtml(el, html) {
+    el.replaceChildren();
+    const source = String(html ?? '');
+    if (!source) return;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    el.appendChild(range.createContextualFragment(source));
+  }
+
   function showScreen(name) {
     Object.values(screens).forEach((s) => s?.classList.remove('active'));
     screens[name]?.classList.add('active');
@@ -80,9 +89,9 @@ export function createAuthScreens({
     state.afterRecoveryKeys = onContinue || null;
     $('#recovery-keys-title').textContent = title;
     const list = $('#recovery-keys-list');
-    list.innerHTML = codes.map((code, i) => `
+    setHtml(list, codes.map((code, i) => `
       <li><span class="rk-slot">${i + 1}</span><span>${esc(code)}</span></li>
-    `).join('');
+    `).join(''));
     const confirm = $('#recovery-keys-confirm');
     const cont = $('#btn-recovery-keys-continue');
     confirm.checked = false;

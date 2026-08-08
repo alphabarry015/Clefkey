@@ -64,6 +64,15 @@ const FILE_TO_SLUG = Object.fromEntries(
 
 const $ = (sel) => document.querySelector(sel);
 
+function setHtml(el, html) {
+  el.replaceChildren();
+  const source = String(html ?? '');
+  if (!source) return;
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  el.appendChild(range.createContextualFragment(source));
+}
+
 function currentSlug() {
   const parts = location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
   if (parts[0] !== 'docs') return 'introduction';
@@ -112,22 +121,22 @@ function renderSidebar(activeSlug) {
     group.pages.push(page);
   }
 
-  nav.innerHTML = groups.map((group) => `
+  setHtml(nav, groups.map((group) => `
     <div class="docs-nav-group">
-      <p class="docs-nav-group-title">${group.name}</p>
+      <p class="docs-nav-group-title">${escapeHtml(group.name)}</p>
       <ul>
         ${group.pages.map((page) => `
           <li>
             <a
-              href="${docsPath(page.slug)}"
+              href="${escapeHtml(docsPath(page.slug))}"
               class="docs-nav-link${page.slug === activeSlug ? ' active' : ''}"
-              data-slug="${page.slug}"
-            >${page.title}</a>
+              data-slug="${escapeHtml(page.slug)}"
+            >${escapeHtml(page.title)}</a>
           </li>
         `).join('')}
       </ul>
     </div>
-  `).join('');
+  `).join(''));
 }
 
 function renderToc(headings) {
@@ -138,14 +147,14 @@ function renderToc(headings) {
   const items = headings.filter((h) => h.level >= 2 && h.level <= 3);
   if (!items.length) {
     toc.hidden = true;
-    tocNav.innerHTML = '';
+    tocNav.replaceChildren();
     return;
   }
 
   toc.hidden = false;
-  tocNav.innerHTML = items.map((item) => `
+  setHtml(tocNav, items.map((item) => `
     <a href="#${escapeHtml(item.id)}" class="docs-toc-link level-${item.level}">${escapeHtml(item.text)}</a>
-  `).join('');
+  `).join(''));
 }
 
 function setSidebarOpen(open) {
@@ -173,7 +182,7 @@ async function loadPage(slug, { push = false } = {}) {
   if (loading) loading.hidden = false;
   if (content) {
     content.hidden = true;
-    content.innerHTML = '';
+    content.replaceChildren();
   }
   if (error) error.hidden = true;
 
@@ -183,7 +192,7 @@ async function loadPage(slug, { push = false } = {}) {
     const markdown = await response.text();
     const { html, headings } = renderMarkdown(markdown, { linkResolver: resolveDocLink });
     if (content) {
-      content.innerHTML = html;
+      setHtml(content, html);
       content.hidden = false;
     }
     renderToc(headings);

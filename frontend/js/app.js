@@ -244,7 +244,7 @@ function resetEntryFormModal() {
     ? addEntryModalTitle(defaultEntryTypeFromFilter())
     : 'Ajouter une clé';
   const btn = $('#btn-save-entry');
-  if (btn) btn.innerHTML = '<i data-lucide="check-circle"></i> Enregistrer';
+  if (btn) setHtml(btn, '<i data-lucide="check-circle"></i> Enregistrer');
   hideEntryFolderCreate();
 }
 
@@ -441,6 +441,34 @@ function esc(str) {
     .replace(/'/g, '&#39;');
 }
 
+/** Remplace le contenu HTML sans assigner `.innerHTML` (réduit le risque XSS / alertes scanners). */
+function setHtml(el, html) {
+  el.replaceChildren();
+  const source = String(html ?? '');
+  if (!source) return;
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  el.appendChild(range.createContextualFragment(source));
+}
+
+/** Remplit un <select> via le DOM (pas d'innerHTML). */
+function fillSelect(sel, options, selectedValue = '') {
+  sel.replaceChildren();
+  for (const { value, label } of options) {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  }
+  if (selectedValue !== '' && [...sel.options].some((o) => o.value === selectedValue)) {
+    sel.value = selectedValue;
+  } else if (selectedValue === '' && [...sel.options].some((o) => o.value === '')) {
+    sel.value = '';
+  } else if (sel.options.length) {
+    sel.selectedIndex = 0;
+  }
+}
+
 function debounce(fn, delay = 250) {
   let timer;
   return (...args) => {
@@ -556,11 +584,11 @@ function applyEntryFormLabels(type = 'login') {
   if (titleLabel) titleLabel.textContent = isApi || isSsh ? 'Nom' : 'Titre';
   if (userLabel) {
     if (isSsh) {
-      userLabel.innerHTML = 'Commentaire / utilisateur <span class="optional">(optionnel)</span>';
+      setHtml(userLabel, 'Commentaire / utilisateur <span class="optional">(optionnel)</span>');
     } else if (isApi) {
-      userLabel.innerHTML = 'Client ID / Identifiant <span class="optional">(optionnel)</span>';
+      setHtml(userLabel, 'Client ID / Identifiant <span class="optional">(optionnel)</span>');
     } else {
-      userLabel.innerHTML = 'Identifiant <span class="optional">(optionnel)</span>';
+      setHtml(userLabel, 'Identifiant <span class="optional">(optionnel)</span>');
     }
   }
   if (passLabel) {
@@ -571,11 +599,11 @@ function applyEntryFormLabels(type = 'login') {
   }
   if (urlLabel) {
     if (isSsh) {
-      urlLabel.innerHTML = 'Hôte / alias <span class="optional">(optionnel)</span>';
+      setHtml(urlLabel, 'Hôte / alias <span class="optional">(optionnel)</span>');
     } else if (isApi) {
-      urlLabel.innerHTML = 'Console / endpoint <span class="optional">(optionnel)</span>';
+      setHtml(urlLabel, 'Console / endpoint <span class="optional">(optionnel)</span>');
     } else {
-      urlLabel.innerHTML = 'URL <span class="optional">(optionnel)</span>';
+      setHtml(urlLabel, 'URL <span class="optional">(optionnel)</span>');
     }
   }
   if (notesLabel) {
@@ -590,11 +618,11 @@ function applyEntryFormLabels(type = 'login') {
   const notesHeading = $('#entry-notes-heading');
   if (notesHeading) {
     if (isSsh) {
-      notesHeading.innerHTML = 'Clé publique / fingerprint <span class="optional">optionnel</span>';
+      setHtml(notesHeading, 'Clé publique / fingerprint <span class="optional">optionnel</span>');
     } else if (isApi) {
-      notesHeading.innerHTML = 'Scopes / notes <span class="optional">optionnel</span>';
+      setHtml(notesHeading, 'Scopes / notes <span class="optional">optionnel</span>');
     } else {
-      notesHeading.innerHTML = 'Notes <span class="optional">optionnel</span>';
+      setHtml(notesHeading, 'Notes <span class="optional">optionnel</span>');
     }
   }
   const titleInput = $('#entry-title');
@@ -703,9 +731,9 @@ function syncFolderFilterButtons() {
   const renderList = (containerId) => {
     const el = $(containerId);
     if (!el) return;
-    el.innerHTML = state.folders.map((f) => `
+    setHtml(el, state.folders.map((f) => `
       <button type="button" class="folder-filter${state.folderFilter === f.id ? ' active' : ''}" data-folder-filter="${esc(f.id)}">${esc(f.name)}</button>
-    `).join('');
+    `).join(''));
   };
   renderList('#dash-folder-filter-list');
   renderList('#vault-folder-filter-list');
@@ -721,11 +749,11 @@ function populateFolderSelect(selectedId = '') {
   const sel = $('#entry-folder');
   if (!sel) return;
   const current = selectedId || sel.value || '';
-  sel.innerHTML = `<option value="">Sans projet</option>` + state.folders.map((f) =>
-    `<option value="${esc(f.id)}">${esc(f.name)}</option>`
-  ).join('');
-  if (current && state.folders.some((f) => f.id === current)) sel.value = current;
-  else sel.value = '';
+  const pick = current && state.folders.some((f) => f.id === current) ? current : '';
+  fillSelect(sel, [
+    { value: '', label: 'Sans projet' },
+    ...state.folders.map((f) => ({ value: f.id, label: f.name })),
+  ], pick);
 }
 
 function defaultFolderIdFromFilter() {
@@ -851,33 +879,34 @@ function populateTransferFolderSelect(selectedId = '', {
   const sel = $('#transfer-folder');
   if (!sel) return;
   const folders = state.folders.filter((f) => f.id !== excludeFolderId);
-  let html = `<option value="">Choisir une destination…</option>`;
+  const options = [{ value: '', label: 'Choisir une destination…' }];
   if (allowUnassign) {
-    html += `<option value="__unassign__">Sans projet</option>`;
+    options.push({ value: '__unassign__', label: 'Sans projet' });
   }
-  html += folders.map((f) =>
-    `<option value="${esc(f.id)}">${esc(f.name)}</option>`
-  ).join('');
-  sel.innerHTML = html;
+  options.push(...folders.map((f) => ({ value: f.id, label: f.name })));
   let pick = selectedId || '';
   if (!pick) {
     if (folders.length === 1) pick = folders[0].id;
     else if (folders.length === 0 && allowUnassign) pick = '__unassign__';
   }
-  if (pick === '__unassign__' && allowUnassign) sel.value = '__unassign__';
-  else if (pick && folders.some((f) => f.id === pick)) sel.value = pick;
-  else sel.value = '';
+  if (pick === '__unassign__' && allowUnassign) {
+    fillSelect(sel, options, '__unassign__');
+  } else if (pick && folders.some((f) => f.id === pick)) {
+    fillSelect(sel, options, pick);
+  } else {
+    fillSelect(sel, options, '');
+  }
 }
 
 function populateDetailFolderSelect(selectedId = '') {
   const sel = $('#detail-move-folder');
   if (!sel) return;
   const current = selectedId || '';
-  sel.innerHTML = `<option value="">Sans projet</option>` + state.folders.map((f) =>
-    `<option value="${esc(f.id)}">${esc(f.name)}</option>`
-  ).join('');
-  if (current && state.folders.some((f) => f.id === current)) sel.value = current;
-  else sel.value = '';
+  const pick = current && state.folders.some((f) => f.id === current) ? current : '';
+  fillSelect(sel, [
+    { value: '', label: 'Sans projet' },
+    ...state.folders.map((f) => ({ value: f.id, label: f.name })),
+  ], pick);
   syncDetailMoveButton();
 }
 
@@ -939,7 +968,7 @@ function renderTransferEntryList(entries) {
   if (!list) return;
   const items = Array.isArray(entries) ? entries : getUnassignedEntries();
   if (items.length === 0) {
-    list.innerHTML = '';
+    list.replaceChildren();
     empty?.classList.remove('hidden');
     if (empty) {
       empty.textContent = state.transferAllowUnassign
@@ -950,7 +979,7 @@ function renderTransferEntryList(entries) {
     return;
   }
   empty?.classList.add('hidden');
-  list.innerHTML = items.map((e) => `
+  setHtml(list, items.map((e) => `
     <li class="transfer-entry-item">
       <label class="transfer-entry-item-label">
         <input type="checkbox" value="${esc(e.id)}" checked>
@@ -960,7 +989,7 @@ function renderTransferEntryList(entries) {
         </span>
       </label>
     </li>
-  `).join('');
+  `).join(''));
   updateTransferSelectionUi();
 }
 
@@ -1070,12 +1099,12 @@ function renderFoldersManageList() {
   const empty = $('#folders-manage-empty');
   if (!list) return;
   if (state.folders.length === 0) {
-    list.innerHTML = '';
+    list.replaceChildren();
     empty?.classList.remove('hidden');
     return;
   }
   empty?.classList.add('hidden');
-  list.innerHTML = state.folders.map((f) => `
+  setHtml(list, state.folders.map((f) => `
     <li class="folders-manage-item" data-folder-id="${esc(f.id)}">
       <input type="text" class="folder-rename-input" value="${esc(f.name)}" maxlength="80" aria-label="Nom du projet">
       <button type="button" class="btn btn-ghost btn-sm folder-rename-save" title="Enregistrer">OK</button>
@@ -1083,7 +1112,7 @@ function renderFoldersManageList() {
         <i data-lucide="trash-2"></i>
       </button>
     </li>
-  `).join('');
+  `).join(''));
   refreshIcons(list);
 }
 
@@ -1256,7 +1285,7 @@ function renderProjectDetailPage() {
 
   if (!list) return;
   if (entries.length === 0) {
-    list.innerHTML = '';
+    list.replaceChildren();
     clearProjectDetailSelection();
     empty?.classList.remove('hidden');
     if (state.projectDetailSearch.trim()) {
@@ -1274,10 +1303,10 @@ function renderProjectDetailPage() {
 
   empty?.classList.add('hidden');
   const selected = new Set(state.projectDetailSelectedIds);
-  list.innerHTML = entries.map((e, i) => entryListCardMarkup(e, i, {
+  setHtml(list, entries.map((e, i) => entryListCardMarkup(e, i, {
     selectable: true,
     selected: selected.has(e.id),
-  })).join('');
+  })).join(''));
   refreshIcons(list);
   setupFaviconImages(list);
   syncProjectDetailSelectionUi();
@@ -1301,13 +1330,13 @@ function renderProjectsPage() {
 
   if (!grid) return;
   if (state.folders.length === 0) {
-    grid.innerHTML = '';
+    grid.replaceChildren();
     empty?.classList.remove('hidden');
     refreshIcons($('#projects-view'));
     return;
   }
   empty?.classList.add('hidden');
-  grid.innerHTML = state.folders.map((f) => {
+  setHtml(grid, state.folders.map((f) => {
     const count = countEntriesInFolder(f.id);
     const countLabelText = count <= 1 ? `${count} clé` : `${count} clés`;
     const initial = esc((f.name?.[0] || '?').toUpperCase());
@@ -1330,7 +1359,7 @@ function renderProjectsPage() {
           </button>
         </div>
       </article>`;
-  }).join('');
+  }).join(''));
   refreshIcons($('#projects-view'));
 }
 
@@ -1430,9 +1459,19 @@ function setEntryAvatar(el, entry) {
     return;
   }
   el.classList.add('entry-icon');
-  el.innerHTML = `
-    <img class="entry-favicon" src="${esc(faviconUrl)}" alt="" width="28" height="28" decoding="async" data-site-url="${esc(normalizeEntryUrl(entry.url))}" onerror="window.onFaviconError(this)">
-    <span class="entry-letter">${letter}</span>`;
+  const img = document.createElement('img');
+  img.className = 'entry-favicon';
+  img.src = faviconUrl;
+  img.alt = '';
+  img.width = 28;
+  img.height = 28;
+  img.decoding = 'async';
+  img.dataset.siteUrl = normalizeEntryUrl(entry.url) || '';
+  img.onerror = function onFaviconImgError() { window.onFaviconError(this); };
+  const letterEl = document.createElement('span');
+  letterEl.className = 'entry-letter';
+  letterEl.textContent = letter;
+  el.replaceChildren(img, letterEl);
   setupFaviconImages(el);
 }
 
@@ -1440,7 +1479,11 @@ function toast(msg, type = 'info') {
   const icons = { success: 'check-circle', error: 'x-circle', info: 'info' };
   const el = document.createElement('div');
   el.className = `toast toast-${type}`;
-  el.innerHTML = `<i data-lucide="${icons[type] || 'info'}"></i><span>${esc(msg)}</span>`;
+  const icon = document.createElement('i');
+  icon.setAttribute('data-lucide', icons[type] || 'info');
+  const span = document.createElement('span');
+  span.textContent = msg || '';
+  el.append(icon, span);
   $('#toasts').appendChild(el);
   refreshIcons(el);
   requestAnimationFrame(() => el.classList.add('show'));
@@ -2364,12 +2407,12 @@ function renderSharesReceived() {
   if (!list || !empty) return;
   updateEntryCounts();
   if (state.sharesReceived.length === 0) {
-    list.innerHTML = '';
+    list.replaceChildren();
     empty.classList.remove('hidden');
     return;
   }
   empty.classList.add('hidden');
-  list.innerHTML = state.sharesReceived.map((e, i) => `
+  setHtml(list, state.sharesReceived.map((e, i) => `
     <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-share-received">
       ${entryAvatarMarkup(e)}
       <div class="entry-info">
@@ -2384,7 +2427,7 @@ function renderSharesReceived() {
           <i data-lucide="trash-2"></i>
         </button>
       </div>
-    </div>`).join('');
+    </div>`).join(''));
   refreshIcons(list);
   setupFaviconImages(list);
 }
@@ -2395,12 +2438,12 @@ function renderSharesSent() {
   if (!list || !empty) return;
   updateEntryCounts();
   if (state.sharesSent.length === 0) {
-    list.innerHTML = '';
+    list.replaceChildren();
     empty.classList.remove('hidden');
     return;
   }
   empty.classList.add('hidden');
-  list.innerHTML = state.sharesSent.map((e, i) => `
+  setHtml(list, state.sharesSent.map((e, i) => `
     <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-share-sent">
       ${entryAvatarMarkup(e)}
       <div class="entry-info">
@@ -2412,7 +2455,7 @@ function renderSharesSent() {
           <i data-lucide="trash-2"></i>
         </button>
       </div>
-    </div>`).join('');
+    </div>`).join(''));
   refreshIcons(list);
   setupFaviconImages(list);
 }
@@ -2565,12 +2608,12 @@ function renderContactsPage() {
   if (!list || !empty) return;
   const contacts = getShareContacts();
   if (contacts.length === 0) {
-    list.innerHTML = '';
+    list.replaceChildren();
     empty.classList.remove('hidden');
     return;
   }
   empty.classList.add('hidden');
-  list.innerHTML = contacts.map((c, i) => {
+  setHtml(list, contacts.map((c, i) => {
     const label = c.display_name || c.email;
     const meta = c.share_count > 0
       ? `${c.share_count} clé${c.share_count > 1 ? 's' : ''} partagée${c.share_count > 1 ? 's' : ''}`
@@ -2588,7 +2631,7 @@ function renderContactsPage() {
         </div>
         <span class="contact-open">Voir</span>
       </button>`;
-  }).join('');
+  }).join(''));
   refreshIcons(list);
 }
 
@@ -2626,11 +2669,11 @@ function renderContactDetail(email) {
   const sharesEmpty = $('#contacts-detail-shares-empty');
   if (sharesList && sharesEmpty) {
     if (!contact.shares.length) {
-      sharesList.innerHTML = '';
+      sharesList.replaceChildren();
       sharesEmpty.classList.remove('hidden');
     } else {
       sharesEmpty.classList.add('hidden');
-      sharesList.innerHTML = contact.shares.map((e, i) => `
+      setHtml(sharesList, contact.shares.map((e, i) => `
         <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-share-sent">
           ${entryAvatarMarkup(e)}
           <div class="entry-info">
@@ -2642,7 +2685,7 @@ function renderContactDetail(email) {
               <i data-lucide="trash-2"></i>
             </button>
           </div>
-        </div>`).join('');
+        </div>`).join(''));
       refreshIcons(sharesList);
       setupFaviconImages(sharesList);
     }
@@ -2657,14 +2700,14 @@ function renderShareContactChips() {
   const contacts = getShareContacts().slice(0, 8);
   if (!contacts.length) {
     wrap.classList.add('hidden');
-    chips.innerHTML = '';
+    chips.replaceChildren();
     return;
   }
   wrap.classList.remove('hidden');
-  chips.innerHTML = contacts.map((c) => {
+  setHtml(chips, contacts.map((c) => {
     const label = c.display_name || c.email;
     return `<button type="button" class="share-contact-chip" data-action="pick-share-contact" data-email="${esc(c.email)}" title="${esc(c.email)}">${esc(label)}</button>`;
-  }).join('');
+  }).join(''));
 }
 
 function openShareModal(entryId, { email = '' } = {}) {
@@ -2715,19 +2758,19 @@ function renderSharePickEntryList() {
   const entries = filterEntriesByQuery(state.entries, state.sharePickSearch)
     .filter((e) => !e.isShare && !isVaultMetaEntry(e));
   if (!entries.length) {
-    list.innerHTML = '';
+    list.replaceChildren();
     empty.classList.remove('hidden');
     return;
   }
   empty.classList.add('hidden');
-  list.innerHTML = entries.slice(0, 40).map((e) => `
+  setHtml(list, entries.slice(0, 40).map((e) => `
     <button type="button" class="share-pick-item" data-action="pick-share-entry" data-id="${esc(e.id)}">
       ${entryAvatarMarkup(e)}
       <div class="entry-info">
         <div class="entry-title">${esc(e.title)}</div>
         <div class="entry-username">${esc(e.username || e.url || '')}</div>
       </div>
-    </button>`).join('');
+    </button>`).join(''));
   refreshIcons(list);
   setupFaviconImages(list);
 }
@@ -2830,12 +2873,12 @@ function renderDashboard() {
   });
 
   if (entries.length === 0 && state.entries.length === 0) {
-    grid.innerHTML = `
+    setHtml(grid, `
       <button type="button" class="dash-tile dash-tile-add dash-tile-add-hero" id="dash-tile-add-only">
         <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
         <span class="dash-tile-name">${esc(addEntryTileLabel())}</span>
         <span class="dash-tile-add-hint">Connexion, API ou SSH</span>
-      </button>`;
+      </button>`);
     empty.classList.add('hidden');
     $('#dash-tile-add-only')?.addEventListener('click', openAddModal);
     refreshIcons(grid);
@@ -2843,7 +2886,7 @@ function renderDashboard() {
   }
 
   if (entries.length === 0) {
-    grid.innerHTML = '';
+    grid.replaceChildren();
     empty.classList.remove('hidden');
     const title = $('#dash-empty-title');
     const text = $('#dash-empty-text');
@@ -2864,7 +2907,7 @@ function renderDashboard() {
 
   empty.classList.add('hidden');
   syncAddEntryButtonLabels();
-  grid.innerHTML = entries.map((e, i) => `
+  setHtml(grid, entries.map((e, i) => `
       <button type="button" class="${dashTileClassName(e)}" style="${dashTileStyle(e, i)}" data-action="show-entry" data-id="${esc(e.id)}" title="${esc(e.title)}">
         ${dashTileIconMarkup(e)}
         <span class="dash-tile-name">${esc(e.title)}</span>
@@ -2873,7 +2916,7 @@ function renderDashboard() {
     <button type="button" class="dash-tile dash-tile-add" data-action="add-entry">
       <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
       <span class="dash-tile-name">${esc(addEntryTileLabel())}</span>
-    </button>`;
+    </button>`);
 
   refreshIcons(grid);
   setupFaviconImages(grid);
@@ -3073,18 +3116,18 @@ function renderEntries() {
   noResults.classList.add('hidden');
 
   if (state.entries.length === 0) {
-    container.innerHTML = '';
+    container.replaceChildren();
     empty.classList.remove('hidden');
     return;
   }
 
   if (list.length === 0) {
-    container.innerHTML = '';
+    container.replaceChildren();
     noResults.classList.remove('hidden');
     return;
   }
 
-  container.innerHTML = list.map((e, i) => `
+  setHtml(container, list.map((e, i) => `
     <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-entry">
       ${entryAvatarMarkup(e)}
       <div class="entry-info">
@@ -3111,7 +3154,7 @@ function renderEntries() {
           <i data-lucide="trash-2"></i>
         </button>
       </div>
-    </div>`).join('');
+    </div>`).join(''));
   refreshIcons(container);
   setupFaviconImages(container);
 }
@@ -3498,7 +3541,7 @@ function openEditModal(entryId) {
   $('#entry-notes').value = e.notes || '';
   $('#entry-generated').classList.add('hidden');
   $('#modal-entry-title').textContent = 'Modifier la clé';
-  $('#btn-save-entry').innerHTML = '<i data-lucide="check-circle"></i> Mettre à jour';
+  setHtml($('#btn-save-entry'), '<i data-lucide="check-circle"></i> Mettre à jour');
   closeModal($('#modal-detail'));
   openModal($('#modal-add'));
   refreshIcons($('#modal-add'));
