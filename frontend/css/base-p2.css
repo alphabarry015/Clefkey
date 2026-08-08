@@ -1,0 +1,267 @@
+/* Clefkey — base-p2.css */
+.form-group label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.optional { color: var(--text-muted); font-weight: 400; }
+
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 0.85rem;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: var(--text-muted);
+}
+
+.input-icon svg,
+.input-icon .lucide { width: 16px; height: 16px; }
+
+.input-wrap input { padding-left: 2.5rem !important; padding-right: 2.5rem !important; }
+
+.btn-eye {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0.35rem;
+  border-radius: var(--radius-xs);
+  transition: var(--transition);
+  display: flex;
+}
+
+.btn-eye:hover { color: var(--text-primary); background: var(--bg-hover); }
+.btn-eye svg, .btn-eye .lucide { width: 18px; height: 18px; }
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: var(--transition);
+  outline: none;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.form-group textarea { resize: vertical; min-height: 60px; }
+
+.strength-bar {
+  height: 4px;
+  background: var(--bg-primary);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+
+.strength-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.strength-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  min-height: 1rem;
+}
+
+.password-input-row { display: flex; gap: 0.5rem; }
+.password-input-row input { flex: 1; }
+
+.generated-preview {
+  margin-top: 0.4rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--success-subtle);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--success);
+  word-break: break-all;
+}
+
+/* ── Buttons ───────────────────────────────────────────── */
+.btn {
+  padding: 0.7rem 1.25rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn svg, .btn .lucide { width: 18px; height: 18px; flex-shrink: 0; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: white;
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--accent-hover), #1e40af);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover { background: var(--bg-hover); border-color: var(--border-light); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 0.55rem;
+  border-radius: var(--radius-sm);
+}
+
+.btn-ghost:hover { color: var(--text-primary); background: var(--bg-hover); }
+.btn-ghost svg { width: 20px; height: 20px; }
+
+.btn-danger-solid {
+  background: var(--error);
+  color: white;
+}
+
+.btn-danger-solid:hover { background: #ef4444; }
+
+.btn-danger-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--error) 45%, var(--border));
+  border-radius: var(--radius-sm);
+  background: var(--error-subtle);
+  color: var(--error);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-danger-outline:hover {
+  background: color-mix(in srgb, var(--error) 12%, var(--bg-card));
+  border-color: var(--error);
+}
+
+.btn-danger-outline svg,
+.btn-danger-outline .lucide {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-full { width: 100%; }
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.45rem;
+  border-radius: var(--radius-xs);
+  transition: var(--transition);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon svg, .btn-icon .lucide { width: 18px; height: 18px; }
+.btn-icon:hover { color: var(--text-primary); background: var(--bg-hover); }
+.btn-danger:hover { color: var(--error); background: var(--error-subtle); }
+
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-left: auto;
+  padding: 0.25rem;
+  line-height: 1;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-close svg, .btn-close .lucide { width: 20px; height: 20px; }
+
+.btn-close:hover { color: var(--text-primary); }
+
+.btn-clear {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-hover);
+  border: none;
+  color: var(--text-muted);
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-clear svg, .btn-clear .lucide { width: 14px; height: 14px; }
+
+.btn-clear:hover { color: var(--text-primary); }
+
+.btn-copy-field {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 0.4rem;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  flex-shrink: 0;
+}
+
+.btn-copy-field svg, .btn-copy-field .lucide { width: 16px; height: 16px; }
+.btn-copy-field:hover { color: var(--accent); border-color: var(--accent); }
+.btn-copy-field.copied { color: var(--success); border-color: var(--success); }
+

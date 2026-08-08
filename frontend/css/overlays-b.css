@@ -1,0 +1,289 @@
+/* Clefkey — overlays-b.css */
+.btn-icon-square svg,
+.btn-icon-square .lucide {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 560px) {
+  .entry-type-pills {
+    grid-template-columns: 1fr;
+  }
+
+  .field-control {
+    flex-direction: column;
+  }
+
+  .field-control-action {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Detail ──────────────────────────────────────────────── */
+.detail-field label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.copyable-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.copyable-field span,
+.copyable-field a {
+  flex: 1;
+  font-size: 0.9rem;
+  word-break: break-all;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.copyable-field a:hover { color: var(--accent-light); text-decoration: underline; }
+
+.mono {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.detail-notes-text {
+  margin-top: 0.35rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.detail-footer {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Confirm ───────────────────────────────────────────── */
+.confirm-text { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+
+.confirm-help {
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.confirm-name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.confirm-name-label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.confirm-name-label strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.confirm-name-input {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: var(--transition);
+}
+
+.confirm-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.btn-danger-solid:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Toasts ────────────────────────────────────────────── */
+#toasts {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 200;
+}
+
+.toast {
+  padding: 0.75rem 1.15rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  transform: translateX(120%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toast svg, .toast .lucide { width: 18px; height: 18px; flex-shrink: 0; }
+
+.toast.show { transform: translateX(0); }
+
+.toast-success { background: var(--success); color: #041f16; }
+.toast-error { background: var(--error); color: white; }
+.toast-info { background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border); }
+
+/* ── Theme switch (interrupteur clair / sombre) ─────────── */
+.theme-switch {
+  --theme-switch-pad: 2px;
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(1.55rem, auto));
+  align-items: center;
+  gap: 0;
+  padding: var(--theme-switch-pad);
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  box-shadow: none;
+  flex-shrink: 0;
+}
+
+.theme-switch-thumb {
+  position: absolute;
+  top: var(--theme-switch-pad);
+  bottom: var(--theme-switch-pad);
+  left: var(--theme-switch-pad);
+  width: calc((100% - (2 * var(--theme-switch-pad))) / 2);
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 2px 8px var(--accent-glow);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.theme-switch[data-active="light"] .theme-switch-thumb { transform: translateX(0); }
+.theme-switch[data-active="dark"] .theme-switch-thumb { transform: translateX(100%); }
+
+.theme-switch-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 1.45rem;
+  min-width: 1.55rem;
+  padding: 0.2rem 0.35rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+
+.theme-switch-btn svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.theme-switch-label {
+  display: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.theme-switch-btn.is-active {
+  color: #fff;
+}
+
+.theme-switch-btn:hover {
+  color: var(--text-primary);
+}
+
+.theme-switch-btn.is-active:hover {
+  color: #fff;
+}
+
+.theme-switch-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-switch-wide {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  max-width: 170px;
+}
+
+.theme-switch-wide .theme-switch-label {
+  display: inline;
+}
+
+.theme-switch-host {
+  display: inline-flex;
+  align-items: center;
+}
+
+.sidebar-theme {
+  padding: 0.35rem 0.65rem 0.75rem;
+}
+
+#screen-vault:not(.sidebar-expanded) .sidebar-theme {
+  display: none;
+}
+
+.profile-theme-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.25rem 0 0.15rem;
+}
+
+.profile-theme-row > span {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+

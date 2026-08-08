@@ -1,0 +1,83 @@
+"""Package vues HTTP Clefkey — réexporte l'API publique historique."""
+
+from ._helpers import (
+    KEY_PROOF_SEAL_PREFIX,
+    KEY_SIZE,
+    MAX_ENCRYPTED_ENTRY_BYTES,
+    MAX_RECOVERY_BLOB_BYTES,
+    MIN_WRAPPED_KEY_BYTES,
+    PUBLIC_KEY_SIZE,
+    RECOVERY_KEY_COUNT,
+    SALT_SIZE,
+    VERIFIER_SIZE,
+    _auth_response,
+    _decode_encrypted_blob,
+    _decode_fixed_b64,
+    _decode_wrapped_key_b64,
+    _dummy_salt_for_email,
+    _entry_response,
+    _key_proof_matches,
+    _parse_registration_names,
+    _profile_payload,
+    _seal_key_proof,
+    _share_received_response,
+    _share_sent_response,
+    _validate_name_field,
+)
+from .auth import (
+    _get_profile,
+    _parse_recovery_packages,
+    _save_recovery_keys,
+    _update_profile,
+    get_salt,
+    login,
+    profile_me,
+    recovery_begin,
+    recovery_complete,
+    register,
+)
+from .entries import (
+    _get_owned_entry,
+    entry_detail,
+    get_entry,
+    update_entry,
+    vault_entries,
+)
+from .favicon_proxy import site_favicon
+from .shares import (
+    lookup_user,
+    share_detail,
+    shares_received,
+    shares_sent,
+    vault_shares,
+)
+from .static_pages import docs_app, favicon, health, index, manifest, service_worker
+
+__all__ = [
+    "KEY_PROOF_SEAL_PREFIX",
+    "RECOVERY_KEY_COUNT",
+    "_seal_key_proof",
+    "_key_proof_matches",
+    "index",
+    "docs_app",
+    "favicon",
+    "manifest",
+    "service_worker",
+    "health",
+    "register",
+    "login",
+    "profile_me",
+    "get_salt",
+    "recovery_begin",
+    "recovery_complete",
+    "vault_entries",
+    "get_entry",
+    "update_entry",
+    "entry_detail",
+    "lookup_user",
+    "vault_shares",
+    "shares_received",
+    "shares_sent",
+    "share_detail",
+    "site_favicon",
+]

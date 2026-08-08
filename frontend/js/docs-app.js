@@ -223,7 +223,7 @@ function bindUi() {
     const link = event.target.closest('a[data-slug]');
     if (!link) return;
     event.preventDefault();
-    loadPage(link.dataset.slug, { push: true });
+    loadPage(link.dataset.slug, { push: true }).catch(() => {});
   });
 
   $('#docs-content')?.addEventListener('click', (event) => {
@@ -238,13 +238,13 @@ function bindUi() {
       if (url.hash) {
         document.getElementById(url.hash.slice(1))?.scrollIntoView({ block: 'start' });
       }
-    });
+    }).catch(() => {});
   });
 
   window.addEventListener('popstate', () => {
-    loadPage(currentSlug());
+    loadPage(currentSlug()).catch(() => {});
   });
 }
 
 bindUi();
-loadPage(currentSlug());
+loadPage(currentSlug()).catch(() => {});

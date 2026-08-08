@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v168';
+const CACHE_VERSION = 'v171';
 const CACHE_STATIC = `clefkey-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
@@ -8,10 +8,29 @@ const PRECACHE = [
   '/favicon.ico',
   '/css/theme.css',
   '/css/style.css',
+  '/css/base-p1.css',
+  '/css/base-p2.css',
+  '/css/vault-layout-a-p1.css',
+  '/css/vault-layout-a-p2.css',
+  '/css/vault-layout-b-p1.css',
+  '/css/vault-layout-b-p2.css',
+  '/css/vault-nav-p1.css',
+  '/css/vault-nav-p2.css',
+  '/css/vault-profile-a.css',
+  '/css/vault-profile-b.css',
+  '/css/vault-content-a.css',
+  '/css/vault-content-b.css',
+  '/css/overlays-a.css',
+  '/css/overlays-b.css',
+  '/css/landing-a.css',
+  '/css/landing-b.css',
+  '/css/responsive-a.css',
+  '/css/responsive-b.css',
   '/css/docs.css',
   '/js/app.js',
   '/js/api.js',
   '/js/crypto.js',
+  '/js/crypto-ssh.js',
   '/js/argon2-worker.js',
   '/js/compat.js',
   '/js/session.js',
@@ -27,6 +46,19 @@ const PRECACHE = [
   '/js/recovery-export.js',
   '/js/recovery-input.js',
   '/js/auth-screens.js',
+  '/js/ui.js',
+  '/js/entry-ui.js',
+  '/js/entry-markup.js',
+  '/js/projects-ui.js',
+  '/js/transfer-ui.js',
+  '/js/shares-ui.js',
+  '/js/vault-views.js',
+  '/js/profile-ui.js',
+  '/js/auth-session.js',
+  '/js/bind-auth.js',
+  '/js/bind-vault.js',
+  '/js/bind-projects.js',
+  '/js/bind-shares.js',
   '/js/docs-app.js',
   '/js/markdown.js',
   '/vendor/hash-wasm.esm.min.js',
@@ -61,7 +93,8 @@ self.addEventListener('install', (event) => {
           PRECACHE.map((url) => cache.add(url).catch(() => undefined)),
         );
       })
-      .then(() => self.skipWaiting()),
+      .then(() => self.skipWaiting())
+      .catch(() => undefined),
   );
 });
 
@@ -79,7 +112,8 @@ self.addEventListener('activate', (event) => {
           ) && key !== CACHE_STATIC)
           .map((key) => caches.delete(key)),
       ))
-      .then(() => self.clients.claim()),
+      .then(() => self.clients.claim())
+      .catch(() => undefined),
   );
 });
 
@@ -114,14 +148,16 @@ self.addEventListener('fetch', (event) => {
       const networkFetch = fetch(request).then((response) => {
         if (!response.ok) return response;
         const clone = response.clone();
-        caches.open(CACHE_STATIC).then((cache) => cache.put(request, clone));
+        caches.open(CACHE_STATIC)
+          .then((cache) => cache.put(request, clone))
+          .catch(() => undefined);
         return response;
-      });
+      }).catch(() => cached);
       if (url.pathname.startsWith('/js/') || url.pathname.startsWith('/css/') || url.pathname.startsWith('/vendor/')) {
         return networkFetch.catch(() => cached);
       }
       if (cached) return cached;
       return networkFetch;
-    }),
+    }).catch(() => fetch(request)),
   );
 });

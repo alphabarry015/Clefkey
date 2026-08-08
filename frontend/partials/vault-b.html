@@ -1,0 +1,295 @@
+
+        <div id="shares-sent-view" class="shares-view hidden">
+          <div class="shares-toolbar">
+            <p class="shares-hint">Clés que vous avez partagées. Vous pouvez révoquer l’accès à tout moment.</p>
+          </div>
+          <div id="shares-sent-list" class="entries-grid"></div>
+          <div id="shares-sent-empty" class="entries-empty hidden">
+            <div class="empty-illustration empty-illustration-sm">
+              <i data-lucide="users"></i>
+            </div>
+            <h3>Aucun partage envoyé</h3>
+            <p>Ouvrez une clé de votre coffre et utilisez « Partager ».</p>
+          </div>
+        </div>
+
+        <div id="contacts-view" class="shares-view contacts-view hidden">
+          <div id="contacts-list-panel">
+            <div class="shares-toolbar">
+              <p class="shares-hint">Personnes à qui vous avez déjà partagé une clé. Reprenez un contact pour partager plus vite.</p>
+            </div>
+            <div id="contacts-list" class="contacts-grid"></div>
+            <div id="contacts-empty" class="entries-empty hidden">
+              <div class="empty-illustration empty-illustration-sm">
+                <i data-lucide="id-card"></i>
+              </div>
+              <h3>Aucun contact</h3>
+              <p>Partagez une clé : le destinataire apparaîtra ici pour les prochains envois.</p>
+            </div>
+          </div>
+          <div id="contacts-detail-panel" class="contacts-detail hidden">
+            <button type="button" id="btn-contacts-back" class="btn btn-secondary btn-sm contacts-back">
+              <i data-lucide="arrow-left"></i>
+              <span>Contacts</span>
+            </button>
+
+            <div class="contacts-bento" aria-label="Profil du contact">
+              <section class="contacts-bento-tile contacts-bento-identity">
+                <div id="contacts-detail-avatar" class="contacts-detail-avatar" aria-hidden="true"></div>
+                <div class="contacts-bento-identity-copy">
+                  <p class="contacts-bento-kicker">Contact</p>
+                  <h2 id="contacts-detail-name">…</h2>
+                  <p id="contacts-detail-email" class="contacts-detail-email">…</p>
+                </div>
+              </section>
+
+              <section class="contacts-bento-tile contacts-bento-stat">
+                <span class="contacts-bento-stat-label">Clés partagées</span>
+                <strong id="contacts-detail-share-count" class="contacts-bento-stat-value">0</strong>
+                <span id="contacts-detail-share-label" class="contacts-bento-stat-hint">actives</span>
+              </section>
+
+              <section class="contacts-bento-tile contacts-bento-stat">
+                <span class="contacts-bento-stat-label">Dernier partage</span>
+                <strong id="contacts-detail-last-share" class="contacts-bento-stat-value contacts-bento-stat-value-sm">—</strong>
+                <span class="contacts-bento-stat-hint">historique</span>
+              </section>
+
+              <section class="contacts-bento-tile contacts-bento-actions">
+                <p class="contacts-bento-kicker">Actions</p>
+                <div class="contacts-detail-actions">
+                  <button type="button" id="btn-contact-share" class="btn btn-primary btn-sm">
+                    <i data-lucide="user-plus"></i>
+                    <span>Partager une clé</span>
+                  </button>
+                  <button type="button" id="btn-contact-remove" class="btn btn-secondary btn-sm">
+                    <i data-lucide="trash-2"></i>
+                    <span>Retirer</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="contacts-bento-tile contacts-bento-shares">
+                <div class="contacts-bento-shares-head">
+                  <h3 class="contacts-detail-section-title">Clés partagées</h3>
+                  <p id="contacts-detail-meta" class="shares-hint"></p>
+                </div>
+                <div id="contacts-detail-shares" class="entries-grid contacts-bento-shares-list"></div>
+                <div id="contacts-detail-shares-empty" class="contacts-bento-empty hidden">
+                  <i data-lucide="key-round"></i>
+                  <p>Aucune clé active partagée avec ce contact.</p>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <div id="profile-view" class="profile-view hidden">
+          <section class="profile-banner">
+            <div class="profile-banner-decor" aria-hidden="true">
+              <div class="profile-orb profile-orb-1"></div>
+              <div class="profile-orb profile-orb-2"></div>
+            </div>
+            <div class="profile-banner-inner">
+              <div id="profile-avatar" class="profile-avatar"></div>
+              <h2 id="profile-display-name">…</h2>
+              <p id="profile-email" class="profile-email-line">…</p>
+              <div id="profile-status" class="profile-status">
+                <span class="profile-status-dot"></span>
+                <span id="profile-status-label">Coffre actif</span>
+              </div>
+              <div class="profile-banner-chips">
+                <div class="profile-chip">
+                  <i data-lucide="calendar"></i>
+                  <span id="profile-member-since">…</span>
+                </div>
+                <div class="profile-chip">
+                  <i data-lucide="key-round"></i>
+                  <span><strong id="profile-chip-entries">0</strong> clé(s)</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="profile-content">
+              <section class="profile-card">
+                <div class="profile-card-header">
+                  <h3><i data-lucide="id-card"></i> Compte</h3>
+                </div>
+                <ul class="profile-fields">
+                  <li class="profile-field profile-field-editable" data-field="first_name">
+                    <div class="profile-field-icon"><i data-lucide="user"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Prénom</span>
+                        <div class="profile-field-value-row">
+                          <span class="profile-field-value" id="profile-detail-first-name">…</span>
+                          <div class="profile-field-actions">
+                            <button type="button" class="profile-field-edit" title="Modifier le prénom" aria-label="Modifier le prénom">
+                              <i data-lucide="pencil"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="profile-field-form hidden">
+                        <label class="profile-field-label" for="inline-edit-first-name">Prénom</label>
+                        <input type="text" id="inline-edit-first-name" class="profile-field-input" maxlength="50" placeholder="Votre prénom">
+                        <div class="profile-field-form-actions">
+                          <button type="button" class="btn btn-primary btn-sm profile-field-save">Enregistrer</button>
+                          <button type="button" class="btn btn-ghost btn-sm profile-field-cancel">Annuler</button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="profile-field profile-field-editable" data-field="middle_name">
+                    <div class="profile-field-icon"><i data-lucide="user-round"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Deuxième prénom <span class="optional">(optionnel)</span></span>
+                        <div class="profile-field-value-row">
+                          <span class="profile-field-value profile-field-value-muted" id="profile-detail-middle-name">…</span>
+                          <div class="profile-field-actions">
+                            <button type="button" class="profile-field-edit" title="Modifier le deuxième prénom" aria-label="Modifier le deuxième prénom">
+                              <i data-lucide="pencil"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="profile-field-form hidden">
+                        <label class="profile-field-label" for="inline-edit-middle-name">Deuxième prénom <span class="optional">(optionnel)</span></label>
+                        <input type="text" id="inline-edit-middle-name" class="profile-field-input" maxlength="50" placeholder="Deuxième prénom">
+                        <div class="profile-field-form-actions">
+                          <button type="button" class="btn btn-primary btn-sm profile-field-save">Enregistrer</button>
+                          <button type="button" class="btn btn-ghost btn-sm profile-field-cancel">Annuler</button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="profile-field profile-field-editable" data-field="last_name">
+                    <div class="profile-field-icon"><i data-lucide="users"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Nom</span>
+                        <div class="profile-field-value-row">
+                          <span class="profile-field-value" id="profile-detail-last-name">…</span>
+                          <div class="profile-field-actions">
+                            <button type="button" class="profile-field-edit" title="Modifier le nom" aria-label="Modifier le nom">
+                              <i data-lucide="pencil"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="profile-field-form hidden">
+                        <label class="profile-field-label" for="inline-edit-last-name">Nom</label>
+                        <input type="text" id="inline-edit-last-name" class="profile-field-input" maxlength="50" placeholder="Votre nom">
+                        <div class="profile-field-form-actions">
+                          <button type="button" class="btn btn-primary btn-sm profile-field-save">Enregistrer</button>
+                          <button type="button" class="btn btn-ghost btn-sm profile-field-cancel">Annuler</button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="profile-field profile-field-editable" data-field="email">
+                    <div class="profile-field-icon"><i data-lucide="mail"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Email</span>
+                        <div class="profile-field-value-row">
+                          <span class="profile-field-value" id="profile-detail-email">…</span>
+                          <div class="profile-field-actions">
+                            <button type="button" class="profile-field-edit" title="Modifier l'email" aria-label="Modifier l'email">
+                              <i data-lucide="pencil"></i>
+                            </button>
+                            <button type="button" class="btn-copy-field profile-field-copy profile-field-copy-view" id="btn-copy-profile-email" title="Copier l'email">
+                              <i data-lucide="copy"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="profile-field-form hidden">
+                        <label class="profile-field-label" for="inline-edit-email">Email</label>
+                        <input type="email" id="inline-edit-email" class="profile-field-input" placeholder="vous@email.com" autocomplete="username">
+                        <div class="profile-field-form-actions">
+                          <button type="button" class="btn btn-primary btn-sm profile-field-save">Enregistrer</button>
+                          <button type="button" class="btn btn-ghost btn-sm profile-field-cancel">Annuler</button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="profile-field profile-field-readonly">
+                    <div class="profile-field-icon"><i data-lucide="fingerprint"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Identifiant</span>
+                        <div class="profile-field-value-row">
+                          <span class="profile-field-value mono" id="profile-detail-id">…</span>
+                          <div class="profile-field-actions">
+                            <button type="button" class="btn-copy-field profile-field-copy" id="btn-copy-profile-id" title="Copier l'identifiant">
+                              <i data-lucide="copy"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="profile-field profile-field-readonly">
+                    <div class="profile-field-icon"><i data-lucide="calendar-check"></i></div>
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Membre depuis</span>
+                        <span class="profile-field-value" id="profile-detail-created">…</span>
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+              </section>
+
+              <section class="profile-card">
+                <div class="profile-card-header">
+                  <h3><i data-lucide="eye"></i> Apparence</h3>
+                </div>
+                <div class="profile-theme-row">
+                  <span>Clair ou sombre. Sans choix, le site suit automatiquement le mode de votre système.</span>
+                  <div class="theme-switch-host" data-theme-switch data-theme-switch-class="theme-switch-wide"></div>
+                </div>
+              </section>
+
+              <section class="profile-card profile-security-card">
+                <div class="profile-card-header">
+                  <h3><i data-lucide="shield-check"></i> Sécurité</h3>
+                </div>
+                <div class="profile-tags">
+                  <span class="profile-tag">Argon2id</span>
+                  <span class="profile-tag">AES 256 GCM</span>
+                  <span class="profile-tag">X25519</span>
+                  <span class="profile-tag profile-tag-success">Zero knowledge</span>
+                </div>
+                <p class="profile-security-text">Vos données sont chiffrées côté client. Le serveur ne peut pas lire vos mots de passe.</p>
+                <div class="profile-session-pref">
+                  <div class="profile-session-pref-text">
+                    <strong>Rechargement (F5) et verrouillage</strong>
+                    <span>Après F5, inactivité (15 min) ou onglet en arrière-plan, le coffre se verrouille. Seul le JWT et le matériel chiffré restent en session — jamais les clés en clair. Un mot de passe maître suffit pour rouvrir.</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="profile-card profile-lock-card">
+                <button type="button" class="profile-lock-btn" id="btn-profile-lock">
+                  <span class="profile-lock-icon"><i data-lucide="lock"></i></span>
+                  <span class="profile-lock-text">
+                    <strong>Verrouiller le coffre</strong>
+                    <span>Efface les clés en mémoire — le mot de passe maître rouvre la session</span>
+                  </span>
+                  <i data-lucide="chevron-right" class="profile-shortcut-arrow"></i>
+                </button>
+              </section>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <button id="fab-add" class="fab" title="Ajouter">
+      <i data-lucide="plus"></i>
+    </button>
+  </div>
+

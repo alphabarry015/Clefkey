@@ -23,6 +23,9 @@ def get_db():
 
 
 def init_db():
-    from .models import user, vault_entry  # noqa: F401
+    # Importer les modèles pour enregistrer les tables sur Base.metadata.
+    from .models.user import User
+    from .models.vault_entry import VaultEntry
 
+    _ = (User, VaultEntry)
     Base.metadata.create_all(bind=engine)

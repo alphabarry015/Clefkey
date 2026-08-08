@@ -1,0 +1,325 @@
+/* Clefkey — vault-layout-a-p2.css */
+.contacts-detail-email {
+  margin: 0.2rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.contacts-bento-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-height: 112px;
+}
+
+.contacts-bento-stat-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.contacts-bento-stat-value {
+  font-size: clamp(1.7rem, 3vw, 2.15rem);
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.contacts-bento-stat-value-sm {
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.contacts-bento-stat-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.contacts-bento-actions {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.85rem;
+}
+
+.contacts-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.contacts-bento-shares {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.contacts-bento-shares-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+}
+
+.contacts-detail-section-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.contacts-bento-shares-head .shares-hint {
+  margin: 0;
+}
+
+.contacts-bento-shares-list {
+  margin: 0;
+}
+
+.contacts-bento-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 140px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
+}
+
+.contacts-bento-empty p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.contacts-bento-empty .lucide,
+.contacts-bento-empty svg {
+  width: 22px;
+  height: 22px;
+  opacity: 0.7;
+}
+
+@media (max-width: 900px) {
+  .contacts-bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .contacts-bento-identity {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    min-height: 180px;
+  }
+
+  .contacts-bento-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .contacts-bento {
+    grid-template-columns: 1fr;
+  }
+
+  .contacts-bento-stat,
+  .contacts-bento-actions,
+  .contacts-bento-shares {
+    grid-column: auto;
+  }
+
+  .contacts-detail-actions {
+    flex-direction: column;
+  }
+
+  .contacts-detail-actions .btn {
+    width: 100%;
+  }
+}
+
+.share-contacts {
+  margin: 0 0 1rem;
+}
+
+.share-contacts-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.share-contacts-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.share-contact-chip {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.share-contact-chip:hover {
+  border-color: #3662D7;
+  background: rgba(54, 98, 215, 0.12);
+}
+
+.share-pick-search {
+  margin-bottom: 0.75rem;
+}
+
+.share-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: min(50vh, 360px);
+  overflow-y: auto;
+}
+
+.share-pick-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.share-pick-item:hover {
+  border-color: rgba(54, 98, 215, 0.45);
+  background: var(--bg-hover);
+}
+
+
+.projects-view {
+  padding: 0.15rem 0 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  width: 100%;
+  max-width: none;
+}
+
+.projects-create {
+  display: flex;
+  gap: 0.55rem;
+  align-items: stretch;
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+    var(--bg-secondary);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.projects-create input {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: var(--transition);
+}
+
+.projects-create input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: var(--bg-elevated);
+}
+
+.projects-create .btn {
+  flex-shrink: 0;
+  min-height: 46px;
+  padding-inline: 1.15rem;
+  border-radius: 12px;
+}
+
+.projects-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.projects-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 0.1rem;
+}
+
+.projects-section-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.projects-section-count {
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+}
+
+.projects-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.9rem;
+  width: 100%;
+}
+
+.project-row {
+  display: flex;
+  flex-direction: column;
+  min-height: 148px;
+  padding: 0;
+  border-radius: 18px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  overflow: hidden;
+}
+

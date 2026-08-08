@@ -1,0 +1,261 @@
+  <!-- ── Écran Auth ─────────────────────────────────── -->
+  <div id="screen-auth" class="screen">
+    <div class="auth-bg">
+      <div class="auth-orb auth-orb-1"></div>
+      <div class="auth-orb auth-orb-2"></div>
+      <div class="auth-orb auth-orb-3"></div>
+    </div>
+    <div class="auth-container">
+      <button type="button" id="btn-back-landing" class="btn-back-landing">
+        <i data-lucide="arrow-left"></i> Retour
+      </button>
+      <div class="auth-card">
+        <div class="auth-card-side">
+          <div class="auth-logo">
+            <h1 class="auth-brand">Clefkey<span class="lp-brand-dot">.</span></h1>
+            <p class="subtitle">Vos mots de passe, chiffrés et sécurisés</p>
+          </div>
+        </div>
+
+        <div class="auth-card-main">
+          <div class="auth-tabs">
+            <button id="tab-login" class="tab active">Connexion</button>
+            <button id="tab-register" class="tab">Inscription</button>
+          </div>
+
+          <form id="form-login" class="auth-form" autocomplete="off" data-form-type="other" novalidate>
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="mail"></i></span>
+              <input
+                type="text"
+                id="login-email"
+                name="clefkey-login-email"
+                placeholder="vous@email.com"
+                autocomplete="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+              >
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Mot de passe maître</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input
+                type="password"
+                id="login-password"
+                name="clefkey-master-login"
+                placeholder="••••••••"
+                autocomplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+              >
+              <button type="button" class="btn-eye" data-target="login-password" aria-label="Afficher">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+          <p class="auth-forgot">
+            <button type="button" id="btn-forgot-master" class="link-btn">Mot de passe maître oublié&nbsp;?</button>
+          </p>
+          <button type="submit" id="btn-login" class="btn btn-primary btn-full">
+            <span>Se connecter</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+        </form>
+
+        <form id="form-unlock" class="auth-form hidden" autocomplete="off" data-form-type="other" novalidate>
+          <p class="shares-hint">Session en pause. Saisissez votre mot de passe maître pour rouvrir le coffre sans vous reconnecter.</p>
+          <p id="unlock-user-label" class="unlock-user-label"></p>
+          <div class="form-group">
+            <label for="unlock-password">Mot de passe maître</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input
+                type="password"
+                id="unlock-password"
+                name="clefkey-master-unlock"
+                placeholder="••••••••"
+                autocomplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+              >
+              <button type="button" class="btn-eye" data-target="unlock-password" aria-label="Afficher">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+          <button type="submit" id="btn-unlock" class="btn btn-primary btn-full">
+            <span>Déverrouiller</span>
+            <i data-lucide="unlock"></i>
+          </button>
+          <button type="button" id="btn-unlock-logout" class="btn btn-secondary btn-full" style="margin-top:0.65rem">
+            Se déconnecter
+          </button>
+        </form>
+
+        <form id="form-recovery" class="auth-form hidden" autocomplete="off" data-form-type="other">
+          <p class="shares-hint">Entrez votre email et <strong>une</strong> de vos 7 clés de récupération.</p>
+          <div class="form-group">
+            <label for="recovery-email">Email</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="mail"></i></span>
+              <input type="email" id="recovery-email" required placeholder="vous@email.com" autocomplete="off" spellcheck="false">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="recovery-code">Clé de récupération</label>
+            <input
+              type="text"
+              id="recovery-code"
+              class="recovery-code-input"
+              required
+              placeholder="XXXX-XXXX-XXXX-XXXX-…"
+              spellcheck="false"
+              autocomplete="off"
+              autocapitalize="characters"
+              inputmode="text"
+              maxlength="79"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-bwignore="true"
+              data-form-type="other"
+            >
+            <div class="recovery-code-meta">
+              <span id="recovery-code-count" class="recovery-code-count">0 / 64</span>
+            </div>
+          </div>
+          <button type="submit" id="btn-recovery-begin" class="btn btn-primary btn-full">
+            <span>Continuer</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+          <button type="button" id="btn-recovery-back" class="btn btn-secondary btn-full" style="margin-top:0.65rem">Retour à la connexion</button>
+        </form>
+
+        <form id="form-recovery-reset" class="auth-form hidden" autocomplete="off" data-form-type="other">
+          <p class="shares-hint">Choisissez un nouveau mot de passe maître. La clé utilisée sera invalidée.</p>
+          <div class="form-group">
+            <label for="recovery-new-password">Nouveau mot de passe maître</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input type="password" id="recovery-new-password" required minlength="12" autocomplete="off">
+              <button type="button" class="btn-eye" data-target="recovery-new-password" aria-label="Afficher">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+            <div class="strength-bar"><div id="recovery-strength-fill" class="strength-fill"></div></div>
+            <div id="recovery-strength-label" class="strength-label"></div>
+          </div>
+          <div class="form-group">
+            <label for="recovery-new-password-confirm">Confirmer</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input type="password" id="recovery-new-password-confirm" required minlength="12" autocomplete="off">
+            </div>
+          </div>
+          <button type="submit" id="btn-recovery-complete" class="btn btn-primary btn-full">
+            <span>Réinitialiser le coffre</span>
+            <i data-lucide="key-round"></i>
+          </button>
+        </form>
+
+        <form id="form-register" class="auth-form hidden" autocomplete="off" data-form-type="other">
+          <div class="form-group">
+            <label for="register-first-name">Prénom</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="user"></i></span>
+              <input type="text" id="register-first-name" name="clefkey-first-name" required placeholder="Pierre" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="register-middle-name">Deuxième prénom <span class="optional">(optionnel)</span></label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="user"></i></span>
+              <input type="text" id="register-middle-name" name="clefkey-middle-name" placeholder="Jean" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="register-last-name">Nom</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="user"></i></span>
+              <input type="text" id="register-last-name" name="clefkey-last-name" required placeholder="Dupont" maxlength="50" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="register-email">Email</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="mail"></i></span>
+              <input
+                type="email"
+                id="register-email"
+                name="clefkey-register-email"
+                required
+                placeholder="vous@email.com"
+                autocomplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+              >
+            </div>
+          </div>
+          <div class="form-group form-group--span">
+            <label for="register-password">Mot de passe maître</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input
+                type="password"
+                id="register-password"
+                name="clefkey-master-register"
+                required
+                placeholder="Min. 12 caractères"
+                autocomplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+              >
+              <button type="button" class="btn-eye" data-target="register-password" aria-label="Afficher">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+            <div class="strength-bar"><div id="strength-fill" class="strength-fill"></div></div>
+            <div id="strength-label" class="strength-label"></div>
+          </div>
+          <div class="form-group form-group--span">
+            <label for="register-password-confirm">Confirmer</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="lock"></i></span>
+              <input
+                type="password"
+                id="register-password-confirm"
+                name="clefkey-master-confirm"
+                required
+                placeholder="••••••••"
+                autocomplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+              >
+            </div>
+          </div>
+          <button type="submit" id="btn-register" class="btn btn-primary btn-full">
+            <span>Créer mon compte</span>
+            <i data-lucide="user-plus"></i>
+          </button>
+        </form>
+        </div>
+      </div>
+    </div>
+  </div>
+

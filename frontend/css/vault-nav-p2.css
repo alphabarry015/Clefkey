@@ -1,0 +1,357 @@
+/* Clefkey — vault-nav-p2.css */
+.dash-tabs::-webkit-scrollbar,
+.dash-type-filters::-webkit-scrollbar,
+.dash-folder-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.dash-tab {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.dash-tab:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--bg-hover) 80%, transparent);
+}
+
+.dash-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.dash-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 1rem;
+}
+
+.dash-tile {
+  position: relative;
+  aspect-ratio: 1.05;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 1rem 0.75rem 0.85rem;
+  color: #fff;
+  font-family: inherit;
+  text-align: center;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  animation: slideUp 0.3s ease backwards;
+}
+
+.dash-tile:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.16);
+}
+
+.dash-tile:active {
+  transform: scale(0.97);
+}
+
+.dash-tile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.dash-tile-letter {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dash-tile-branded {
+  position: relative;
+  padding: 0;
+  gap: 0;
+  justify-content: flex-end;
+  overflow: hidden;
+  background: var(--bg-elevated) !important;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.dash-tile-branded:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.12);
+}
+
+.dash-tile-branded .dash-tile-logo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 0.85rem 2.1rem;
+  background: var(--bg-elevated);
+  border-radius: inherit;
+  box-shadow: none;
+}
+
+.dash-tile-branded .dash-tile-favicon {
+  width: auto;
+  height: auto;
+  max-width: min(72%, 112px);
+  max-height: min(72%, 112px);
+  object-fit: contain;
+  display: block;
+}
+
+.dash-tile-branded .dash-tile-logo .dash-tile-letter-fallback {
+  display: none;
+}
+
+.dash-tile-branded .dash-tile-logo.is-fallback {
+  background: linear-gradient(160deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #000));
+}
+
+.dash-tile-branded .dash-tile-logo.is-fallback .dash-tile-favicon {
+  display: none;
+}
+
+.dash-tile-branded .dash-tile-logo.is-fallback .dash-tile-letter-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 2.8rem;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dash-tile-branded .dash-tile-name {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  width: 100%;
+  margin-top: auto;
+  padding: 1.6rem 0.45rem 0.2rem;
+  color: var(--text-primary);
+  background: linear-gradient(to top, var(--bg-elevated) 55%, transparent);
+  opacity: 1;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.dash-tile-branded .dash-tile-meta {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: 0 0.4rem 0.45rem;
+  background: var(--bg-elevated);
+  justify-content: center;
+}
+
+.dash-tile-logo {
+  width: 68px;
+  height: 68px;
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.dash-tile-logo .dash-tile-letter-fallback {
+  display: none;
+}
+
+.dash-tile-favicon {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+}
+
+.dash-tile-logo.is-fallback .dash-tile-favicon {
+  display: none;
+}
+
+.dash-tile-logo.is-fallback .dash-tile-letter-fallback {
+  display: flex;
+  font-size: 1.75rem;
+  color: var(--accent);
+  text-shadow: none;
+}
+
+.dash-tile-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.95;
+}
+
+.dash-tile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  max-width: 100%;
+}
+
+.dash-tile-project {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: inherit;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-tile-branded .dash-tile-project {
+  background: var(--bg-elevated);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.dash-tile-add {
+  background: var(--bg-card);
+  border: 2px dashed var(--border);
+  color: var(--text-secondary);
+  box-shadow: none;
+  gap: 0.45rem;
+}
+
+.dash-tile-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-subtle);
+  box-shadow: none;
+  transform: translateY(-2px);
+}
+
+.dash-tile-add-hero {
+  min-height: 160px;
+  aspect-ratio: auto;
+}
+
+.dash-tile-add-hint {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.dash-tile-add-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.dash-tile-add:hover .dash-tile-add-icon {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: var(--bg-hover);
+}
+
+.dash-tile-add-icon svg,
+.dash-tile-add-icon .lucide {
+  width: 22px;
+  height: 22px;
+}
+
+.dash-tiles-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 2.25rem 1.25rem;
+  text-align: center;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+}
+
+.dash-empty-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  margin-bottom: 0.25rem;
+}
+
+.dash-empty-icon svg,
+.dash-empty-icon .lucide {
+  width: 26px;
+  height: 26px;
+}
+
+.dash-tiles-empty h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.dash-tiles-empty p,
+#dash-empty-text {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.dash-tiles-empty .btn {
+  margin-top: 0.45rem;
+}
+
+.dash-tiles-empty .btn svg,
+.dash-tiles-empty .btn .lucide {
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+  opacity: 1;
+}
+
+.entry-avatar.sm { width: 36px; height: 36px; font-size: 0.95rem; border-radius: 10px; }
+

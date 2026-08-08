@@ -1,0 +1,325 @@
+/* Clefkey — responsive-b.css */
+  .profile-view {
+    width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .profile-banner,
+  .profile-content {
+    max-width: none;
+  }
+
+  .modal-overlay {
+    align-items: flex-end;
+    justify-content: stretch;
+    padding: 0;
+    padding-top: min(10vh, 3.5rem);
+    overflow: hidden;
+  }
+
+  .modal-content {
+    display: flex;
+    flex-direction: column;
+    max-width: none;
+    border-radius: 16px 16px 0 0;
+    max-height: calc(92dvh - min(10vh, 3.5rem));
+    overflow: hidden;
+    animation: modalSheetIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .modal-content.modal-sm {
+    border-radius: 16px 16px 0 0;
+    max-height: none;
+  }
+
+  .modal-content-wide {
+    max-width: none;
+  }
+
+  .modal-content-wide .modal-body {
+    padding: 1.15rem 1.25rem;
+    padding-bottom: calc(1.15rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .modal-header {
+    position: relative;
+    top: auto;
+  }
+
+  .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 768px) {
+  .dash-tiles-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .profile-banner-inner {
+    padding: 1.5rem 1.25rem 1.25rem;
+  }
+
+  .profile-card {
+    padding: 1.15rem 1.25rem;
+  }
+
+  .profile-field {
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: start;
+    min-height: 48px;
+  }
+
+  .profile-field-body {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .profile-field-value-row {
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-container { padding: 1rem; max-width: 100%; }
+
+  .auth-card {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding: 1.35rem;
+  }
+
+  .auth-card-side {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-right: 0;
+    padding-bottom: 1.25rem;
+  }
+
+  .auth-logo { text-align: center; }
+
+  #form-login.auth-form,
+  #form-register.auth-form {
+    grid-template-columns: 1fr;
+  }
+
+  #form-register .form-group,
+  #form-register .btn-full {
+    grid-column: auto;
+  }
+  .auth-logo .auth-brand { font-size: 1.45rem; }
+
+  .vault-topbar { padding: calc(0.55rem + env(safe-area-inset-top)) 0.65rem 0.55rem; }
+  .topbar-title h1 { font-size: 1rem; }
+  .topbar-subtitle { display: none; }
+  .topbar-total { display: none; }
+  .topbar-total strong { font-size: 0.85rem; }
+
+  .lp-header {
+    padding: calc(0.72rem + env(safe-area-inset-top)) 0.78rem 0.72rem;
+  }
+
+  .lp-hero {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .lp-headline {
+    font-size: clamp(2rem, 10vw, 2.7rem);
+  }
+
+  .lp-desc {
+    margin: 1rem auto 1.45rem;
+    font-size: 0.92rem;
+  }
+
+  .lp-actions {
+    width: 100%;
+  }
+
+  .vault-main { padding: 0 0.75rem; }
+
+  .dash-tiles-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .dash-filter-caption { display: none; }
+
+  .dash-tile-add-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+    font-size: 1.65rem;
+  }
+
+  .profile-banner-inner h2 {
+    font-size: 1.15rem;
+    padding: 0 0.25rem;
+  }
+
+  .profile-email-line {
+    font-size: 0.8rem;
+    padding: 0 0.5rem;
+    word-break: break-word;
+  }
+
+  .profile-banner-chips {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.45rem;
+  }
+
+  .profile-chip {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .profile-card {
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .profile-card-header h3 { font-size: 0.9rem; }
+
+  .profile-field-icon {
+    width: 24px;
+    height: 24px;
+    padding-top: 0.1rem;
+  }
+
+  .profile-field-value {
+    font-size: 0.85rem;
+  }
+
+  .profile-field.is-editing {
+    padding: 0.85rem;
+  }
+
+  .profile-field-form-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .profile-lock-btn {
+    padding: 0.65rem 0;
+  }
+
+  .profile-lock-text strong { font-size: 0.82rem; }
+
+  .search-box input {
+    font-size: 16px;
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+  }
+
+  .entry-card { padding: 0.8rem 0.85rem; }
+  .entry-actions { opacity: 1; }
+  .entry-avatar { width: 38px; height: 38px; font-size: 0.9rem; }
+
+  .entries-empty { padding: 3rem 1rem; }
+  .empty-illustration { width: 80px; height: 80px; }
+
+  .field-control { flex-direction: column; }
+  .field-control .btn,
+  .field-control-action { width: 100%; justify-content: center; }
+
+  .modal-header { padding: 1rem 1.15rem; }
+  .modal-body { padding: 1rem 1.15rem; padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
+
+  .detail-date-meta {
+    max-width: 8.5rem;
+    height: 30px;
+    padding: 0 0.4rem;
+    gap: 0.2rem;
+  }
+
+  .detail-date-meta-label,
+  .detail-date-meta-sep {
+    font-size: 0.58rem;
+  }
+
+  .detail-date-meta-value {
+    font-size: 0.62rem;
+  }
+
+  .modal-header-actions .btn-close {
+    width: 30px;
+    height: 30px;
+  }
+
+  .detail-footer-actions {
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0.4rem;
+  }
+
+  .detail-footer-actions .btn {
+    padding: 0.55rem 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .detail-footer-actions #btn-delete-detail {
+    justify-self: end;
+  }
+
+  .confirm-actions { flex-direction: column-reverse; }
+  .confirm-actions .btn { width: 100%; }
+
+  .form-group input,
+  .form-group textarea {
+    font-size: 16px;
+  }
+
+  .btn-close {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.5rem;
+    margin-right: -0.35rem;
+  }
+
+  .profile-field-actions .profile-field-edit,
+  .profile-field-actions .profile-field-copy.btn-copy-field {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0;
+  }
+
+  .fab {
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    width: 52px;
+    height: 52px;
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar-total svg,
+  .topbar-total .lucide {
+    display: none;
+  }
+
+  .profile-status {
+    font-size: 0.68rem;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .entry-actions { opacity: 1; }
+  .entry-card:active { background: var(--bg-hover); }
+  .dash-tile:active { transform: scale(0.95); }
+  .profile-field-edit:active {
+    opacity: 0.85;
+  }
+}

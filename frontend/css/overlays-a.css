@@ -1,0 +1,301 @@
+/* Clefkey — overlays-a.css */
+/* ── Modals ────────────────────────────────────────────── */
+.modal { display: none; }
+.modal.open { display: block; }
+
+body.modal-open {
+  overflow: hidden;
+}
+
+body.modal-open #screen-vault,
+body.modal-open .sidebar,
+body.modal-open .vault-layout {
+  touch-action: auto;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+  overscroll-behavior: none;
+}
+
+#modal-master-confirm .modal-overlay {
+  z-index: 130;
+}
+
+.modal-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: var(--shadow);
+  animation: modalIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.modal-sm { max-width: 400px; }
+
+.modal-content-wide {
+  max-width: min(720px, calc(100vw - 2rem));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-content-wide .modal-header {
+  flex-shrink: 0;
+}
+
+.modal-content-wide .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 1.35rem 1.65rem 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .modal-content-wide .entry-form {
+    gap: 1.35rem;
+  }
+
+  .modal-content-wide .entry-form-block:first-child {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 1rem 1.15rem;
+    align-items: start;
+  }
+
+  .modal-content-wide .entry-form-block:first-child .entry-form-heading {
+    grid-column: 1 / -1;
+  }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes modalSheetIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.modal-header h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.modal-header-text { flex: 1; min-width: 0; }
+.modal-header-text h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.modal-body {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.entry-form {
+  gap: 1.25rem;
+}
+
+.entry-form-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.entry-form-block-last {
+  gap: 0.55rem;
+}
+
+.entry-form-heading {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.entry-form .form-group {
+  gap: 0.35rem;
+}
+
+.entry-form .form-group > label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.entry-form .field-input,
+.entry-form .field-select,
+.entry-form select,
+.entry-form input[type="text"],
+.entry-form input[type="password"],
+.entry-form input[type="email"],
+.entry-form textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.7rem 0.9rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-family: inherit;
+  transition: var(--transition);
+  outline: none;
+}
+
+.entry-form textarea.field-input,
+.entry-form textarea {
+  min-height: 72px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.entry-form .field-input:focus,
+.entry-form .field-select:focus,
+.entry-form select:focus,
+.entry-form input:focus,
+.entry-form textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: var(--bg-elevated);
+}
+
+.entry-form .field-select,
+.entry-form select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) calc(50% - 2px),
+    calc(100% - 11px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 2rem;
+}
+
+.entry-type-pills {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  padding: 0.25rem;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.entry-type-pill {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 9px;
+  padding: 0.55rem 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.entry-type-pill:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+}
+
+.entry-type-pill.active {
+  background: var(--bg-secondary);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+}
+
+.field-control {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.field-control .field-input,
+.field-control .field-select,
+.field-control input,
+.field-control select {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-control-action {
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: 44px;
+  padding-inline: 0.85rem;
+}
+
+.entry-folder-create {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+  padding: 0.7rem;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.entry-folder-create input {
+  margin: 0;
+}
+
+.entry-folder-create-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.entry-form > .btn-full {
+  margin-top: 0.15rem;
+  min-height: 48px;
+  border-radius: 12px;
+}
+
+.btn-icon-square {
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+

@@ -1,0 +1,27 @@
+  <!-- ── Toasts ─────────────────────────────────────── -->
+  <div id="toasts"></div>
+
+  <div id="compat-banner" class="compat-banner hidden" role="alert">
+    <p id="compat-banner-text"></p>
+    <p class="compat-banner-hint">Utilisez la dernière version de Chrome, Firefox, Edge ou Safari 16+, en HTTPS.</p>
+  </div>
+
+  <!-- ── Loading ────────────────────────────────────── -->
+  <div id="loading" class="loading-overlay hidden">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Dérivation de clé en cours...</div>
+  </div>
+
+  <script nomodule>
+    (function () {
+      var el = document.getElementById('compat-banner');
+      var text = document.getElementById('compat-banner-text');
+      if (!el || !text) return;
+      text.textContent = 'Ce navigateur ne prend pas en charge les modules JavaScript modernes requis par Clefkey.';
+      el.classList.remove('hidden');
+    })();
+  </script>
+  <script src="/js/pwa.js" defer></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

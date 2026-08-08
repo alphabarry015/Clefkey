@@ -2,7 +2,6 @@
 """Interface CLI du gestionnaire de mots de passe."""
 
 import getpass
-import sys
 
 from client import VaultSession
 
