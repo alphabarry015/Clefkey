@@ -18,7 +18,7 @@ const LEGACY_STORAGE_KEYS = [
 /** Durée sans action avant verrouillage soft (alignée sous le JWT ~60 min). */
 export const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
 /** Onglet en arrière-plan trop longtemps → verrouillage soft au retour. */
-export const HIDDEN_LOCK_MS = 60 * 1000;
+export const HIDDEN_LOCK_MS = 5 * 60 * 1000;
 
 const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'mousemove', 'scroll', 'touchstart'];
 

@@ -4,16 +4,24 @@
 from pathlib import Path
 
 try:
-    from PIL import Image, ImageDraw
+    from PIL import Image, ImageDraw, ImageFont
 except ImportError:
     import subprocess
     import sys
 
     subprocess.check_call([sys.executable, "-m", "pip", "install", "pillow"], stdout=subprocess.DEVNULL)
-    from PIL import Image, ImageDraw
+    from PIL import Image, ImageDraw, ImageFont
 
 ACCENT = (37, 99, 235, 255)  # #2563eb
+BRAND_BLUE = (54, 98, 215, 255)  # #3662D7 (point du logo)
+BLACK = (0, 0, 0, 255)
 WHITE = (255, 255, 255, 255)
+BRAND_FONT_CANDIDATES = (
+    "C:/Windows/Fonts/segoeuib.ttf",
+    "C:/Windows/Fonts/arialbd.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+)
 OUT_DIR = Path(__file__).resolve().parent.parent / "frontend" / "icons"
 SOURCE_CANDIDATES = (
     OUT_DIR / "chevalier-source.png",
@@ -82,6 +90,43 @@ def draw_icon(size: int, padding_ratio: float = 0.1) -> Image.Image:
     return base
 
 
+def _brand_font(size: int) -> ImageFont.FreeTypeFont:
+    for path in BRAND_FONT_CANDIDATES:
+        if Path(path).exists():
+            return ImageFont.truetype(path, size)
+    return ImageFont.load_default()
+
+
+def draw_brand_favicon(size: int) -> Image.Image:
+    """Favicon Clefkey : fond noir, « C » blanc suivi du point bleu."""
+    img = Image.new("RGBA", (size, size), BLACK)
+    draw = ImageDraw.Draw(img)
+
+    # Marge de 8 % : le glyphe doit remplir l'icône sans toucher les bords.
+    target = size * 0.84
+    font = _brand_font(int(size * 0.9))
+    while True:
+        box = draw.textbbox((0, 0), "C.", font=font, anchor="ls")
+        if (box[2] - box[0] <= target and box[3] - box[1] <= target) or font.size <= 6:
+            break
+        font = _brand_font(font.size - 1)
+
+    box = draw.textbbox((0, 0), "C.", font=font, anchor="ls")
+    # Origine (x, baseline) telle que la boîte du glyphe soit centrée.
+    origin_x = (size - (box[2] - box[0])) / 2 - box[0]
+    baseline_y = (size - (box[3] - box[1])) / 2 - box[1]
+
+    draw.text((origin_x, baseline_y), "C", font=font, fill=WHITE, anchor="ls")
+    draw.text(
+        (origin_x + draw.textlength("C", font=font), baseline_y),
+        ".",
+        font=font,
+        fill=BRAND_BLUE,
+        anchor="ls",
+    )
+    return img
+
+
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     mask = _load_alpha_mask()
@@ -91,7 +136,7 @@ def main() -> None:
     draw_icon(512).save(OUT_DIR / "icon-512.png", "PNG")
     draw_icon(512, padding_ratio=0.18).save(OUT_DIR / "icon-512-maskable.png", "PNG")
     # Favicon multi-tailles pour les navigateurs qui demandent /favicon.ico
-    draw_icon(48).save(
+    draw_brand_favicon(48).save(
         OUT_DIR / "favicon.ico",
         format="ICO",
         sizes=[(16, 16), (32, 32), (48, 48)],

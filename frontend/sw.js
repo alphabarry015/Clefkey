@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v165';
+const CACHE_VERSION = 'v168';
 const CACHE_STATIC = `clefkey-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
@@ -6,6 +6,7 @@ const PRECACHE = [
   '/',
   '/docs/',
   '/favicon.ico',
+  '/css/theme.css',
   '/css/style.css',
   '/css/docs.css',
   '/js/app.js',
@@ -37,6 +38,7 @@ const PRECACHE = [
   '/icons/logo-chevalier.png',
   '/icons/icon-192.png',
   '/icons/favicon.ico',
+  '/icons/favicon.svg',
 ];
 
 const API_PREFIXES = ['/auth/', '/vault/', '/health/'];
