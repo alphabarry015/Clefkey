@@ -58,6 +58,7 @@ const state = {
   devMode: false,
   page: 'dashboard',
   search: '',
+  selectedIds: [],
   dashTab: 'recent',
   dashSearch: '',
   typeFilter: 'all',

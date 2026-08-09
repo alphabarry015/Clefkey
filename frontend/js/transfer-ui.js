@@ -1,7 +1,7 @@
 /**
  * Modale de transfert de clés entre projets.
  */
-import { folderNameById } from './folders.js';
+import { folderNameById, entryFolderId } from './folders.js';
 import {
   $, $$, esc, setHtml, fillSelect, toast, openModal, closeModal,
 } from './ui.js';

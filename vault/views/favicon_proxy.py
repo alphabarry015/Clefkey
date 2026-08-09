@@ -1,7 +1,8 @@
 """Proxy favicon distant."""
 
-from django.http import HttpResponse, JsonResponse
-from django.views.decorators.http import require_GET
+import hashlib
+
+from django.http import HttpResponse
 
 from ..decorators import api_error, require_auth
 from ..favicon import fetch_site_favicon, normalize_page_url

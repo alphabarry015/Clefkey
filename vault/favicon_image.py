@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlparse
 
 from .favicon_constants import MAX_ICON_BYTES
 
+
+@dataclass
 class IconCandidate:
     url: str
     score: int

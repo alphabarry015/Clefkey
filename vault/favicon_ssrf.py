@@ -5,7 +5,7 @@ from __future__ import annotations
 import ipaddress
 import socket
 import time
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 import httpcore
 import httpx

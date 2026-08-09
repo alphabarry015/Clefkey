@@ -27,7 +27,7 @@ export function getSiteDomain(url) {
 export function getFaviconUrl(url) {
   const pageUrl = normalizeEntryUrl(url);
   if (!pageUrl) return null;
-  return `${window.location.origin}/vault/favicon?url=${encodeURIComponent(pageUrl)}&v=7`;
+  return `${window.location.origin}/vault/favicon?url=${encodeURIComponent(pageUrl)}&v=8`;
 }
 
 export function prepareEntry(entry) {

@@ -11,30 +11,31 @@
   }
 
   .modal-overlay {
-    align-items: flex-end;
-    justify-content: stretch;
-    padding: 0;
-    padding-top: min(10vh, 3.5rem);
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
     overflow: hidden;
   }
 
   .modal-content {
     display: flex;
     flex-direction: column;
-    max-width: none;
-    border-radius: 16px 16px 0 0;
-    max-height: calc(92dvh - min(10vh, 3.5rem));
+    max-width: 500px;
+    width: 100%;
+    border-radius: 16px;
+    max-height: 90vh;
+    max-height: 90dvh;
     overflow: hidden;
-    animation: modalSheetIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: modalIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .modal-content.modal-sm {
-    border-radius: 16px 16px 0 0;
+    border-radius: 16px;
     max-height: none;
   }
 
   .modal-content-wide {
-    max-width: none;
+    max-width: min(720px, calc(100% - 2rem));
   }
 
   .modal-content-wide .modal-body {

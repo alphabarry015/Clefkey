@@ -119,6 +119,24 @@ export function bindVault(deps) {
 
   document.addEventListener('click', handleEntryClick);
 
+  function toggleListSelection(id) {
+    if (!id) return;
+    const set = new Set(state.selectedIds);
+    if (set.has(id)) set.delete(id);
+    else set.add(id);
+    state.selectedIds = [...set];
+
+    const card = $('#entries-list .entry-card[data-id="' + id + '"]');
+    if (card) card.classList.toggle('is-selected', set.has(id));
+    const box = card?.querySelector('input[data-action="toggle-select"]');
+    if (box) box.checked = set.has(id);
+  }
+
+  $('#entries-list')?.addEventListener('change', (e) => {
+    const box = e.target.closest('input[data-action="toggle-select"]');
+    if (box) toggleListSelection(box.dataset.id);
+  });
+
   $$('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const page = btn.dataset.page;
