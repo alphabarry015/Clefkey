@@ -12,7 +12,8 @@ export function bindProjects(deps) {
   const {
     state,
     switchPage, openProjectsPage, openProjectPage, openProjectDetailTransfer,
-    createFolderByName, deleteFolder, persistFoldersMeta,
+    createFolderByName, deleteFolder, persistFoldersMeta, openAddModal, openFoldersModal,
+    moveFolderToParent, openCreateSubprojectModal, openMoveProjectModal, syncMoveProjectPreview,
     syncFolderFilterButtons, populateFolderSelect, renderFoldersManageList,
     refreshCurrentView, getProjectDetailEntries,
     clearProjectDetailSelection, syncProjectDetailSelectionUi,
@@ -23,8 +24,83 @@ export function bindProjects(deps) {
     showEntryFolderCreate, hideEntryFolderCreate,
   } = deps;
 
+  async function promptRenameFolder(folderId) {
+    const folder = state.folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    const name = normalizeFolderName(
+      window.prompt('Nouveau nom du projet', folder.name) || '',
+    );
+    if (!name || name === folder.name) return;
+    if (state.folders.some((f) => f.id !== folderId
+      && (f.parentId || '') === (folder.parentId || '')
+      && f.name.toLowerCase() === name.toLowerCase())) {
+      toast('Ce projet existe déjà', 'error');
+      return;
+    }
+    try {
+      state.folders = normalizeFoldersList(
+        state.folders.map((f) => (f.id === folderId ? { ...f, name } : f)),
+      );
+      await persistFoldersMeta();
+      syncFolderFilterButtons();
+      populateFolderSelect();
+      renderFoldersManageList();
+      refreshCurrentView();
+      toast('Projet renommé', 'success');
+    } catch (err) {
+      toast(err.message || 'Renommage impossible', 'error');
+    }
+  }
+
   $('#btn-dash-create-project')?.addEventListener('click', openProjectsPage);
   $('#btn-close-folders')?.addEventListener('click', () => closeModal($('#modal-folders')));
+
+  const closeSubprojectModal = () => {
+    state.subprojectParentId = null;
+    closeModal($('#modal-subproject'));
+  };
+  const closeMoveProjectModal = () => {
+    state.moveProjectId = null;
+    closeModal($('#modal-move-project'));
+  };
+
+  $('#btn-close-subproject')?.addEventListener('click', closeSubprojectModal);
+  $('#btn-subproject-cancel')?.addEventListener('click', closeSubprojectModal);
+  $('#btn-close-move-project')?.addEventListener('click', closeMoveProjectModal);
+  $('#btn-move-project-cancel')?.addEventListener('click', closeMoveProjectModal);
+  $('#move-project-parent')?.addEventListener('change', () => syncMoveProjectPreview());
+
+  $('#form-subproject')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const parentId = state.subprojectParentId;
+    if (!parentId) return;
+    const btn = $('#btn-subproject-submit');
+    if (btn) btn.disabled = true;
+    try {
+      const folder = await createFolderByName($('#subproject-name')?.value, { parentId });
+      if (folder) closeSubprojectModal();
+    } catch (err) {
+      toast(err.message || 'Création impossible', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+
+  $('#form-move-project')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const folderId = state.moveProjectId;
+    if (!folderId) return;
+    const btn = $('#btn-move-project-submit');
+    if (btn) btn.disabled = true;
+    try {
+      const ok = await moveFolderToParent(folderId, ($('#move-project-parent')?.value || '').trim());
+      if (ok) closeMoveProjectModal();
+    } catch (err) {
+      toast(err.message || 'Déplacement impossible', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
 
   $('#form-project-page-create')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -50,7 +126,7 @@ export function bindProjects(deps) {
 
   // Délégation : résiste au re-render / cache SW partiel
   document.addEventListener('click', (e) => {
-    const btn = e.target.closest('#btn-project-detail-transfer, #btn-project-detail-move');
+    const btn = e.target.closest('#btn-project-detail-transfer');
     if (!btn || btn.disabled) return;
     e.preventDefault();
     openProjectDetailTransfer();
@@ -85,7 +161,20 @@ export function bindProjects(deps) {
   });
 
   $('#projects-grid')?.addEventListener('click', async (e) => {
-    const card = e.target.closest('.project-row[data-folder-id], .project-card[data-folder-id]');
+    const toggleSubs = e.target.closest('[data-action="toggle-subs"]');
+    if (toggleSubs) {
+      const parentId = toggleSubs.dataset.parentId;
+      const set = new Set(state.collapsedProjectIds || []);
+      if (set.has(parentId)) set.delete(parentId);
+      else set.add(parentId);
+      state.collapsedProjectIds = [...set];
+      const box = toggleSubs.closest('.project-subs');
+      box?.classList.toggle('is-collapsed', set.has(parentId));
+      toggleSubs.setAttribute('aria-expanded', set.has(parentId) ? 'false' : 'true');
+      return;
+    }
+
+    const card = e.target.closest('.project-sub-item[data-folder-id], .project-row[data-folder-id], .project-card[data-folder-id]');
     if (!card) return;
     const folderId = card.dataset.folderId;
     const folder = state.folders.find((f) => f.id === folderId);
@@ -97,34 +186,34 @@ export function bindProjects(deps) {
       return;
     }
 
+    if (action === 'toggle-create-subproject') {
+      openCreateSubprojectModal(folderId);
+      return;
+    }
+
+    if (action === 'toggle-move-project') {
+      openMoveProjectModal(folderId);
+      return;
+    }
+
     if (action === 'delete-project') {
       deleteFolder(folderId);
       return;
     }
 
     if (action === 'rename-project') {
-      const name = normalizeFolderName(
-        window.prompt('Nouveau nom du projet', folder.name) || '',
-      );
-      if (!name) return;
-      if (state.folders.some((f) => f.id !== folderId && f.name.toLowerCase() === name.toLowerCase())) {
-        toast('Ce projet existe déjà', 'error');
-        return;
-      }
-      try {
-        state.folders = normalizeFoldersList(
-          state.folders.map((f) => (f.id === folderId ? { ...f, name } : f)),
-        );
-        await persistFoldersMeta();
-        syncFolderFilterButtons();
-        populateFolderSelect();
-        renderFoldersManageList();
-        refreshCurrentView();
-        toast('Projet renommé', 'success');
-      } catch (err) {
-        toast(err.message || 'Renommage impossible', 'error');
-      }
+      await promptRenameFolder(folderId);
     }
+  });
+
+  $('#btn-project-detail-subproject')?.addEventListener('click', () => {
+    if (state.activeProjectId) openCreateSubprojectModal(state.activeProjectId);
+  });
+  $('#btn-project-detail-move')?.addEventListener('click', () => {
+    if (state.activeProjectId) openMoveProjectModal(state.activeProjectId);
+  });
+  $('#btn-project-detail-rename')?.addEventListener('click', () => {
+    if (state.activeProjectId) void promptRenameFolder(state.activeProjectId);
   });
 
   $('#btn-folders-transfer')?.addEventListener('click', () => openTransferModal());
@@ -251,8 +340,12 @@ export function bindProjects(deps) {
     const btn = $('#btn-folder-create');
     if (btn) btn.disabled = true;
     try {
-      const folder = await createFolderByName($('#folder-new-name')?.value);
-      if (folder && $('#folder-new-name')) $('#folder-new-name').value = '';
+      const parentId = $('#folder-new-parent')?.value || '';
+      const folder = await createFolderByName($('#folder-new-name')?.value, { parentId });
+      if (folder) {
+        if ($('#folder-new-name')) $('#folder-new-name').value = '';
+        if ($('#folder-new-parent')) $('#folder-new-parent').value = '';
+      }
     } catch (err) {
       toast(err.message || 'Impossible de créer le projet', 'error');
     } finally {
@@ -295,6 +388,44 @@ export function bindProjects(deps) {
         toast('Projet renommé', 'success');
       } catch (err) {
         toast(err.message || 'Renommage impossible', 'error');
+      }
+    }
+
+    if (e.target.closest('.folder-move-save')) {
+      const select = row.querySelector('.folder-move-parent');
+      const newParentId = (select?.value || '').trim();
+      if (newParentId === folderId) {
+        toast('Un projet ne peut pas être son propre parent', 'error');
+        return;
+      }
+      if (newParentId) {
+        const target = state.folders.find((f) => f.id === newParentId);
+        if (!target || target.parentId) {
+          toast('Projet parent invalide', 'error');
+          return;
+        }
+        const childIds = state.folders.filter((f) => f.parentId === folderId).map((c) => c.id);
+        if (childIds.includes(newParentId)) {
+          toast('Impossible de déplacer dans un sous-projet', 'error');
+          return;
+        }
+      }
+      if (state.folders.some((f) => f.id !== folderId && f.parentId === newParentId && f.name.toLowerCase() === folder.name.toLowerCase())) {
+        toast('Ce nom existe déjà à cet emplacement', 'error');
+        return;
+      }
+      try {
+        state.folders = normalizeFoldersList(
+          state.folders.map((f) => (f.id === folderId ? { ...f, parentId: newParentId } : f)),
+        );
+        await persistFoldersMeta();
+        syncFolderFilterButtons();
+        populateFolderSelect();
+        renderFoldersManageList();
+        refreshCurrentView();
+        toast('Projet déplacé', 'success');
+      } catch (err) {
+        toast(err.message || 'Déplacement impossible', 'error');
       }
     }
   });

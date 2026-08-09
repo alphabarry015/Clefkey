@@ -28,14 +28,19 @@ export function normalizeFolderName(name) {
 
 export function normalizeFoldersList(list) {
   if (!Array.isArray(list)) return [];
+  const byId = new Map(list.map((item) => [item?.id, item]));
   const seen = new Set();
   const out = [];
   for (const item of list) {
     const id = typeof item?.id === 'string' ? item.id.trim() : '';
     const name = normalizeFolderName(item?.name);
     if (!id || !name || seen.has(id)) continue;
+    let parentId = (typeof item?.parentId === 'string' ? item.parentId.trim() : '');
+    if (parentId === id) parentId = '';
+    const parent = byId.get(parentId);
+    if (!parentId || !parent || parent.parentId) parentId = '';
     seen.add(id);
-    out.push({ id, name });
+    out.push({ id, name, parentId });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
 }
@@ -74,4 +79,17 @@ export function entryInKnownFolder(entry, folders) {
 export function folderNameById(folders, folderId) {
   if (!folderId) return null;
   return folders.find((f) => f.id === folderId)?.name || null;
+}
+
+export function topLevelFolders(folders) {
+  return (folders || []).filter((f) => !f.parentId);
+}
+
+export function folderChildren(folders, parentId) {
+  if (!parentId) return [];
+  return (folders || []).filter((f) => f.parentId === parentId).sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+}
+
+export function hasFolderChildren(folders, parentId) {
+  return (folders || []).some((f) => f.parentId === parentId);
 }

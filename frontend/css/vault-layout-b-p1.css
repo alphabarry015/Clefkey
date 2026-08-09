@@ -78,15 +78,39 @@
   transition: var(--transition);
 }
 
-.project-row-actions {
-  display: flex;
+.project-row-delete {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.15rem;
-  flex-shrink: 0;
-  padding: 0.45rem 0.55rem;
-  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
+  justify-content: center;
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.project-row-delete svg,
+.project-row-delete .lucide {
+  width: 15px;
+  height: 15px;
+}
+
+.project-row-delete:hover {
+  background: var(--error-subtle);
+  color: var(--error);
+}
+
+.project-group:hover .project-row-delete,
+.project-row-delete:focus-visible {
+  opacity: 1;
 }
 
 .project-row-btn {
@@ -117,6 +141,164 @@
 .project-row-btn-danger:hover {
   background: var(--error-subtle);
   color: var(--error);
+}
+
+.project-group {
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.project-group:hover {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.1);
+}
+
+.project-group .project-row {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.project-group .project-row:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.project-subs {
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-elevated) 70%, transparent);
+}
+
+.project-subs-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.5rem 0.85rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+
+.project-subs-toggle:hover {
+  color: var(--text-primary);
+}
+
+.project-subs-chevron {
+  width: 14px;
+  height: 14px;
+  transform: rotate(90deg);
+  transition: transform 0.18s ease;
+}
+
+.project-subs.is-collapsed .project-subs-chevron {
+  transform: rotate(0deg);
+}
+
+.project-subs.is-collapsed .project-sub-list {
+  display: none;
+}
+
+.project-sub-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0.5rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.project-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 10px;
+  transition: var(--transition);
+}
+
+.project-sub-item:hover {
+  background: var(--bg-hover);
+}
+
+.project-sub-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+}
+
+.project-sub-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.project-sub-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-sub-meta {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 560;
+  color: var(--text-muted);
+}
+
+.project-sub-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding-right: 0.3rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.project-sub-item:hover .project-sub-actions,
+.project-sub-item:focus-within .project-sub-actions {
+  opacity: 1;
+}
+
+.project-sub-actions .project-row-btn {
+  width: 28px;
+  height: 28px;
+}
+
+.project-sub-actions .project-row-btn svg,
+.project-sub-actions .project-row-btn .lucide {
+  width: 14px;
+  height: 14px;
 }
 
 .projects-empty {
@@ -210,8 +392,14 @@
 .project-detail-heading-actions {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
   flex-shrink: 0;
+}
+
+.project-detail-heading-actions .btn-ghost {
+  border: 1px solid var(--border);
 }
 
 .project-detail-select-bar {

@@ -48,8 +48,6 @@ export function bindVault(deps) {
     const root = target.closest('#dash-tiles-grid, #entries-list, #project-detail-list, #shares-received-list, #shares-sent-list, #contacts-list, #contacts-detail-shares, #share-pick-entry-list, #share-contacts-chips');
     if (!root) return;
 
-    if (target.closest('.entry-card-select')) return;
-
     const actionEl = target.closest('[data-action]');
     if (!actionEl || !root.contains(actionEl)) return;
 
@@ -119,23 +117,6 @@ export function bindVault(deps) {
 
   document.addEventListener('click', handleEntryClick);
 
-  function toggleListSelection(id) {
-    if (!id) return;
-    const set = new Set(state.selectedIds);
-    if (set.has(id)) set.delete(id);
-    else set.add(id);
-    state.selectedIds = [...set];
-
-    const card = $('#entries-list .entry-card[data-id="' + id + '"]');
-    if (card) card.classList.toggle('is-selected', set.has(id));
-    const box = card?.querySelector('input[data-action="toggle-select"]');
-    if (box) box.checked = set.has(id);
-  }
-
-  $('#entries-list')?.addEventListener('change', (e) => {
-    const box = e.target.closest('input[data-action="toggle-select"]');
-    if (box) toggleListSelection(box.dataset.id);
-  });
 
   $$('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {

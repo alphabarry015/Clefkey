@@ -1,7 +1,7 @@
 /**
  * Modale de transfert de clés entre projets.
  */
-import { folderNameById, entryFolderId } from './folders.js';
+import { folderNameById, entryFolderId, topLevelFolders, folderChildren } from './folders.js';
 import {
   $, $$, esc, setHtml, fillSelect, toast, openModal, closeModal,
 } from './ui.js';
@@ -27,12 +27,18 @@ export function createTransfer(deps) {
   } = {}) {
     const sel = $('#transfer-folder');
     if (!sel) return;
-    const folders = state.folders.filter((f) => f.id !== excludeFolderId);
+    const valid = (f) => f.id !== excludeFolderId;
     const options = [{ value: '', label: 'Choisir une destination…' }];
     if (allowUnassign) {
       options.push({ value: '__unassign__', label: 'Sans projet' });
     }
-    options.push(...folders.map((f) => ({ value: f.id, label: f.name })));
+    topLevelFolders(state.folders).filter(valid).forEach((f) => {
+      options.push({ value: f.id, label: f.name });
+      folderChildren(state.folders, f.id).filter(valid).forEach((c) => {
+        options.push({ value: c.id, label: `— ${c.name}` });
+      });
+    });
+    const folders = state.folders.filter(valid);
     let pick = selectedId || '';
     if (!pick) {
       if (folders.length === 1) pick = folders[0].id;
@@ -52,10 +58,14 @@ export function createTransfer(deps) {
     if (!sel) return;
     const current = selectedId || '';
     const pick = current && state.folders.some((f) => f.id === current) ? current : '';
-    fillSelect(sel, [
-      { value: '', label: 'Sans projet' },
-      ...state.folders.map((f) => ({ value: f.id, label: f.name })),
-    ], pick);
+    const options = [{ value: '', label: 'Sans projet' }];
+    topLevelFolders(state.folders).forEach((f) => {
+      options.push({ value: f.id, label: f.name });
+      folderChildren(state.folders, f.id).forEach((c) => {
+        options.push({ value: c.id, label: `— ${c.name}` });
+      });
+    });
+    fillSelect(sel, options, pick);
     syncDetailMoveButton();
   }
 

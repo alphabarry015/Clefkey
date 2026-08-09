@@ -306,11 +306,13 @@
 .projects-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  align-items: start;
   gap: 0.9rem;
   width: 100%;
 }
 
 .project-row {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 148px;

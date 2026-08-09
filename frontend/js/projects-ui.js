@@ -3,10 +3,11 @@
  */
 import { api } from './api.js';
 import { toB64, encryptData } from './crypto.js';
+import { deleteDevEntry } from './dev.js';
 import {
   newFolderId, normalizeFolderName, normalizeFoldersList,
   createFoldersMetaPayload, entryFolderId, entryInKnownFolder,
-  folderNameById, isVaultMetaEntry,
+  folderNameById, isVaultMetaEntry, topLevelFolders, folderChildren,
 } from './folders.js';
 import {
   $, $$, esc, setHtml, fillSelect, toast, showLoading, hideLoading, openModal, closeModal,
@@ -32,17 +33,24 @@ export function createProjects(deps) {
     setTimeout(() => $('#entry-folder-new-name')?.focus(), 40);
   }
 
-  async function createFolderByName(rawName, { selectInEntryForm = false } = {}) {
+  async function createFolderByName(rawName, { parentId = '', selectInEntryForm = false } = {}) {
     const name = normalizeFolderName(rawName);
     if (!name) {
       toast('Nom du projet requis', 'error');
       return null;
     }
-    if (state.folders.some((f) => f.name.toLowerCase() === name.toLowerCase())) {
-      toast('Ce projet existe déjà', 'error');
+    if (parentId) {
+      const parent = state.folders.find((f) => f.id === parentId);
+      if (!parent || parent.parentId) {
+        toast('Projet parent invalide', 'error');
+        return null;
+      }
+    }
+    if (state.folders.some((f) => f.parentId === parentId && f.name.toLowerCase() === name.toLowerCase())) {
+      toast('Ce nom est déjà utilisé', 'error');
       return null;
     }
-    const folder = { id: newFolderId(), name };
+    const folder = { id: newFolderId(), name, parentId };
     state.folders = normalizeFoldersList([...state.folders, folder]);
     await persistFoldersMeta();
     syncFolderFilterButtons();
@@ -51,16 +59,59 @@ export function createProjects(deps) {
     deps.syncTransferEntryButtons();
     renderFoldersManageList();
     deps.refreshCurrentView();
-    toast('Projet créé', 'success');
+    toast(parentId ? 'Sous-projet créé' : 'Projet créé', 'success');
     return folder;
+  }
+
+  async function moveFolderToParent(folderId, newParentId = '') {
+    const folder = state.folders.find((f) => f.id === folderId);
+    if (!folder) return false;
+    if (newParentId === folderId) {
+      toast('Un projet ne peut pas être son propre parent', 'error');
+      return false;
+    }
+    if (newParentId) {
+      const target = state.folders.find((f) => f.id === newParentId);
+      if (!target || target.parentId) {
+        toast('Projet parent invalide', 'error');
+        return false;
+      }
+      if (state.folders.some((f) => f.parentId === folderId)) {
+        toast('Ce projet contient des sous-projets', 'error');
+        return false;
+      }
+    }
+    if (state.folders.some((f) => f.id !== folderId && f.parentId === newParentId
+      && f.name.toLowerCase() === folder.name.toLowerCase())) {
+      toast('Ce nom existe déjà à cet emplacement', 'error');
+      return false;
+    }
+    if ((folder.parentId || '') === newParentId) return true;
+    state.folders = normalizeFoldersList(
+      state.folders.map((f) => (f.id === folderId ? { ...f, parentId: newParentId } : f)),
+    );
+    await persistFoldersMeta();
+    syncFolderFilterButtons();
+    populateFolderSelect();
+    renderFoldersManageList();
+    deps.refreshCurrentView();
+    toast('Projet déplacé', 'success');
+    return true;
   }
 
   function syncFolderFilterButtons() {
     const renderList = (containerId) => {
       const el = $(containerId);
       if (!el) return;
-      setHtml(el, state.folders.map((f) => `
-        <button type="button" class="folder-filter${state.folderFilter === f.id ? ' active' : ''}" data-folder-filter="${esc(f.id)}">${esc(f.name)}</button>
+      const buttons = [];
+      topLevelFolders(state.folders).forEach((f) => {
+        buttons.push({ id: f.id, name: f.name, depth: 0 });
+        folderChildren(state.folders, f.id).forEach((c) => {
+          buttons.push({ id: c.id, name: c.name, depth: 1 });
+        });
+      });
+      setHtml(el, buttons.map((f) => `
+        <button type="button" class="folder-filter${state.folderFilter === f.id ? ' active' : ''}${f.depth ? ' child' : ''}" data-folder-filter="${esc(f.id)}">${f.depth ? '&nbsp;&nbsp;' : ''}${esc(f.name)}</button>
       `).join(''));
     };
     renderList('#dash-folder-filter-list');
@@ -78,10 +129,14 @@ export function createProjects(deps) {
     if (!sel) return;
     const current = selectedId || sel.value || '';
     const pick = current && state.folders.some((f) => f.id === current) ? current : '';
-    fillSelect(sel, [
-      { value: '', label: 'Sans projet' },
-      ...state.folders.map((f) => ({ value: f.id, label: f.name })),
-    ], pick);
+    const options = [{ value: '', label: 'Sans projet' }];
+    topLevelFolders(state.folders).forEach((f) => {
+      options.push({ value: f.id, label: f.name });
+      folderChildren(state.folders, f.id).forEach((c) => {
+        options.push({ value: c.id, label: `— ${c.name}` });
+      });
+    });
+    fillSelect(sel, options, pick);
   }
 
   function defaultFolderIdFromFilter() {
@@ -127,6 +182,20 @@ export function createProjects(deps) {
       }
     }
     if (!state.devMode && affected.length) await deps.loadEntries();
+  }
+
+  async function deleteEntriesInFolder(folderId) {
+    const affected = state.entries.filter((e) => !e.isShare && !isVaultMetaEntry(e)
+      && entryFolderId(e) === folderId);
+    for (const e of affected) {
+      if (state.devMode) {
+        deleteDevEntry(state.entries, e.id);
+      } else {
+        await api.deleteEntry(state.token, e.id);
+      }
+    }
+    if (!state.devMode && affected.length) await deps.loadEntries();
+    return affected.length;
   }
 
   function getUnassignedEntries() {
@@ -182,23 +251,56 @@ export function createProjects(deps) {
       return;
     }
     empty?.classList.add('hidden');
-    setHtml(list, state.folders.map((f) => `
-      <li class="folders-manage-item" data-folder-id="${esc(f.id)}">
-        <input type="text" class="folder-rename-input" value="${esc(f.name)}" maxlength="80" aria-label="Nom du projet">
-        <button type="button" class="btn btn-ghost btn-sm folder-rename-save" title="Enregistrer">OK</button>
-        <button type="button" class="btn btn-ghost btn-sm btn-danger folder-delete-btn" title="Supprimer">
-          <i data-lucide="trash-2"></i>
-        </button>
-      </li>
-    `).join(''));
+    const parentOptions = (f) => topLevelFolders(state.folders)
+      .filter((p) => p.id !== f.id)
+      .map((p) => `<option value="${esc(p.id)}" ${p.id === f.parentId ? 'selected' : ''}>${esc(p.name)}</option>`)
+      .join('');
+    const manageItem = (f, isChild) => `
+      <li class="folders-manage-item${isChild ? ' folders-manage-child' : ''}" data-folder-id="${esc(f.id)}">
+        <div class="folder-manage-main">
+          <input type="text" class="folder-rename-input" value="${esc(f.name)}" maxlength="80" aria-label="Nom du projet">
+        </div>
+        <div class="folder-manage-actions">
+          <button type="button" class="btn btn-ghost btn-icon btn-sm folder-rename-save" title="Enregistrer" aria-label="Enregistrer">
+            <i data-lucide="check-circle"></i>
+          </button>
+          <select class="folder-move-parent" aria-label="Déplacer sous">
+            <option value="" ${!f.parentId ? 'selected' : ''}>Projet principal</option>
+            ${parentOptions(f)}
+          </select>
+          <button type="button" class="btn btn-ghost btn-icon btn-sm folder-move-save" title="Déplacer" aria-label="Déplacer">
+            <i data-lucide="arrow-right"></i>
+          </button>
+          <button type="button" class="btn btn-ghost btn-icon btn-sm btn-danger folder-delete-btn" title="Supprimer" aria-label="Supprimer">
+            <i data-lucide="trash-2"></i>
+          </button>
+        </div>
+      </li>`;
+    const items = [];
+    topLevelFolders(state.folders).forEach((f) => {
+      items.push(manageItem(f, false));
+      folderChildren(state.folders, f.id).forEach((c) => {
+        items.push(manageItem(c, true));
+      });
+    });
+    setHtml(list, items.join(''));
     refreshIcons(list);
   }
 
-  function openFoldersModal() {
+  function openFoldersModal({ parentId = '' } = {}) {
     renderFoldersManageList();
     deps.syncTransferEntryButtons();
     const input = $('#folder-new-name');
     if (input) input.value = '';
+    const parentSel = $('#folder-new-parent');
+    if (parentSel) {
+      parentSel.innerHTML = `<option value="">Projet principal (niveau 1)</option>${
+        topLevelFolders(state.folders).map((f) => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('')
+      }`;
+      if (parentId && topLevelFolders(state.folders).some((f) => f.id === parentId)) {
+        parentSel.value = parentId;
+      }
+    }
     openModal($('#modal-folders'));
     refreshIcons($('#modal-folders'));
     setTimeout(() => input?.focus(), 50);
@@ -293,7 +395,6 @@ export function createProjects(deps) {
     const n = state.projectDetailSelectedIds.length;
     const bar = $('#project-detail-select-bar');
     const countEl = $('#project-detail-selection-count');
-    const moveBtn = $('#btn-project-detail-move');
     const all = $('#project-detail-select-all');
     const transferBtn = $('#btn-project-detail-transfer');
 
@@ -301,7 +402,6 @@ export function createProjects(deps) {
     if (countEl) {
       countEl.textContent = n <= 1 ? `${n} sélectionnée` : `${n} sélectionnées`;
     }
-    if (moveBtn) moveBtn.disabled = n === 0;
     if (all) {
       const total = visibleIds.size;
       all.checked = total > 0 && n === total;
@@ -354,6 +454,7 @@ export function createProjects(deps) {
 
     if (avatar) avatar.textContent = (folder.name?.[0] || '?').toUpperCase();
     if (nameEl) nameEl.textContent = folder.name;
+    $('#btn-project-detail-subproject')?.classList.toggle('hidden', !!folder.parentId);
     if (metaEl) {
       const n = allInProject.length;
       metaEl.textContent = n <= 1 ? `${n} clé` : `${n} clés`;
@@ -414,48 +515,93 @@ export function createProjects(deps) {
       return;
     }
     empty?.classList.add('hidden');
-    setHtml(grid, state.folders.map((f) => {
-      const count = countEntriesInFolder(f.id);
-      const countLabelText = count <= 1 ? `${count} clé` : `${count} clés`;
-      const initial = esc((f.name?.[0] || '?').toUpperCase());
-      return `
-        <article class="project-row" data-folder-id="${esc(f.id)}" role="listitem">
-          <button type="button" class="project-row-main" data-action="open-project" title="Ouvrir ${esc(f.name)}">
-            <span class="project-row-avatar" aria-hidden="true">${initial}</span>
-            <span class="project-row-body">
-              <span class="project-row-name">${esc(f.name)}</span>
-              <span class="project-row-meta">${esc(countLabelText)}</span>
-            </span>
-            <span class="project-row-open">Ouvrir</span>
+    const countLabelFor = (id) => {
+      const count = countEntriesInFolder(id);
+      return count <= 1 ? `${count} clé` : `${count} clés`;
+    };
+
+    const subItem = (c) => `
+        <li class="project-sub-item" data-folder-id="${esc(c.id)}">
+          <button type="button" class="project-sub-main" data-action="open-project" title="Ouvrir ${esc(c.name)}">
+            <span class="project-sub-dot" aria-hidden="true"></span>
+            <span class="project-sub-name">${esc(c.name)}</span>
+            <span class="project-sub-meta">${esc(countLabelFor(c.id))}</span>
           </button>
-          <div class="project-row-actions">
+          <div class="project-sub-actions">
+            <button type="button" class="project-row-btn" data-action="toggle-move-project" title="Déplacer" aria-label="Déplacer">
+              <i data-lucide="arrow-right"></i>
+            </button>
             <button type="button" class="project-row-btn" data-action="rename-project" title="Renommer" aria-label="Renommer">
               <i data-lucide="pencil"></i>
             </button>
-            <button type="button" class="project-row-btn project-row-btn-danger" data-action="delete-project" title="Supprimer" aria-label="Supprimer">
+            <button type="button" class="project-row-btn project-row-btn-danger" data-action="delete-project" title="Supprimer le sous-projet" aria-label="Supprimer le sous-projet">
               <i data-lucide="trash-2"></i>
             </button>
           </div>
-        </article>`;
-    }).join(''));
+        </li>`;
+
+    const projectGroup = (f) => {
+      const initial = esc((f.name?.[0] || '?').toUpperCase());
+      const children = folderChildren(state.folders, f.id);
+      const collapsed = state.collapsedProjectIds?.includes(f.id);
+      return `
+        <div class="project-group" role="listitem">
+          <article class="project-row" data-folder-id="${esc(f.id)}">
+            <button type="button" class="project-row-delete" data-action="delete-project" title="Supprimer le projet" aria-label="Supprimer le projet">
+              <i data-lucide="trash-2"></i>
+            </button>
+            <button type="button" class="project-row-main" data-action="open-project" title="Ouvrir ${esc(f.name)}">
+              <span class="project-row-avatar" aria-hidden="true">${initial}</span>
+              <span class="project-row-body">
+                <span class="project-row-name">${esc(f.name)}</span>
+                <span class="project-row-meta">${esc(countLabelFor(f.id))}${
+                  children.length ? ` · ${children.length} sous-projet${children.length > 1 ? 's' : ''}` : ''
+                }</span>
+              </span>
+              <span class="project-row-open">Ouvrir</span>
+            </button>
+          </article>
+          ${children.length ? `
+          <div class="project-subs${collapsed ? ' is-collapsed' : ''}" data-parent-id="${esc(f.id)}">
+            <button type="button" class="project-subs-toggle" data-action="toggle-subs" data-parent-id="${esc(f.id)}" aria-expanded="${collapsed ? 'false' : 'true'}">
+              <i data-lucide="chevron-right" class="project-subs-chevron"></i>
+              <span>${children.length} sous-projet${children.length > 1 ? 's' : ''}</span>
+            </button>
+            <ul class="project-sub-list">
+              ${children.map(subItem).join('')}
+            </ul>
+          </div>` : ''}
+        </div>`;
+    };
+
+    setHtml(grid, topLevelFolders(state.folders).map(projectGroup).join(''));
     refreshIcons($('#projects-view'));
   }
 
-  async function performDeleteFolder(folderId) {
+  async function performDeleteFolder(folderId, { deleteKeys = false, keepChildren = false } = {}) {
     const folder = state.folders.find((f) => f.id === folderId);
     if (!folder) return;
     showLoading('Mise à jour des projets...');
     try {
-      await clearFolderIdOnEntries(folderId);
-      state.folders = state.folders.filter((f) => f.id !== folderId);
+      const children = folderChildren(state.folders, folderId);
+      const removedChildren = keepChildren ? [] : children;
+      const toRemove = [folderId, ...removedChildren.map((c) => c.id)];
+      for (const id of toRemove) {
+        if (deleteKeys) await deleteEntriesInFolder(id);
+        else await clearFolderIdOnEntries(id);
+      }
+      state.folders = state.folders
+        .filter((f) => !toRemove.includes(f.id))
+        .map((f) => (keepChildren && f.parentId === folderId ? { ...f, parentId: '' } : f));
+      state.folders = normalizeFoldersList(state.folders);
       await persistFoldersMeta();
-      if (state.folderFilter === folderId) state.folderFilter = 'all';
-      if (state.activeProjectId === folderId) state.activeProjectId = null;
+      if (toRemove.includes(state.folderFilter)) state.folderFilter = 'all';
+      if (toRemove.includes(state.activeProjectId)) state.activeProjectId = null;
       syncFolderFilterButtons();
       populateFolderSelect();
       renderFoldersManageList();
       deps.refreshCurrentView();
-      toast('Projet supprimé — les clés sont passées en « Sans projet »', 'info');
+      toast(deleteKeys ? 'Projet et clés supprimés' : 'Projet supprimé — les clés ont été conservées', 'info');
     } finally {
       hideLoading();
     }
@@ -464,21 +610,92 @@ export function createProjects(deps) {
   function deleteFolder(folderId) {
     const folder = state.folders.find((f) => f.id === folderId);
     if (!folder) return;
+    const children = folderChildren(state.folders, folderId);
+    const keysCount = countEntriesInFolder(folderId);
+    const optionsHtml = `
+      <label class="confirm-option">
+        <input type="checkbox" id="confirm-delete-keys">
+        <span class="confirm-option-body">
+          <span class="confirm-option-title">Supprimer aussi les clés de ce projet</span>
+          <span class="confirm-option-hint">${keysCount} clé(s). Sinon elles passeront en « Sans projet ».</span>
+        </span>
+      </label>
+      ${children.length ? `
+      <label class="confirm-option">
+        <input type="checkbox" id="confirm-keep-children">
+        <span class="confirm-option-body">
+          <span class="confirm-option-title">Conserver les sous-projets et leurs clés</span>
+          <span class="confirm-option-hint">${children.length} sous-projet(s) deviendront des projets principaux.</span>
+        </span>
+      </label>` : ''}`;
     deps.showDeleteConfirm(
       { title: folder.name },
       async () => {
+        const deleteKeys = !!$('#confirm-delete-keys')?.checked;
+        const keepChildren = !!$('#confirm-keep-children')?.checked;
         try {
-          await performDeleteFolder(folderId);
+          await performDeleteFolder(folderId, { deleteKeys, keepChildren });
         } catch (err) {
           toast(err.message || 'Suppression impossible', 'error');
         }
       },
       {
-        title: 'Supprimer le projet',
-        message: 'Cette action est irréversible. Les clés de ce projet passeront en « Sans projet ».',
+        title: children.length ? 'Supprimer le projet et ses sous-projets' : 'Supprimer le projet',
+        message: 'Cette action est irréversible. Choisissez ce qui doit être conservé.',
         placeholder: 'Nom du projet',
+        optionsHtml,
       },
     );
+  }
+
+  function openCreateSubprojectModal(parentId) {
+    const parent = state.folders.find((f) => f.id === parentId);
+    if (!parent || parent.parentId) {
+      toast('Projet parent invalide', 'error');
+      return;
+    }
+    state.subprojectParentId = parentId;
+    const label = $('#subproject-parent-name');
+    if (label) label.textContent = parent.name;
+    const input = $('#subproject-name');
+    if (input) input.value = '';
+    openModal($('#modal-subproject'));
+    refreshIcons($('#modal-subproject'));
+    setTimeout(() => input?.focus(), 50);
+  }
+
+  function syncMoveProjectPreview() {
+    const select = $('#move-project-parent');
+    const target = $('#move-project-to');
+    if (!select || !target) return;
+    const parent = state.folders.find((f) => f.id === select.value);
+    target.textContent = parent ? parent.name : 'Projet principal';
+  }
+
+  function openMoveProjectModal(folderId) {
+    const folder = state.folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    state.moveProjectId = folderId;
+    const nameEl = $('#move-project-name');
+    if (nameEl) nameEl.textContent = folder.name;
+    const fromEl = $('#move-project-from');
+    if (fromEl) {
+      const parent = state.folders.find((f) => f.id === folder.parentId);
+      fromEl.textContent = parent ? parent.name : 'Projet principal';
+    }
+    const select = $('#move-project-parent');
+    if (select) {
+      const hasChildren = folderChildren(state.folders, folderId).length > 0;
+      const options = hasChildren ? [] : topLevelFolders(state.folders).filter((p) => p.id !== folderId);
+      setHtml(select, `<option value="">Projet principal (niveau 1)</option>${
+        options.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')
+      }`);
+      select.value = folder.parentId || '';
+    }
+    syncMoveProjectPreview();
+    openModal($('#modal-move-project'));
+    refreshIcons($('#modal-move-project'));
+    setTimeout(() => $('#move-project-parent')?.focus(), 50);
   }
 
   return {
@@ -486,10 +703,12 @@ export function createProjects(deps) {
     syncFolderFilterButtons, populateFolderSelect, defaultFolderIdFromFilter,
     persistFoldersMeta, clearFolderIdOnEntries, getUnassignedEntries,
     setEntryFolder, assignEntriesToFolder,
-    renderFoldersManageList, openFoldersModal, openProjectsPage,
+    renderFoldersManageList, openFoldersModal, openProjectsPage, moveFolderToParent,
     countEntriesInFolder, openProjectPage, getProjectDetailEntries,
     entryListCardMarkup, clearProjectDetailSelection, syncProjectDetailSelectionUi,
     toggleProjectDetailSelection, renderProjectDetailPage, openProjectFilter,
     renderProjectsPage, performDeleteFolder, deleteFolder,
+    openCreateSubprojectModal, openMoveProjectModal, syncMoveProjectPreview,
+    deleteEntriesInFolder,
   };
 }

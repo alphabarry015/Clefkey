@@ -207,6 +207,11 @@ export function createAuthSession(deps) {
   function resetDeleteConfirm() {
     $('#confirm-name-input').value = '';
     $('#btn-confirm-ok').disabled = true;
+    const options = $('#confirm-options');
+    if (options) {
+      options.innerHTML = '';
+      options.classList.add('hidden');
+    }
     state.confirmDeleteName = null;
     state.confirmCallback = null;
   }
@@ -240,6 +245,11 @@ export function createAuthSession(deps) {
     $('#confirm-name-expected').textContent = entry.title;
     const input = $('#confirm-name-input');
     if (input) input.placeholder = options.placeholder || 'Nom de la clé';
+    const optionsBox = $('#confirm-options');
+    if (optionsBox) {
+      optionsBox.innerHTML = options.optionsHtml || '';
+      optionsBox.classList.toggle('hidden', !options.optionsHtml);
+    }
     state.confirmDeleteName = entry.title;
     state.confirmCallback = onConfirm;
     $('#confirm-name-input').value = '';

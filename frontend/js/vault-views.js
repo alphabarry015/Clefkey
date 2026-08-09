@@ -274,17 +274,8 @@ export function createVaultViews(deps) {
       return;
     }
 
-    const visibleIds = new Set(list.map((e) => e.id));
-    state.selectedIds = state.selectedIds.filter((id) => visibleIds.has(id));
-    const selected = new Set(state.selectedIds);
-
-    setHtml(container, list.map((e, i) => {
-      const isSelected = selected.has(e.id);
-      return `
-      <div class="entry-card entry-card-selectable${isSelected ? ' is-selected' : ''}" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-entry">
-        <label class="entry-card-select" data-action="toggle-select" data-id="${esc(e.id)}" title="Sélectionner">
-          <input type="checkbox" data-action="toggle-select" data-id="${esc(e.id)}" ${isSelected ? 'checked' : ''} aria-label="Sélectionner ${esc(e.title)}">
-        </label>
+    setHtml(container, list.map((e, i) => `
+      <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-entry">
         ${deps.entryAvatarMarkup(e)}
         <div class="entry-info">
           <div class="entry-title-row">
@@ -310,8 +301,7 @@ export function createVaultViews(deps) {
             <i data-lucide="trash-2"></i>
           </button>
         </div>
-      </div>`;
-    }).join(''));
+      </div>`).join(''));
     refreshIcons(container);
     setupFaviconImages(container);
   }

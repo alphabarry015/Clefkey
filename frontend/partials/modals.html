@@ -255,21 +255,117 @@
           </button>
         </div>
         <div class="modal-body">
-          <p class="shares-hint">Organisez vos clés par projet. Les partages restent hors des projets.</p>
-          <form id="form-folder-create" class="folder-create-row" autocomplete="off">
-            <input type="text" id="folder-new-name" maxlength="80" placeholder="Nom du projet" required>
-            <button type="submit" class="btn btn-primary btn-sm" id="btn-folder-create">
-              <i data-lucide="plus"></i>
-              Créer
-            </button>
-          </form>
-          <button type="button" id="btn-folders-transfer" class="btn btn-secondary btn-sm btn-folders-transfer">
-            <i data-lucide="layers"></i>
-            Transférer des clés sans projet
-          </button>
+          <div class="folder-create-card">
+            <h3 class="folder-create-title">Créer un projet</h3>
+            <p class="folder-create-hint">Choisir un projet principal pour créer un sous-projet, ou laissez vide pour un projet de premier niveau.</p>
+            <form id="form-folder-create" class="folder-create-form" autocomplete="off">
+              <div class="folder-create-field">
+                <label for="folder-new-parent" class="folder-create-label">Sous</label>
+                <select id="folder-new-parent" class="select-parent" title="Laisser vide pour un projet principal">
+                  <option value="">Projet principal</option>
+                </select>
+              </div>
+              <div class="folder-create-field folder-create-field-name">
+                <label for="folder-new-name" class="folder-create-label">Nom</label>
+                <input type="text" id="folder-new-name" maxlength="80" placeholder="Nom du projet" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm" id="btn-folder-create">
+                <i data-lucide="plus"></i>
+                Créer
+              </button>
+            </form>
+          </div>
+
+          <h3 class="folders-manage-title">Gérer et déplacer</h3>
           <ul id="folders-manage-list" class="folders-manage-list"></ul>
           <p id="folders-manage-empty" class="folders-manage-empty">Aucun projet pour le moment.</p>
+
+          <button type="button" id="btn-folders-transfer" class="btn btn-secondary btn-sm btn-folders-transfer">
+            <i data-lucide="layers"></i>
+            Transférer les clés sans projet
+          </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Créer un sous-projet ────────────────── -->
+  <div id="modal-subproject" class="modal">
+    <div class="modal-overlay">
+      <div class="modal-content modal-sm modal-project-action modal-project-create">
+        <div class="modal-header">
+          <div class="modal-project-icon modal-project-icon-create" aria-hidden="true">
+            <i data-lucide="layers"></i>
+          </div>
+          <div class="modal-header-text">
+            <h2>Créer un sous-projet</h2>
+            <p class="modal-project-sub">Dans <strong id="subproject-parent-name">…</strong></p>
+          </div>
+          <button type="button" id="btn-close-subproject" class="btn-close" aria-label="Fermer">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <form id="form-subproject" class="modal-body" autocomplete="off">
+          <div class="form-group">
+            <label for="subproject-name">Nom du sous-projet</label>
+            <input type="text" id="subproject-name" maxlength="80" placeholder="ex. Client A, Serveurs…" required>
+          </div>
+          <p class="modal-project-hint">
+            <i data-lucide="info"></i>
+            <span>Un sous-projet appartient à un projet principal.</span>
+          </p>
+          <div class="modal-project-actions">
+            <button type="button" id="btn-subproject-cancel" class="btn btn-secondary">Annuler</button>
+            <button type="submit" id="btn-subproject-submit" class="btn btn-primary">
+              <i data-lucide="plus"></i>
+              Créer le sous-projet
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Déplacer un projet ──────────────────── -->
+  <div id="modal-move-project" class="modal">
+    <div class="modal-overlay">
+      <div class="modal-content modal-sm modal-project-action modal-project-move">
+        <div class="modal-header">
+          <div class="modal-project-icon modal-project-icon-move" aria-hidden="true">
+            <i data-lucide="arrow-right"></i>
+          </div>
+          <div class="modal-header-text">
+            <h2>Déplacer le projet</h2>
+            <p class="modal-project-sub"><strong id="move-project-name">…</strong></p>
+          </div>
+          <button type="button" id="btn-close-move-project" class="btn-close" aria-label="Fermer">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <form id="form-move-project" class="modal-body" autocomplete="off">
+          <div class="move-project-path">
+            <span class="move-project-chip" id="move-project-from">…</span>
+            <i data-lucide="arrow-right" class="move-project-arrow"></i>
+            <span class="move-project-chip move-project-chip-target" id="move-project-to">…</span>
+          </div>
+          <div class="form-group">
+            <label for="move-project-parent">Nouvelle destination</label>
+            <select id="move-project-parent" class="field-select">
+              <option value="">Projet principal (niveau 1)</option>
+            </select>
+          </div>
+          <p class="modal-project-hint">
+            <i data-lucide="info"></i>
+            <span>Un projet contenant des sous-projets ne peut pas devenir un sous-projet.</span>
+          </p>
+          <div class="modal-project-actions">
+            <button type="button" id="btn-move-project-cancel" class="btn btn-secondary">Annuler</button>
+            <button type="submit" id="btn-move-project-submit" class="btn btn-primary">
+              <i data-lucide="arrow-right"></i>
+              Déplacer
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -407,6 +503,7 @@
         </div>
         <div class="modal-body">
           <p id="confirm-message" class="confirm-text"></p>
+          <div id="confirm-options" class="confirm-options hidden"></div>
           <div class="confirm-name-block">
             <label for="confirm-name-input" class="confirm-name-label">
               Saisissez <strong id="confirm-name-expected"></strong> pour confirmer
