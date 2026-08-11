@@ -1,0 +1,90 @@
+/* Clefkey — bascule "Mot de passe / Adresse e-mail" du widget de vérification. */
+
+.breach-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(6px);
+}
+
+[data-theme="light"] .breach-switch {
+  border-color: rgba(15, 23, 42, 0.12);
+  background: rgba(15, 23, 42, 0.05);
+}
+
+.breach-switch-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+[data-theme="light"] .breach-switch-tab {
+  color: rgba(15, 23, 42, 0.6);
+}
+
+.breach-switch-tab:hover {
+  color: #ffffff;
+}
+
+[data-theme="light"] .breach-switch-tab:hover {
+  color: #0f172a;
+}
+
+.breach-switch-tab.is-active {
+  background: var(--lp-blue, #3662d7);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(54, 98, 215, 0.35);
+}
+
+.breach-switch-tab:focus-visible {
+  outline: 2px solid var(--lp-blue, #3662d7);
+  outline-offset: 2px;
+}
+
+.breach-switch-vault {
+  margin: 0 auto 1rem;
+}
+
+.breach-switch-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.breach-result-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  vertical-align: -3px;
+  margin-right: 0.45rem;
+}
+
+.breach-result-icon-spin {
+  animation: breach-spin 0.9s linear infinite;
+}
+
+@keyframes breach-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breach-result-icon-spin { animation: none; }
+}

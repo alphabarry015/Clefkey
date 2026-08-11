@@ -53,7 +53,7 @@ const PAGES = [
   {
     slug: 'audit',
     file: 'AUDIT-MOT-DE-PASSE.md',
-    title: 'Audit de mot de passe',
+    title: 'Audit de compromission',
     group: 'Référence',
   },
   {

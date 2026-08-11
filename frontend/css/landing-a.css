@@ -423,6 +423,10 @@
   transition: color 0.2s ease, background 0.2s ease;
 }
 
+.lp-audit-icon-btn[hidden] {
+  display: none;
+}
+
 .lp-audit-icon-btn:hover {
   color: #0f172a;
   background: #f3f4f6;

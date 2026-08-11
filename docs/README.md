@@ -12,7 +12,7 @@ Le dépôt GitHub est **public**. Ne committez jamais `.env`, clés API, jetons 
 | [API.md](./API.md) | Endpoints HTTP |
 | [DEPLOIEMENT.md](./DEPLOIEMENT.md) | Local, Supabase, Vercel |
 | [SECURITE.md](./SECURITE.md) | Modèle de menace et bonnes pratiques |
-| [AUDIT-MOT-DE-PASSE.md](./AUDIT-MOT-DE-PASSE.md) | Audit de mot de passe (Have I Been Pwned, k-anonymity) |
+| [AUDIT-MOT-DE-PASSE.md](./AUDIT-MOT-DE-PASSE.md) | Audit de compromission mot de passe (HIBP, k-anonymity) et e-mail (XposedOrNot) |
 | [AUDIT.md](./AUDIT.md) | Audit sécurité / performance / maintenance |
 
 Repo : [Clefkey.](https://github.com/alphabarry015/Gardefort)

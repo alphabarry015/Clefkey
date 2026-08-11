@@ -17,7 +17,7 @@ class SecurityHeadersMiddleware:
         "font-src 'self' https://fonts.gstatic.com data:; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "script-src 'self' 'wasm-unsafe-eval'; "
-        "connect-src 'self'; "
+        "connect-src 'self' https://api.pwnedpasswords.com https://api.xposedornot.com; "
         "worker-src 'self'; "
         "manifest-src 'self'"
     )

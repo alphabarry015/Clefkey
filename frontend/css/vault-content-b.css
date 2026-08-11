@@ -471,6 +471,20 @@ a.detail-url-plain {
   height: 18px;
 }
 
+.audit-toggle-vault[hidden] {
+  display: none;
+}
+
+.audit-view .audit-eye-off,
+.audit-view[data-reveal="true"] .audit-eye-open {
+  display: none;
+}
+
+.audit-view .audit-eye-open,
+.audit-view[data-reveal="true"] .audit-eye-off {
+  display: inline-flex;
+}
+
 .audit-submit-vault {
   height: 40px;
   padding: 0 1.25rem;

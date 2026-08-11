@@ -34,7 +34,12 @@ Tuiles des clés (populaires, récents, A à Z), recherche, ajout rapide. Filtre
 
 ### Audit
 
-L'entrée **Audit** de la sidebar permet de vérifier si un mot de passe a fuité en ligne. Le test utilise l'API Have I Been Pwned en mode **k-anonymity** : le mot de passe est hashé localement et seuls 5 caractères du hash sont transmis. Voir la [documentation dédiée](./AUDIT-MOT-DE-PASSE.md).
+L'entrée **Audit** de la sidebar permet de vérifier si un mot de passe **ou une adresse e-mail** a fuité en ligne. Un switch bascule entre les deux modes :
+
+- **Mot de passe** — API Have I Been Pwned en mode **k-anonymity** : le mot de passe est hashé localement et seuls 5 caractères du hash sont transmis.
+- **Adresse e-mail** — API publique XposedOrNot, qui liste les fuites connues associées à l'adresse.
+
+Le même widget est disponible sur la landing page. Voir la [documentation dédiée](./AUDIT-MOT-DE-PASSE.md).
 
 ### 5. Toutes les clés
 

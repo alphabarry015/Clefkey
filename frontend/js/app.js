@@ -38,6 +38,7 @@ import { createShares } from './shares-ui.js';
 import { createVaultViews } from './vault-views.js';
 import { createProfile } from './profile-ui.js';
 import { createAudit } from './audit.js';
+import { bindBreachWidget } from './breach-check.js';
 import { createAuthSession } from './auth-session.js';
 import { bindAuth } from './bind-auth.js';
 import { bindVault } from './bind-vault.js';
@@ -388,5 +389,13 @@ initTheme();
 initIcons();
 initProfileFieldEdits();
 refreshIcons($('#screen-landing'));
+bindBreachWidget($('#lp-audit'), {
+  form: '#lp-audit-form',
+  input: '#lp-audit-input',
+  result: '#lp-audit-result',
+  tabs: '[data-breach-mode]',
+  toggle: '#lp-audit-toggle',
+  privacy: '#lp-audit-privacy',
+});
 showCompatBannerIfNeeded();
 restoreSessionIfAny();

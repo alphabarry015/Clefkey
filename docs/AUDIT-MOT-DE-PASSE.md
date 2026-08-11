@@ -1,13 +1,20 @@
-# Audit de mot de passe
+# Audit de compromission
 
-Clefkey propose un **audit de mot de passe** intégré au site, accessible :
+Clefkey propose un **audit de compromission** intégré au site, accessible :
 
 - depuis la **landing page**, juste en dessous du champ principal ;
 - depuis le **coffre connecté**, via le menu **Audit** de la sidebar.
 
-L'audit indique si un mot de passe a déjà fuité dans une branche de données publiques, sans jamais transmettre le mot de passe complet.
+Un **switch** permet de basculer entre deux modes :
 
-## Fonctionnement
+| Mode | Service interrogé | Donnée transmise |
+| --- | --- | --- |
+| Mot de passe (icône cadenas) | [Have I Been Pwned — Pwned Passwords](https://haveibeenpwned.com/Passwords) | 5 caractères du hash SHA-1 |
+| Adresse e-mail (icône enveloppe) | [XposedOrNot](https://xposedornot.com/) | l'adresse e-mail |
+
+Le widget est implémenté dans `frontend/js/breach-check.js` et partagé entre la landing page et la page d'audit du coffre.
+
+## Mode mot de passe
 
 ### Zero-knowledge
 
@@ -22,27 +29,50 @@ Aucun mot de passe complet, ni hash complet, n'est envoyé sur le réseau.
 
 Cette méthode est appelée **k-anonymity** : le service ne peut pas différencier le mot de passe testé des milliers d'autres partageant le même préfixe SHA-1.
 
-## Utilisation
+### Utilisation
 
-1. Saisissez le mot de passe à vérifier dans le champ arrondi.
-2. Cliquez sur **Afficher** si vous voulez visualiser le texte en clair.
+1. Sélectionnez l'onglet **Mot de passe**.
+2. Saisissez le mot de passe à vérifier dans le champ arrondi.
+3. Cliquez sur l'icône **œil** pour afficher ou masquer le texte en clair.
+4. Cliquez sur **Vérifier**.
+5. Le résultat apparaît directement sous le champ :
+   - **Mot de passe non compromis** (icône coche, vert) : il n'a pas été trouvé dans les bases de fuites connues.
+   - **Compromis N fois** (icône alerte, rouge) : le mot de passe a fuité ; changez-le.
+
+## Mode adresse e-mail
+
+Le mode e-mail interroge l'API publique et gratuite de **XposedOrNot** (sans clé API) :
+
+```
+GET https://api.xposedornot.com/v1/check-email/{email}
+```
+
+- Une réponse **404** ou un champ `Error` signifie qu'aucune fuite connue ne concerne cette adresse (résultat vert).
+- Sinon, la liste `breaches` renvoie les plateformes compromises, affichées avec leur nombre (résultat rouge).
+
+Contrairement au mode mot de passe, **l'adresse e-mail est transmise en clair** au service : c'est inhérent à l'API. Aucune donnée du coffre Clefkey n'accompagne la requête.
+
+### Utilisation
+
+1. Sélectionnez l'onglet **Adresse e-mail**.
+2. Saisissez l'adresse à tester (le bouton œil disparaît, le champ passe en type `email`).
 3. Cliquez sur **Vérifier**.
-4. Le résultat apparaît directement sous le champ :
-   - 🟢 **Mot de passe non compromis** : il n'a pas été trouvé dans les bases de fuites connues.
-   - 🔴 **Compromis N fois** : le mot de passe a fuité ; changez-le.
 
 ## Limites
 
-- Le test indique une fuite **connue et publique** : un mot de passe noté « non compromis » peut avoir fuité dans une base non répertoriée.
+- Le test indique une fuite **connue et publique** : un résultat « non compromis » peut malgré tout correspondre à une base non répertoriée.
 - Pwned Passwords couvre principalement les mots de passe d'usage courant. Des mots de passe très uniques (et longs) peuvent ne pas y figurer.
 - L'audit ne teste pas la robustesse, seulement l'existence dans des fuites.
+- Les deux services sont externes : une indisponibilité réseau affiche un message d'erreur.
 
 ## Mode clair / sombre
 
-Le champ d'audit et le message de résultat s'adaptent automatiquement au thème choisi dans l'application (clair ou sombre).
+Le switch, le champ d'audit et le message de résultat s'adaptent automatiquement au thème choisi dans l'application (clair ou sombre).
 
 ## Confidentialité
 
 - Le calcul SHA-1 est réalisé **côté client**.
-- L'appel réseau envoie 5 caractères de hash uniquement (`https://api.pwnedpasswords.com/range/…`).
-- Aucune information liée au compte Clefkey n'est transmise à Have I Been Pwned.
+- En mode mot de passe, l'appel réseau envoie 5 caractères de hash uniquement (`https://api.pwnedpasswords.com/range/…`).
+- En mode e-mail, seule l'adresse saisie est transmise à XposedOrNot ; elle n'est ni stockée ni liée à votre compte.
+- Aucune information liée au compte Clefkey n'est transmise à ces services.
+- La CSP (`vault/middleware.py`) autorise explicitement `api.pwnedpasswords.com` et `api.xposedornot.com` dans `connect-src`.
