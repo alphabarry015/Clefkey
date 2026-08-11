@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v188';
+const CACHE_VERSION = 'v193';
 const CACHE_STATIC = `clefkey-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).

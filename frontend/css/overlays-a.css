@@ -263,11 +263,186 @@ body.modal-open .vault-layout {
   padding-inline: 0.85rem;
 }
 
+.entry-folder-labelbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+}
+
+.entry-folder-create-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.entry-folder-create-toggle:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  color: var(--accent);
+  background: var(--accent-subtle);
+}
+
+.entry-folder-create-toggle svg,
+.entry-folder-create-toggle .lucide {
+  width: 13px;
+  height: 13px;
+}
+
+.entry-folder-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-elevated) 70%, transparent);
+}
+
+.entry-folder-tree-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  padding: 0.5rem 0.65rem 0.5rem 0.75rem;
+  border-radius: 9px;
+  cursor: pointer;
+  color: var(--text-primary);
+  background: transparent;
+  transition: var(--transition);
+  outline: none;
+}
+
+.entry-folder-tree-row.is-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  bottom: 0.45rem;
+  width: 3px;
+  border-radius: 0 4px 4px 0;
+  background: var(--accent);
+}
+
+.entry-folder-tree-row:hover {
+  background: var(--bg-hover);
+}
+
+.entry-folder-tree-row.is-selected {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.entry-folder-tree-row.is-child {
+  padding-left: 2.4rem;
+}
+
+.entry-folder-tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.entry-folder-tree-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.entry-folder-tree-chevron {
+  width: 14px;
+  height: 14px;
+  transform: rotate(90deg);
+  transition: transform 0.18s ease;
+}
+
+.entry-folder-tree-branch.is-collapsed {
+  display: none;
+}
+
+.entry-folder-tree-children.is-expanded > .entry-folder-tree-row .entry-folder-tree-chevron {
+  transform: rotate(90deg);
+}
+
+.entry-folder-tree-spacer {
+  width: 22px;
+  flex-shrink: 0;
+}
+
+.entry-folder-tree-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.entry-folder-tree-icon svg,
+.entry-folder-tree-icon .lucide {
+  width: 16px;
+  height: 16px;
+}
+
+.entry-folder-tree-row.is-selected .entry-folder-tree-icon {
+  color: var(--accent);
+}
+
+.entry-folder-tree-check {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: var(--transition);
+}
+
+.entry-folder-tree-row.is-selected .entry-folder-tree-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.entry-folder-tree-check svg,
+.entry-folder-tree-check .lucide {
+  width: 14px;
+  height: 14px;
+}
+
+.entry-folder-tree-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .entry-folder-create {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-top: 0.15rem;
+  margin-top: 0.5rem;
   padding: 0.7rem;
   border-radius: 12px;
   background: var(--bg-elevated);
@@ -297,5 +472,122 @@ body.modal-open .vault-layout {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.detail-project-labelbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+}
+
+.detail-project-labelbar label {
+  margin: 0;
+}
+
+.detail-project-move-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.detail-project-move-btn:not(:disabled):hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  color: var(--accent);
+  background: var(--accent-subtle);
+}
+
+.detail-project-move-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.detail-project-move-btn svg,
+.detail-project-move-btn .lucide {
+  width: 13px;
+  height: 13px;
+}
+
+.detail-project-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 46px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.detail-project-picker:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-subtle) 30%, var(--bg-elevated));
+}
+
+.detail-project-picker-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+
+.detail-project-picker-icon svg,
+.detail-project-picker-icon .lucide {
+  width: 16px;
+  height: 16px;
+}
+
+.detail-project-picker-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-project-picker-chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  transform: rotate(0deg);
+  transition: transform 0.18s ease;
+}
+
+.detail-project-picker[aria-expanded="true"] .detail-project-picker-chevron {
+  transform: rotate(90deg);
+}
+
+.detail-folder-tree {
+  max-height: 180px;
+  margin-top: 0.4rem;
+  transition: opacity 0.15s ease, max-height 0.18s ease;
+}
+
+.detail-folder-tree.is-collapsed {
+  display: none;
+}
+
+.detail-project-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
 }
 

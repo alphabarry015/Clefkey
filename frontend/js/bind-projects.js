@@ -274,7 +274,71 @@ export function bindProjects(deps) {
     }
   });
 
-  $('#detail-move-folder')?.addEventListener('change', syncDetailMoveButton);
+  function selectDetailFolder(folderId) {
+    const hidden = $('#detail-move-folder');
+    const tree = $('#detail-folder-tree');
+    const pickerName = $('#detail-project-picker-name');
+    const picker = $('#detail-project-picker');
+    if (!hidden || !tree) return;
+    hidden.value = folderId;
+    tree.querySelectorAll('.entry-folder-tree-row').forEach((r) => {
+      const selected = r.dataset.folderId === folderId;
+      r.classList.toggle('is-selected', selected);
+      r.setAttribute('aria-selected', selected ? 'true' : 'false');
+      r.setAttribute('aria-checked', selected ? 'true' : 'false');
+    });
+    if (pickerName) {
+      const name = folderId ? folderNameById(state.folders, folderId) : 'Sans projet';
+      pickerName.textContent = name || 'Sans projet';
+    }
+    if (picker) {
+      picker.setAttribute('aria-expanded', 'false');
+    }
+    tree.classList.add('is-collapsed');
+    tree.classList.remove('is-open');
+    syncDetailMoveButton();
+  }
+
+  function toggleDetailProjectTree(forceOpen) {
+    const tree = $('#detail-folder-tree');
+    const picker = $('#detail-project-picker');
+    if (!tree || !picker) return;
+    const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : tree.classList.contains('is-collapsed');
+    if (shouldOpen) {
+      tree.classList.remove('is-collapsed');
+      tree.classList.add('is-open');
+      picker.setAttribute('aria-expanded', 'true');
+    } else {
+      tree.classList.add('is-collapsed');
+      tree.classList.remove('is-open');
+      picker.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  $('#detail-project-picker')?.addEventListener('click', () => toggleDetailProjectTree());
+
+  $('#detail-folder-tree')?.addEventListener('click', (e) => {
+    const treeRoot = $('#detail-folder-tree');
+    if (!treeRoot) return;
+    const toggle = e.target.closest('[data-action="toggle-folder-tree"]');
+    if (toggle) {
+      e.stopPropagation();
+      const parentId = toggle.dataset.parentId;
+      const branch = treeRoot.querySelector(`.entry-folder-tree-children[data-folder-id="${parentId}"] > .entry-folder-tree-branch`);
+      const parentRow = toggle.closest('.entry-folder-tree-children');
+      if (branch) {
+        branch.classList.toggle('is-collapsed');
+        const expanded = !branch.classList.contains('is-collapsed');
+        toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        parentRow?.classList.toggle('is-expanded', expanded);
+      }
+      return;
+    }
+    const row = e.target.closest('.entry-folder-tree-row');
+    if (row) {
+      selectDetailFolder(row.dataset.folderId);
+    }
+  });
 
   $('#btn-detail-move-folder')?.addEventListener('click', async () => {
     const entryId = state.detailEntryId;
@@ -309,6 +373,41 @@ export function bindProjects(deps) {
   });
 
   $('#btn-entry-folder-cancel')?.addEventListener('click', hideEntryFolderCreate);
+
+  function selectEntryFolder(folderId) {
+    const hidden = $('#entry-folder');
+    const tree = $('#entry-folder-tree');
+    if (!hidden || !tree) return;
+    hidden.value = folderId;
+    tree.querySelectorAll('.entry-folder-tree-row').forEach((r) => {
+      const selected = r.dataset.folderId === folderId;
+      r.classList.toggle('is-selected', selected);
+      r.setAttribute('aria-checked', selected ? 'true' : 'false');
+    });
+  }
+
+  $('#entry-folder-tree')?.addEventListener('click', (e) => {
+    const treeRoot = $('#entry-folder-tree');
+    if (!treeRoot) return;
+    const toggle = e.target.closest('[data-action="toggle-folder-tree"]');
+    if (toggle) {
+      e.stopPropagation();
+      const parentId = toggle.dataset.parentId;
+      const branch = treeRoot.querySelector(`.entry-folder-tree-children[data-folder-id="${parentId}"] > .entry-folder-tree-branch`);
+      const parentRow = toggle.closest('.entry-folder-tree-children');
+      if (branch) {
+        branch.classList.toggle('is-collapsed');
+        const expanded = !branch.classList.contains('is-collapsed');
+        toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        parentRow?.classList.toggle('is-expanded', expanded);
+      }
+      return;
+    }
+    const row = e.target.closest('.entry-folder-tree-row');
+    if (row) {
+      selectEntryFolder(row.dataset.folderId);
+    }
+  });
 
   $('#btn-entry-folder-create')?.addEventListener('click', async () => {
     const btn = $('#btn-entry-folder-create');

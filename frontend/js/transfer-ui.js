@@ -54,31 +54,72 @@ export function createTransfer(deps) {
   }
 
   function populateDetailFolderSelect(selectedId = '') {
-    const sel = $('#detail-move-folder');
-    if (!sel) return;
+    const tree = $('#detail-folder-tree');
+    const hidden = $('#detail-move-folder');
+    if (!tree || !hidden) return;
+
     const current = selectedId || '';
     const pick = current && state.folders.some((f) => f.id === current) ? current : '';
-    const options = [{ value: '', label: 'Sans projet' }];
-    topLevelFolders(state.folders).forEach((f) => {
-      options.push({ value: f.id, label: f.name });
-      folderChildren(state.folders, f.id).forEach((c) => {
-        options.push({ value: c.id, label: `— ${c.name}` });
-      });
-    });
-    fillSelect(sel, options, pick);
+    hidden.value = pick;
+
+    const rootRow = (selected) => `
+      <div class="entry-folder-tree-row entry-folder-tree-row-root${selected ? ' is-selected' : ''}" data-folder-id="" role="radio" aria-checked="${selected ? 'true' : 'false'}" tabindex="0">
+        <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
+        <span class="entry-folder-tree-name">Sans projet</span>
+        <span class="entry-folder-tree-check" aria-hidden="true"><i data-lucide="check-circle"></i></span>
+      </div>`;
+
+    const row = (f, { selected = false, child = false, expanded = true } = {}) => {
+      const children = child ? [] : folderChildren(state.folders, f.id);
+      const hasChildren = children.length > 0;
+      return `
+      <div class="entry-folder-tree-children${expanded ? ' is-expanded' : ''}" data-folder-id="${esc(f.id)}">
+        <div class="entry-folder-tree-row${selected ? ' is-selected' : ''}${child ? ' is-child' : ''}" data-folder-id="${esc(f.id)}" role="radio" aria-checked="${selected ? 'true' : 'false'}" tabindex="0">
+          ${hasChildren ? `
+          <button type="button" class="entry-folder-tree-toggle" data-action="toggle-folder-tree" data-parent-id="${esc(f.id)}" aria-expanded="${expanded ? 'true' : 'false'}" tabindex="-1">
+            <i data-lucide="chevron-right" class="entry-folder-tree-chevron"></i>
+          </button>` : '<span class="entry-folder-tree-spacer" aria-hidden="true"></span>'}
+          <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
+          <span class="entry-folder-tree-name">${esc(f.name)}</span>
+          <span class="entry-folder-tree-check" aria-hidden="true"><i data-lucide="check-circle"></i></span>
+        </div>
+        ${hasChildren ? `
+        <div class="entry-folder-tree-branch${expanded ? '' : ' is-collapsed'}">
+          ${children.map((c) => row(c, { selected: c.id === pick, child: true, expanded: true })).join('')}
+        </div>` : ''}
+      </div>`;
+    };
+
+    tree.innerHTML = rootRow(pick === '') + topLevelFolders(state.folders).map((f) => row(f, { selected: f.id === pick })).join('');
+    refreshIcons(tree);
+    tree.classList.add('is-collapsed');
+    tree.classList.remove('is-open');
+    syncDetailProjectPicker(pick);
     syncDetailMoveButton();
   }
 
+  function syncDetailProjectPicker(folderId) {
+    const pickerName = $('#detail-project-picker-name');
+    const picker = $('#detail-project-picker');
+    if (pickerName) {
+      const name = folderId ? folderNameById(state.folders, folderId) : 'Sans projet';
+      pickerName.textContent = name || 'Sans projet';
+    }
+    if (picker) {
+      picker.setAttribute('aria-expanded', 'false');
+    }
+  }
+
   function syncDetailMoveButton() {
-    const sel = $('#detail-move-folder');
+    const hidden = $('#detail-move-folder');
     const btn = $('#btn-detail-move-folder');
     const entry = state.entries.find((e) => e.id === state.detailEntryId);
-    if (!sel || !btn || !entry) {
+    if (!hidden || !btn || !entry) {
       if (btn) btn.disabled = true;
       return;
     }
     const current = entryFolderId(entry) || '';
-    const next = (sel.value || '').trim();
+    const next = (hidden.value || '').trim();
     btn.disabled = next === current || (next !== '' && !state.folders.some((f) => f.id === next));
   }
 

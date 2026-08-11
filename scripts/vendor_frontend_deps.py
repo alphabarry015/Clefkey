@@ -18,7 +18,7 @@ import {
   Plus, LayoutDashboard, KeySquare, LogOut, Menu, Layers, Search, X, KeyRound,
   SearchX, Calendar, IdCard, Pencil, UserRound, Users, Copy, Fingerprint,
   CalendarCheck, ChevronRight, ExternalLink, Trash2, Dices, Save,
-  CheckCircle, XCircle, Info, BookOpen
+  CheckCircle, XCircle, Info, BookOpen, Folder, CornerUpRight
 } from 'lucide';
 
 export const icons = {
@@ -26,7 +26,7 @@ export const icons = {
   Plus, LayoutDashboard, KeySquare, LogOut, Menu, Layers, Search, X, KeyRound,
   SearchX, Calendar, IdCard, Pencil, UserRound, Users, Copy, Fingerprint,
   CalendarCheck, ChevronRight, ExternalLink, Trash2, Dices, Save,
-  CheckCircle, XCircle, Info, BookOpen,
+  CheckCircle, XCircle, Info, BookOpen, Folder, CornerUpRight,
 };
 """
 

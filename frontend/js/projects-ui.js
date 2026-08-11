@@ -125,18 +125,44 @@ export function createProjects(deps) {
   }
 
   function populateFolderSelect(selectedId = '') {
-    const sel = $('#entry-folder');
-    if (!sel) return;
-    const current = selectedId || sel.value || '';
+    const tree = $('#entry-folder-tree');
+    const hidden = $('#entry-folder');
+    if (!tree || !hidden) return;
+
+    const current = selectedId !== undefined ? String(selectedId) : (hidden.value || '');
     const pick = current && state.folders.some((f) => f.id === current) ? current : '';
-    const options = [{ value: '', label: 'Sans projet' }];
-    topLevelFolders(state.folders).forEach((f) => {
-      options.push({ value: f.id, label: f.name });
-      folderChildren(state.folders, f.id).forEach((c) => {
-        options.push({ value: c.id, label: `— ${c.name}` });
-      });
-    });
-    fillSelect(sel, options, pick);
+
+    const rootRow = (selected) => `
+      <div class="entry-folder-tree-row entry-folder-tree-row-root${selected ? ' is-selected' : ''}" data-folder-id="" role="radio" aria-checked="${selected ? 'true' : 'false'}" tabindex="0">
+        <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
+        <span class="entry-folder-tree-name">Sans projet</span>
+        <span class="entry-folder-tree-check" aria-hidden="true"><i data-lucide="check-circle"></i></span>
+      </div>`;
+
+    const row = (f, { selected = false, child = false, expanded = true } = {}) => {
+      const children = child ? [] : folderChildren(state.folders, f.id);
+      const hasChildren = children.length > 0;
+      return `
+      <div class="entry-folder-tree-children${expanded ? ' is-expanded' : ''}" data-folder-id="${esc(f.id)}">
+        <div class="entry-folder-tree-row${selected ? ' is-selected' : ''}${child ? ' is-child' : ''}" data-folder-id="${esc(f.id)}" role="radio" aria-checked="${selected ? 'true' : 'false'}" tabindex="0">
+          ${hasChildren ? `
+          <button type="button" class="entry-folder-tree-toggle" data-action="toggle-folder-tree" data-parent-id="${esc(f.id)}" aria-expanded="${expanded ? 'true' : 'false'}" tabindex="-1">
+            <i data-lucide="chevron-right" class="entry-folder-tree-chevron"></i>
+          </button>` : '<span class="entry-folder-tree-spacer" aria-hidden="true"></span>'}
+          <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
+          <span class="entry-folder-tree-name">${esc(f.name)}</span>
+          <span class="entry-folder-tree-check" aria-hidden="true"><i data-lucide="check-circle"></i></span>
+        </div>
+        ${hasChildren ? `
+        <div class="entry-folder-tree-branch${expanded ? '' : ' is-collapsed'}">
+          ${children.map((c) => row(c, { selected: c.id === pick, child: true, expanded: true })).join('')}
+        </div>` : ''}
+      </div>`;
+    };
+
+    tree.innerHTML = rootRow(pick === '') + topLevelFolders(state.folders).map((f) => row(f, { selected: f.id === pick })).join('');
+    hidden.value = pick;
+    refreshIcons(tree);
   }
 
   function defaultFolderIdFromFilter() {

@@ -43,16 +43,26 @@
           </div>
           <div class="detail-field" id="detail-project-field">
             <label for="detail-move-folder">Projet</label>
-            <div class="detail-move-row">
-              <select id="detail-move-folder" class="field-select" aria-label="Projet de la clé">
-                <option value="">Sans projet</option>
-              </select>
-              <button type="button" id="btn-detail-move-folder" class="btn btn-secondary btn-sm" disabled>
-                <i data-lucide="layers"></i>
-                Déplacer
+            <input type="hidden" id="detail-move-folder" value="">
+            <button type="button" id="detail-project-picker" class="detail-project-picker" aria-haspopup="listbox" aria-expanded="false" aria-controls="detail-folder-tree" title="Changer de projet">
+              <span class="detail-project-picker-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
+              <span id="detail-project-picker-name" class="detail-project-picker-name">Sans projet</span>
+              <i data-lucide="chevron-right" class="detail-project-picker-chevron"></i>
+            </button>
+            <div id="detail-folder-tree" class="entry-folder-tree detail-folder-tree is-collapsed" role="listbox" aria-label="Projet de la clé">
+              <div class="entry-folder-tree-row entry-folder-tree-row-root is-selected" data-folder-id="" role="option" aria-selected="true" tabindex="0">
+                <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
+                <span class="entry-folder-tree-name">Sans projet</span>
+                <span class="entry-folder-tree-check" aria-hidden="true"><i data-lucide="check-circle"></i></span>
+              </div>
+            </div>
+            <div class="detail-project-actions">
+              <button type="button" id="btn-detail-move-folder" class="detail-project-move-btn" disabled>
+                <i data-lucide="check-circle"></i>
+                <span>Appliquer</span>
               </button>
             </div>
-            <p id="detail-project-hint" class="entry-ssh-hint">Assignez cette clé à un projet pour l’organiser.</p>
+            <p id="detail-project-hint" class="entry-ssh-hint">Ouvrez pour changer le projet de cette clé.</p>
           </div>
           <div class="detail-field" id="detail-url-field">
             <label id="detail-url-label">URL</label>
@@ -164,15 +174,19 @@
               </div>
             </div>
             <div class="form-group entry-folder-group">
-              <label for="entry-folder">Projet</label>
-              <div class="field-control">
-                <select id="entry-folder" class="field-select">
-                  <option value="">Sans projet</option>
-                </select>
-                <button type="button" id="btn-entry-folder-toggle" class="btn btn-secondary field-control-action" title="Créer un projet" aria-expanded="false" aria-controls="entry-folder-create">
+              <div class="entry-folder-labelbar">
+                <label for="entry-folder">Projet</label>
+                <button type="button" id="btn-entry-folder-toggle" class="entry-folder-create-toggle" title="Créer un projet" aria-expanded="false" aria-controls="entry-folder-create">
                   <i data-lucide="plus"></i>
-                  <span>Créer</span>
+                  <span>Nouveau</span>
                 </button>
+              </div>
+              <input type="hidden" id="entry-folder" value="">
+              <div id="entry-folder-tree" class="entry-folder-tree" role="radiogroup" aria-label="Choisir un projet">
+                <div class="entry-folder-tree-row entry-folder-tree-row-root is-selected" data-folder-id="" role="radio" aria-checked="true" tabindex="0">
+                  <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
+                  <span class="entry-folder-tree-name">Sans projet</span>
+                </div>
               </div>
               <div id="entry-folder-create" class="entry-folder-create hidden">
                 <input type="text" id="entry-folder-new-name" maxlength="80" placeholder="Nom du nouveau projet" autocomplete="off">

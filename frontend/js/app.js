@@ -65,7 +65,6 @@ const state = {
   activeProjectId: null,
   projectDetailSearch: '',
   projectDetailSelectedIds: [],
-  collapsedProjectIds: [],
   transferAllowUnassign: false,
   transferExcludeFolderId: '',
   folders: [],
