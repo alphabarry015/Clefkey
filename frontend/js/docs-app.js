@@ -52,8 +52,14 @@ const PAGES = [
   },
   {
     slug: 'audit',
+    file: 'AUDIT-MOT-DE-PASSE.md',
+    title: 'Audit de mot de passe',
+    group: 'Référence',
+  },
+  {
+    slug: 'audit-technique',
     file: 'AUDIT.md',
-    title: 'Audit',
+    title: 'Audit technique',
     group: 'Référence',
   },
 ];

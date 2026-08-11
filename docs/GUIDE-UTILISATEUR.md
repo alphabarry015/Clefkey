@@ -32,6 +32,10 @@ Sur `localhost` uniquement : laisser les champs **vides** charge un mode démo (
 
 Tuiles des clés (populaires, récents, A à Z), recherche, ajout rapide. Filtres **Tous**, **Connexions**, **Clés API**, **SSH / stockage**, et **projets** (Tous les projets / Sans projet / chaque projet).
 
+### Audit
+
+L'entrée **Audit** de la sidebar permet de vérifier si un mot de passe a fuité en ligne. Le test utilise l'API Have I Been Pwned en mode **k-anonymity** : le mot de passe est hashé localement et seuls 5 caractères du hash sont transmis. Voir la [documentation dédiée](./AUDIT-MOT-DE-PASSE.md).
+
 ### 5. Toutes les clés
 
 Liste complète, recherche (raccourci **Ctrl+K**), ouverture du détail. Chaque entrée affiche un badge selon son type (connexion, clé API ou SSH / stockage) et son projet le cas échéant.

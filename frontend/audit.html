@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Vérifiez si un mot de passe a été compromis dans une fuite de données, sans jamais l'envoyer en clair.">
+  <title>Audit de mot de passe — ClefKey</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #6d28d9;
+      --accent-light: #8b5cf6;
+      --accent-subtle: #ede9fe;
+      --success: #059669;
+      --success-bg: #d1fae5;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+      --radius: 18px;
+      --transition: 0.2s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .audit-card {
+      width: 100%;
+      max-width: 460px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 2.25rem;
+      text-align: center;
+    }
+
+    .audit-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1.25rem;
+      background: var(--accent-subtle);
+      color: var(--accent);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .audit-icon svg {
+      width: 30px;
+      height: 30px;
+    }
+
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.55rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .audit-lead {
+      margin: 0 0 1.75rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .audit-input-group {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .audit-input {
+      flex: 1;
+      min-width: 0;
+      height: 52px;
+      padding: 0 1rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+      color: var(--text);
+      font: inherit;
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+
+    .audit-input:focus {
+      outline: none;
+      border-color: var(--accent-light);
+      box-shadow: 0 0 0 3px var(--accent-subtle);
+    }
+
+    .audit-toggle,
+    .audit-submit {
+      height: 52px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .audit-toggle {
+      padding: 0 0.85rem;
+      white-space: nowrap;
+    }
+
+    .audit-toggle:hover,
+    .audit-submit:hover {
+      border-color: var(--accent-light);
+      color: var(--accent);
+      background: var(--accent-subtle);
+    }
+
+    .audit-submit {
+      width: 100%;
+      padding: 0 1.25rem;
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+      margin-bottom: 1.25rem;
+    }
+
+    .audit-submit:hover {
+      background: var(--accent-light);
+      border-color: var(--accent-light);
+      color: #ffffff;
+    }
+
+    .audit-submit:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .audit-loader {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
+    .audit-loader.is-visible {
+      display: flex;
+    }
+
+    .audit-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .audit-result {
+      display: none;
+      padding: 1rem 1.15rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      line-height: 1.45;
+      margin-bottom: 1.25rem;
+    }
+
+    .audit-result.is-visible {
+      display: block;
+    }
+
+    .audit-result.is-safe {
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .audit-result.is-pwned {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .audit-privacy {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
+    .audit-privacy svg {
+      width: 16px;
+      height: 16px;
+      color: var(--success);
+      flex-shrink: 0;
+    }
+
+    .audit-footer {
+      margin-top: 1.5rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .audit-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .audit-footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <main class="audit-card" role="main" aria-label="Vérification de fuite de mot de passe">
+    <div class="audit-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+    </div>
+
+    <h1>Audit de mot de passe</h1>
+    <p class="audit-lead">Vérifiez si un mot de passe est apparu dans une fuite de données connue.</p>
+
+    <form id="audit-form" class="audit-form" novalidate>
+      <div class="audit-input-group">
+        <input
+          id="audit-password"
+          class="audit-input"
+          type="password"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Saisissez un mot de passe"
+          aria-label="Mot de passe à vérifier"
+          required
+        />
+        <button id="audit-toggle" class="audit-toggle" type="button" aria-pressed="false">
+          Afficher
+        </button>
+      </div>
+
+      <button id="audit-submit" class="audit-submit" type="submit">
+        Vérifier la sécurité
+      </button>
+    </form>
+
+    <div id="audit-loader" class="audit-loader" aria-live="polite">
+      <span class="audit-spinner" aria-hidden="true"></span>
+      <span>Vérification en cours...</span>
+    </div>
+
+    <div id="audit-result" class="audit-result" role="status" aria-live="polite"></div>
+
+    <div class="audit-privacy">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+    </div>
+
+    <p class="audit-footer">
+      Service propulsé par <a href="https://haveibeenpwned.com/Passwords" target="_blank" rel="noopener noreferrer">Pwned Passwords</a>.
+    </p>
+  </main>
+
+  <script>
+    (function () {
+      const form = document.getElementById('audit-form');
+      const input = document.getElementById('audit-password');
+      const toggleBtn = document.getElementById('audit-toggle');
+      const submitBtn = document.getElementById('audit-submit');
+      const loader = document.getElementById('audit-loader');
+      const result = document.getElementById('audit-result');
+
+      function toHex(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let hex = '';
+        for (let i = 0; i < bytes.length; i += 1) {
+          hex += bytes[i].toString(16).padStart(2, '0');
+        }
+        return hex.toUpperCase();
+      }
+
+      async function sha1(value) {
+        if (!window.crypto || !window.crypto.subtle) {
+          throw new Error('La vérification nécessite un navigateur sécurisé prenant en charge Web Crypto.');
+        }
+        const encoder = new TextEncoder();
+        const digest = await window.crypto.subtle.digest('SHA-1', encoder.encode(value));
+        return toHex(digest);
+      }
+
+      async function checkPassword(password) {
+        const hash = await sha1(password);
+        const prefix = hash.substring(0, 5);
+        const suffix = hash.substring(5);
+
+        const response = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
+
+        if (!response.ok) {
+          throw new Error('Le service de vérification est momentanément indisponible.');
+        }
+
+        const text = await response.text();
+        const lines = text.split(/\r?\n/);
+
+        for (const line of lines) {
+          const [hashSuffix, count] = line.split(':');
+          if (hashSuffix === suffix) {
+            return parseInt(count, 10) || 0;
+          }
+        }
+
+        return 0;
+      }
+
+      function setLoading(isLoading) {
+        loader.classList.toggle('is-visible', isLoading);
+        submitBtn.disabled = isLoading;
+      }
+
+      function showResult(safe, count) {
+        result.classList.add('is-visible');
+        result.classList.remove('is-safe', 'is-pwned');
+
+        if (safe) {
+          result.classList.add('is-safe');
+          result.textContent = ' Mot de passe non trouvé dans les fuites connues.';
+        } else {
+          result.classList.add('is-pwned');
+          result.textContent = ` Ce mot de passe a été compromis ${count.toLocaleString('fr-FR')} fois. Changez-le.`;
+        }
+      }
+
+      function showError(message) {
+        result.classList.add('is-visible', 'is-pwned');
+        result.classList.remove('is-safe');
+        result.textContent = message;
+      }
+
+      toggleBtn.addEventListener('click', () => {
+        const isHidden = input.type === 'password';
+        input.type = isHidden ? 'text' : 'password';
+        toggleBtn.setAttribute('aria-pressed', String(isHidden));
+        toggleBtn.textContent = isHidden ? 'Masquer' : 'Afficher';
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const password = input.value;
+        if (!password) {
+          showError('Veuillez saisir un mot de passe.');
+          return;
+        }
+
+        result.classList.remove('is-visible');
+        setLoading(true);
+
+        try {
+          const count = await checkPassword(password);
+          showResult(count === 0, count);
+        } catch (err) {
+          showError(`❌ ${err.message || 'Une erreur est survenue.'}`);
+        } finally {
+          setLoading(false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -31,6 +31,7 @@
             </svg>
           </a>
           <div class="theme-switch-host" data-theme-switch></div>
+          <button type="button" id="btn-landing-login" class="lp-header-login">Se connecter</button>
         </div>
       </header>
 
@@ -40,13 +41,15 @@
             <span class="lp-headline-accent">Coffre zero-knowledge.</span>
             <span class="lp-headline-main">Clés sous contrôle.</span>
           </h1>
-          <p class="lp-desc">
-            Open-source. Vos secrets restent chiffrés sur votre appareil
-            avec AES-256 et Argon2id. Le serveur ne voit jamais votre clé maître.
-          </p>
-          <div class="lp-actions">
-            <button type="button" id="btn-landing-start" class="lp-btn lp-btn-primary">Commencer</button>
-            <button type="button" id="btn-landing-login" class="lp-btn lp-btn-secondary">Se connecter</button>
+          
+          <div class="lp-audit" id="lp-audit">
+            <form class="lp-audit-form" id="lp-audit-form" novalidate>
+              <div class="lp-audit-field">
+                <input id="lp-audit-input" class="lp-audit-input" type="password" autocomplete="off" spellcheck="false" placeholder="Vérifier un mot de passe" aria-label="Mot de passe à vérifier" required>
+                <button type="submit" class="lp-audit-verify" title="Vérifier">Vérifier</button>
+              </div>
+            </form>
+            <p id="lp-audit-result" class="lp-audit-result" role="status" aria-live="polite"></p>
           </div>
         </div>
         <div class="lp-hero-visual" aria-hidden="true">
@@ -194,4 +197,69 @@
       </footer>
     </div>
   </div>
+
+  <script>
+    (function () {
+      const form = document.getElementById('lp-audit-form');
+      const input = document.getElementById('lp-audit-input');
+      const result = document.getElementById('lp-audit-result');
+
+      function toHex(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let hex = '';
+        for (let i = 0; i < bytes.length; i += 1) {
+          hex += bytes[i].toString(16).padStart(2, '0');
+        }
+        return hex.toUpperCase();
+      }
+
+      async function sha1(value) {
+        if (!window.crypto || !window.crypto.subtle) {
+          throw new Error('Web Crypto non disponible. Utilisez HTTPS ou un navigateur récent.');
+        }
+        const digest = await window.crypto.subtle.digest('SHA-1', new TextEncoder().encode(value));
+        return toHex(digest);
+      }
+
+      async function checkPassword(password) {
+        const hash = await sha1(password);
+        const prefix = hash.substring(0, 5);
+        const suffix = hash.substring(5);
+        const response = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
+        if (!response.ok) throw new Error('Service indisponible.');
+        const text = await response.text();
+        for (const line of text.split(/\r?\n/)) {
+          const [hashSuffix, count] = line.split(':');
+          if (hashSuffix === suffix) return parseInt(count, 10) || 0;
+        }
+        return 0;
+      }
+
+      function show(safe, count) {
+        result.classList.add('is-visible');
+        result.classList.remove('is-safe', 'is-pwned');
+        if (safe) {
+          result.classList.add('is-safe');
+          result.textContent = '✅ Mot de passe non compromis.';
+        } else {
+          result.classList.add('is-pwned');
+          result.textContent = `⚠️ Compromis ${count.toLocaleString('fr-FR')} fois.`;
+        }
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const password = input.value;
+        if (!password) return;
+        try {
+          const count = await checkPassword(password);
+          show(count === 0, count);
+        } catch (err) {
+          result.classList.add('is-visible', 'is-pwned');
+          result.classList.remove('is-safe');
+          result.textContent = `❌ ${err.message || 'Erreur.'}`;
+        }
+      });
+    })();
+  </script>
 

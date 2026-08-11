@@ -37,6 +37,7 @@ import { createTransfer } from './transfer-ui.js';
 import { createShares } from './shares-ui.js';
 import { createVaultViews } from './vault-views.js';
 import { createProfile } from './profile-ui.js';
+import { createAudit } from './audit.js';
 import { createAuthSession } from './auth-session.js';
 import { bindAuth } from './bind-auth.js';
 import { bindVault } from './bind-vault.js';
@@ -108,6 +109,7 @@ Object.assign(deps, createProjects(deps));
 Object.assign(deps, createTransfer(deps));
 Object.assign(deps, createShares(deps));
 Object.assign(deps, createVaultViews(deps));
+Object.assign(deps, createAudit(deps));
 
 const {
   fillEntryDetailCommon,
@@ -138,6 +140,7 @@ const {
   resetDeleteConfirm, settleMasterConfirm, requestMasterPasswordConfirmation,
   showDeleteConfirm, clearLoginForm, validateLoginForm, restoreSessionIfAny,
   verifyMasterPasswordForCurrentVault,
+  renderAudit,
 } = deps;
 
 installVaultGlobals();
@@ -255,6 +258,7 @@ const PAGE_TITLES = {
   'shares-sent': { title: 'Partage · Envoyé', subtitle: 'Clés que vous avez partagées' },
   contacts: { title: 'Contacts', subtitle: 'Destinataires de vos partages' },
   profile: { title: 'Mon profil', subtitle: 'Informations de votre compte' },
+  audit: { title: 'Audit', subtitle: 'Vérifiez si un mot de passe a fuité' },
 };
 
 function updatePageTitle() {
@@ -273,10 +277,11 @@ function updatePageTitle() {
   $('#page-title').textContent = page.title;
   $('#page-subtitle').textContent = page.subtitle;
   const onProfile = state.page === 'profile';
+  const onAudit = state.page === 'audit';
   const onShares = state.page === 'shares-received' || state.page === 'shares-sent' || state.page === 'contacts';
   const onProjects = state.page === 'projects';
-  $('#topbar-total').classList.toggle('hidden', onProfile || onShares);
-  $('#fab-add').classList.toggle('hidden', onProfile || onShares || onProjects);
+  $('#topbar-total').classList.toggle('hidden', onProfile || onShares || onAudit);
+  $('#fab-add').classList.toggle('hidden', onProfile || onShares || onProjects || onAudit);
 }
 
 function switchPage(page) {
@@ -301,6 +306,7 @@ function switchPage(page) {
   $('#shares-sent-view')?.classList.toggle('hidden', page !== 'shares-sent');
   $('#contacts-view')?.classList.toggle('hidden', page !== 'contacts');
   $('#profile-view').classList.toggle('hidden', page !== 'profile');
+  $('#audit-view')?.classList.toggle('hidden', page !== 'audit');
   updatePageTitle();
   updateEntryCounts();
   $('.vault-main')?.scrollTo(0, 0);
@@ -313,6 +319,7 @@ function switchPage(page) {
     else if (page === 'shares-sent') renderSharesSent();
     else if (page === 'contacts') renderContactsPage();
     else if (page === 'profile') renderProfile();
+    else if (page === 'audit') renderAudit();
   } catch (err) {
     console.error('Erreur affichage page:', err);
     toast('Impossible d\'afficher cette page', 'error');

@@ -1,9 +1,10 @@
-const CACHE_VERSION = 'v193';
+const CACHE_VERSION = 'v212';
 const CACHE_STATIC = `clefkey-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
 const PRECACHE = [
   '/',
+  '/audit.html',
   '/docs/',
   '/favicon.ico',
   '/css/theme.css',
@@ -54,6 +55,7 @@ const PRECACHE = [
   '/js/shares-ui.js',
   '/js/vault-views.js',
   '/js/profile-ui.js',
+  '/js/audit.js',
   '/js/auth-session.js',
   '/js/bind-auth.js',
   '/js/bind-vault.js',
@@ -66,11 +68,9 @@ const PRECACHE = [
   '/vendor/lucide.bundle.js',
   '/manifest.webmanifest',
   '/icons/icon.svg',
-  '/icons/icon-mark.svg',
-  '/icons/logo-chevalier.png',
+  '/icons/favicon.svg',
   '/icons/icon-192.png',
   '/icons/favicon.ico',
-  '/icons/favicon.svg',
 ];
 
 const API_PREFIXES = ['/auth/', '/vault/', '/health/'];

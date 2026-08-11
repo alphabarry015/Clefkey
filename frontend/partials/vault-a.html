@@ -5,7 +5,7 @@
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-brand">
         <div class="sidebar-logo">
-          <img src="/icons/logo-chevalier.png" alt="" class="brand-mark" width="22" height="22">
+          <img src="/icons/favicon.svg" alt="Clefkey" class="brand-mark" width="22" height="22">
         </div>
         <div class="sidebar-brand-text">
           <div class="sidebar-title">Clefkey.</div>
@@ -14,41 +14,37 @@
       </div>
 
       <button id="btn-add-sidebar" class="sidebar-add-btn" title="Nouvelle clé">
-        <i data-lucide="plus"></i>
-        <span class="sidebar-text">Nouvelle clé</span>
+                <i data-lucide="plus"></i><span class="sidebar-text">Nouvelle clé</span>
       </button>
 
       <nav class="sidebar-nav">
         <div class="sidebar-section-label">Navigation</div>
         <button class="nav-item active" data-page="dashboard" title="Dashboard">
-          <i data-lucide="layout-dashboard"></i>
-          <span class="sidebar-text">Dashboard</span>
+                    <i data-lucide="layout-dashboard"></i><span class="sidebar-text">Dashboard</span>
         </button>
         <button class="nav-item" data-page="vault" title="Toutes les clés">
-          <i data-lucide="key-square"></i>
-          <span class="sidebar-text">Toutes les clés</span>
+                    <i data-lucide="key-square"></i><span class="sidebar-text">Toutes les clés</span>
           <span class="nav-badge" id="nav-count-all">0</span>
         </button>
         <button class="nav-item" data-page="projects" title="Projets">
-          <i data-lucide="layers"></i>
-          <span class="sidebar-text">Projets</span>
+                    <i data-lucide="layers"></i><span class="sidebar-text">Projets</span>
           <span class="nav-badge" id="nav-count-projects">0</span>
+        </button>
+        <button class="nav-item" data-page="audit" title="Audit">
+                    <i data-lucide="shield-check"></i><span class="sidebar-text">Audit</span>
         </button>
 
         <div class="sidebar-section-label">Partage</div>
         <button class="nav-item nav-item-sub" data-page="shares-received" title="Partages reçus">
-          <i data-lucide="mail"></i>
-          <span class="sidebar-text">Reçu</span>
+                    <i data-lucide="mail"></i><span class="sidebar-text">Reçu</span>
           <span class="nav-badge" id="nav-count-received">0</span>
         </button>
         <button class="nav-item nav-item-sub" data-page="shares-sent" title="Partages envoyés">
-          <i data-lucide="users"></i>
-          <span class="sidebar-text">Envoyé</span>
+                    <i data-lucide="users"></i><span class="sidebar-text">Envoyé</span>
           <span class="nav-badge" id="nav-count-sent">0</span>
         </button>
         <button class="nav-item nav-item-sub" data-page="contacts" title="Contacts">
-          <i data-lucide="id-card"></i>
-          <span class="sidebar-text">Contacts</span>
+                    <i data-lucide="id-card"></i><span class="sidebar-text">Contacts</span>
           <span class="nav-badge" id="nav-count-contacts">0</span>
         </button>
       </nav>
@@ -62,8 +58,7 @@
           </div>
         </button>
         <button id="btn-lock" class="sidebar-lock-btn" title="Verrouiller le coffre">
-          <i data-lucide="log-out"></i>
-          <span class="sidebar-text">Verrouiller</span>
+                    <i data-lucide="log-out"></i><span class="sidebar-text">Verrouiller</span>
         </button>
       </div>
     </aside>
@@ -79,8 +74,7 @@
         </div>
         <div class="topbar-actions">
           <div class="topbar-total" id="topbar-total">
-            <i data-lucide="layers"></i>
-            <span class="topbar-total-label">Total</span>
+                        <span class="topbar-total-label">Total</span>
             <strong id="entry-count">0</strong>
           </div>
           <div class="theme-switch-host topbar-theme" data-theme-switch></div>
@@ -100,12 +94,10 @@
               </div>
               <div class="dash-toolbar-actions">
                 <button type="button" class="btn btn-secondary btn-sm dash-toolbar-project" id="btn-dash-create-project" title="Créer un projet">
-                  <i data-lucide="layers"></i>
-                  <span>Projet</span>
+                                    <span>Projet</span>
                 </button>
                 <button type="button" class="btn btn-primary btn-sm dash-toolbar-add" id="btn-dash-add">
-                  <i data-lucide="plus"></i>
-                  <span class="add-entry-label">Nouveau</span>
+                                    <span class="add-entry-label">Nouveau</span>
                 </button>
               </div>
             </div>
@@ -149,8 +141,7 @@
             <h3 id="dash-empty-title">Aucune clé</h3>
             <p id="dash-empty-text">Ajoutez votre première clé pour commencer.</p>
             <button type="button" class="btn btn-primary btn-sm" id="btn-dash-add-empty">
-              <i data-lucide="plus"></i>
-              <span class="add-entry-label">Ajouter une clé</span>
+                            <span class="add-entry-label">Ajouter une clé</span>
             </button>
           </div>
         </div>
@@ -188,13 +179,11 @@
           <div id="entries-list" class="entries-grid"></div>
           <div id="entries-empty" class="entries-empty hidden">
             <div class="empty-illustration">
-              <i data-lucide="key-square"></i>
-            </div>
+                          </div>
             <h3>Aucune clé</h3>
             <p>Commencez par ajouter votre première clé sécurisée</p>
             <button type="button" class="btn btn-primary" id="btn-entries-empty-add">
-              <i data-lucide="plus"></i>
-              <span class="add-entry-label">Ajouter une clé</span>
+                            <span class="add-entry-label">Ajouter une clé</span>
             </button>
           </div>
           <div id="entries-no-results" class="entries-empty hidden">
@@ -212,8 +201,7 @@
             <label class="sr-only" for="project-page-new-name">Nom du projet</label>
             <input type="text" id="project-page-new-name" maxlength="80" placeholder="Nom du projet (ex. Perso, Travail…)" required>
             <button type="submit" class="btn btn-primary" id="btn-project-page-create">
-              <i data-lucide="plus"></i>
-              <span>Créer</span>
+                            <span>Créer</span>
             </button>
           </form>
 
@@ -224,7 +212,7 @@
             </div>
             <div id="projects-grid" class="projects-list" role="list"></div>
             <div id="projects-empty" class="projects-empty hidden">
-              <div class="projects-empty-icon"><i data-lucide="layers"></i></div>
+              <div class="projects-empty-icon"></div>
               <h3>Aucun projet pour l’instant</h3>
               <p>Créez un projet ci-dessus pour regrouper vos clés.</p>
             </div>
@@ -245,8 +233,7 @@
               </div>
               <div class="project-detail-heading-actions">
                 <button type="button" id="btn-project-detail-subproject" class="btn btn-ghost btn-sm" title="Créer un sous-projet">
-                  <i data-lucide="plus"></i>
-                  <span>Sous-projet</span>
+                                    <span>Sous-projet</span>
                 </button>
                 <button type="button" id="btn-project-detail-move" class="btn btn-ghost btn-sm" title="Déplacer ce projet">
                   <i data-lucide="arrow-right"></i>
@@ -257,12 +244,10 @@
                   <span>Renommer</span>
                 </button>
                 <button type="button" id="btn-project-detail-transfer" class="btn btn-secondary btn-sm" title="Transférer des clés">
-                  <i data-lucide="layers"></i>
-                  <span>Transférer</span>
+                                    <span>Transférer</span>
                 </button>
                 <button type="button" id="btn-project-detail-add" class="btn btn-primary btn-sm">
-                  <i data-lucide="plus"></i>
-                  <span>Ajouter</span>
+                                    <span>Ajouter</span>
                 </button>
               </div>
             </div>
@@ -288,8 +273,7 @@
             <h3 id="project-detail-empty-title">Aucune clé</h3>
             <p id="project-detail-empty-text">Ajoutez une clé à ce projet pour commencer.</p>
             <button type="button" class="btn btn-primary btn-sm" id="btn-project-detail-add-empty">
-              <i data-lucide="plus"></i>
-              <span>Ajouter une clé</span>
+                            <span>Ajouter une clé</span>
             </button>
           </div>
         </div>
@@ -301,8 +285,7 @@
           <div id="shares-received-list" class="entries-grid"></div>
           <div id="shares-received-empty" class="entries-empty hidden">
             <div class="empty-illustration empty-illustration-sm">
-              <i data-lucide="mail"></i>
-            </div>
+                          </div>
             <h3>Aucun partage reçu</h3>
             <p>Quand quelqu’un partage une clé avec vous, elle apparaît ici.</p>
           </div>
