@@ -182,7 +182,12 @@
                 </button>
               </div>
               <input type="hidden" id="entry-folder" value="">
-              <div id="entry-folder-tree" class="entry-folder-tree" role="radiogroup" aria-label="Choisir un projet">
+              <button type="button" id="entry-folder-picker" class="detail-project-picker" aria-haspopup="listbox" aria-expanded="false" aria-controls="entry-folder-tree" title="Choisir un projet">
+                <span class="detail-project-picker-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
+                <span id="entry-folder-picker-name" class="detail-project-picker-name">Sans projet</span>
+                <i data-lucide="chevron-right" class="detail-project-picker-chevron"></i>
+              </button>
+              <div id="entry-folder-tree" class="entry-folder-tree is-collapsed" role="radiogroup" aria-label="Choisir un projet">
                 <div class="entry-folder-tree-row entry-folder-tree-row-root is-selected" data-folder-id="" role="radio" aria-checked="true" tabindex="0">
                   <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
                   <span class="entry-folder-tree-name">Sans projet</span>

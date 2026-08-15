@@ -60,17 +60,11 @@ export function createAuthScreens({
     refreshIcons($('#screen-auth'));
   }
 
-  /** Écran soft-lock : mot de passe maître uniquement. */
+  /** Écran soft-lock : mot de passe maître uniquement (email jamais affiché). */
   function openUnlockScreen() {
     $('.auth-tabs')?.classList.add('hidden');
     hideAllAuthForms();
     $('#form-unlock')?.classList.remove('hidden');
-    const email = state.user?.email || '';
-    const label = $('#unlock-user-label');
-    if (label) {
-      label.textContent = email ? `Compte : ${email}` : '';
-      label.classList.toggle('hidden', !email);
-    }
     const input = $('#unlock-password');
     if (input) input.value = '';
     showScreen('auth');

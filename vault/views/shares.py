@@ -27,6 +27,7 @@ from ._helpers import (
 )
 from .entries import _get_owned_entry
 
+@require_auth
 def lookup_user(request):
     """Clé publique d'un utilisateur (pour partage), sans secrets."""
     email = (request.GET.get("email") or "").strip().lower()

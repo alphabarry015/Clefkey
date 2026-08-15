@@ -124,6 +124,16 @@ export function createProjects(deps) {
     });
   }
 
+  function syncEntryFolderPicker(folderId) {
+    const pickerName = $('#entry-folder-picker-name');
+    const picker = $('#entry-folder-picker');
+    if (pickerName) {
+      const name = folderId ? folderNameById(state.folders, folderId) : 'Sans projet';
+      pickerName.textContent = name || 'Sans projet';
+    }
+    if (picker) picker.setAttribute('aria-expanded', 'false');
+  }
+
   function populateFolderSelect(selectedId = '') {
     const tree = $('#entry-folder-tree');
     const hidden = $('#entry-folder');
@@ -163,6 +173,8 @@ export function createProjects(deps) {
     tree.innerHTML = rootRow(pick === '') + topLevelFolders(state.folders).map((f) => row(f, { selected: f.id === pick })).join('');
     hidden.value = pick;
     refreshIcons(tree);
+    tree.classList.add('is-collapsed');
+    syncEntryFolderPicker(pick);
   }
 
   function defaultFolderIdFromFilter() {
@@ -727,6 +739,7 @@ export function createProjects(deps) {
   return {
     hideEntryFolderCreate, showEntryFolderCreate, createFolderByName,
     syncFolderFilterButtons, populateFolderSelect, defaultFolderIdFromFilter,
+    syncEntryFolderPicker,
     persistFoldersMeta, clearFolderIdOnEntries, getUnassignedEntries,
     setEntryFolder, assignEntriesToFolder,
     renderFoldersManageList, openFoldersModal, openProjectsPage, moveFolderToParent,

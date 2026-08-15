@@ -6,10 +6,6 @@
 }
 
 @media (max-width: 560px) {
-  .entry-type-pills {
-    grid-template-columns: 1fr;
-  }
-
   .field-control {
     flex-direction: column;
   }

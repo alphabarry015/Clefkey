@@ -72,17 +72,6 @@ body.modal-open .vault-layout {
   .modal-content-wide .entry-form {
     gap: 1.35rem;
   }
-
-  .modal-content-wide .entry-form-block:first-child {
-    display: grid;
-    grid-template-columns: 1.15fr 1fr;
-    gap: 1rem 1.15rem;
-    align-items: start;
-  }
-
-  .modal-content-wide .entry-form-block:first-child .entry-form-heading {
-    grid-column: 1 / -1;
-  }
 }
 
 @keyframes modalIn {
@@ -460,6 +449,9 @@ body.modal-open .vault-layout {
 }
 
 .entry-form > .btn-full {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   margin-top: 0.15rem;
   min-height: 48px;
   border-radius: 12px;
@@ -581,7 +573,8 @@ body.modal-open .vault-layout {
   transition: opacity 0.15s ease, max-height 0.18s ease;
 }
 
-.detail-folder-tree.is-collapsed {
+.detail-folder-tree.is-collapsed,
+.entry-folder-tree.is-collapsed {
   display: none;
 }
 

@@ -140,13 +140,6 @@
   color: var(--text-secondary);
 }
 
-.unlock-user-label {
-  margin: 0 0 1rem;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  word-break: break-all;
-}
-
 .profile-session-pref-status {
   margin-top: 0.65rem;
   font-size: 0.75rem;
@@ -284,5 +277,81 @@
 .profile-lock-btn:hover .profile-shortcut-arrow {
   color: var(--error);
   transform: translateX(2px);
+}
+
+/* ── Export du coffre ──────────────────────────────────── */
+.profile-export-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.85rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.profile-export-count svg {
+  width: 14px;
+  height: 14px;
+}
+
+.profile-export-count-empty {
+  color: var(--text-muted);
+}
+
+.profile-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.profile-export-btn {
+  flex: 1 1 220px;
+  justify-content: center;
+  text-align: center;
+  padding: 0.8rem 1rem;
+}
+
+.profile-export-btn svg.lucide {
+  width: 20px;
+  height: 20px;
+  transition: transform var(--transition);
+}
+
+.profile-export-btn:hover svg.lucide {
+  transform: translateY(2px);
+}
+
+.profile-export-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.profile-export-btn:disabled:hover svg.lucide {
+  transform: none;
+}
+
+.profile-export-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.profile-export-btn-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  line-height: 1.3;
+}
+
+.profile-export-btn-label strong {
+  font-size: 0.875rem;
+}
+
+.profile-export-btn-label small {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.75;
 }
 

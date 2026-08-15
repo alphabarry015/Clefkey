@@ -7,6 +7,7 @@ import {
 import { api } from './api.js';
 import { createDevEntry, updateDevEntry } from './dev.js';
 import { preloadFavicon } from './favicon.js';
+import { downloadEntriesTxt, downloadEntriesPdf } from './export-entries.js';
 import { copyToClipboard } from './compat.js';
 import { setLucideIcon } from './icons.js';
 import {
@@ -160,6 +161,34 @@ export function bindVault(deps) {
   });
 
   $('#btn-profile-lock').addEventListener('click', () => lockVault('manual'));
+
+  /** Export local de toutes les clés du compte (jamais les partages reçus). */
+  async function exportAllEntries(format) {
+    const entries = state.entries.filter((e) => !e.isShare);
+    if (!entries.length) {
+      toast('Aucune clé à exporter', 'info');
+      return;
+    }
+    const confirmed = await requestMasterPasswordConfirmation();
+    if (!confirmed) {
+      toast('Export annulé', 'info');
+      return;
+    }
+    showLoading('Préparation de l\'export...');
+    try {
+      const meta = { email: state.user?.email || '', folders: state.folders };
+      if (format === 'pdf') await downloadEntriesPdf(entries, meta);
+      else downloadEntriesTxt(entries, meta);
+      toast(`Export ${format.toUpperCase()} téléchargé — conservez-le hors ligne`, 'success');
+    } catch (err) {
+      toast(err.message || 'Export impossible', 'error');
+    } finally {
+      hideLoading();
+    }
+  }
+
+  $('#btn-profile-export-txt')?.addEventListener('click', () => exportAllEntries('txt'));
+  $('#btn-profile-export-pdf')?.addEventListener('click', () => exportAllEntries('pdf'));
 
   $('#btn-copy-profile-email').addEventListener('click', async () => {
     const email = $('#profile-detail-email').textContent;

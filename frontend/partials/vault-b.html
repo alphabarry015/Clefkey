@@ -263,6 +263,36 @@
                 </div>
               </section>
 
+              <section class="profile-card profile-export-card">
+                <div class="profile-card-header">
+                  <h3><i data-lucide="save"></i> Exporter mes clés</h3>
+                </div>
+                <p class="profile-security-text">
+                  Téléchargez toutes vos clés <strong>en clair</strong> pour les sauvegarder hors ligne.
+                  Le mot de passe maître est demandé avant l'export.
+                </p>
+                <p class="profile-export-count">
+                  <i data-lucide="key-round"></i>
+                  <span id="profile-export-count-label">Chargement…</span>
+                </p>
+                <div class="profile-export-actions">
+                  <button type="button" id="btn-profile-export-pdf" class="btn btn-primary profile-export-btn">
+                    <svg class="lucide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+                    <span class="profile-export-btn-label">
+                      <strong>Télécharger en PDF</strong>
+                      <small>Paginé, prêt à imprimer</small>
+                    </span>
+                  </button>
+                  <button type="button" id="btn-profile-export-txt" class="btn btn-secondary profile-export-btn">
+                    <svg class="lucide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                    <span class="profile-export-btn-label">
+                      <strong>Télécharger en TXT</strong>
+                      <small>Texte brut, léger</small>
+                    </span>
+                  </button>
+                </div>
+              </section>
+
               <section class="profile-card profile-lock-card">
                 <button type="button" class="profile-lock-btn" id="btn-profile-lock">
                   <span class="profile-lock-icon"><i data-lucide="lock"></i></span>

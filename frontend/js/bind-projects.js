@@ -15,6 +15,7 @@ export function bindProjects(deps) {
     createFolderByName, deleteFolder, persistFoldersMeta, openAddModal, openFoldersModal,
     moveFolderToParent, openCreateSubprojectModal, openMoveProjectModal, syncMoveProjectPreview,
     syncFolderFilterButtons, populateFolderSelect, renderFoldersManageList,
+    syncEntryFolderPicker,
     refreshCurrentView, getProjectDetailEntries,
     clearProjectDetailSelection, syncProjectDetailSelectionUi,
     toggleProjectDetailSelection, renderProjectDetailPage,
@@ -374,6 +375,17 @@ export function bindProjects(deps) {
 
   $('#btn-entry-folder-cancel')?.addEventListener('click', hideEntryFolderCreate);
 
+  function toggleEntryFolderTree(forceOpen) {
+    const tree = $('#entry-folder-tree');
+    const picker = $('#entry-folder-picker');
+    if (!tree || !picker) return;
+    const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : tree.classList.contains('is-collapsed');
+    tree.classList.toggle('is-collapsed', !shouldOpen);
+    picker.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+  }
+
+  $('#entry-folder-picker')?.addEventListener('click', () => toggleEntryFolderTree());
+
   function selectEntryFolder(folderId) {
     const hidden = $('#entry-folder');
     const tree = $('#entry-folder-tree');
@@ -384,6 +396,8 @@ export function bindProjects(deps) {
       r.classList.toggle('is-selected', selected);
       r.setAttribute('aria-checked', selected ? 'true' : 'false');
     });
+    syncEntryFolderPicker(folderId);
+    toggleEntryFolderTree(false);
   }
 
   $('#entry-folder-tree')?.addEventListener('click', (e) => {

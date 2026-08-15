@@ -103,6 +103,19 @@ export function createProfile(deps) {
     $('#profile-chip-entries').textContent = state.entries.length;
   }
 
+  function updateExportCount() {
+    const count = state.entries.filter((e) => !e.isShare).length;
+    const label = $('#profile-export-count-label');
+    const isZero = count === 0;
+    label.textContent = isZero
+      ? 'Aucune clé à exporter'
+      : `${count} clé${count > 1 ? 's' : ''} prête${count > 1 ? 's' : ''} à exporter`;
+    label.closest('.profile-export-count').classList.toggle('profile-export-count-empty', isZero);
+    document.querySelectorAll('.profile-export-btn').forEach((btn) => {
+      btn.disabled = isZero;
+    });
+  }
+
   function setProfileStatus(devMode) {
     $('#profile-status-label').textContent = devMode ? 'Mode développement' : 'Coffre actif';
     $('#profile-status').classList.toggle('profile-status-dev', devMode);
@@ -134,6 +147,7 @@ export function createProfile(deps) {
     $('#profile-detail-id').textContent = shortenUserId(user.id);
     $('#profile-detail-id').dataset.full = user.id;
     updateProfileChip();
+    updateExportCount();
 
     if (state.devMode) {
       $('#profile-detail-created').textContent = 'Environnement local';
