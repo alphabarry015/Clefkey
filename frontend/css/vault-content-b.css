@@ -847,35 +847,6 @@ a.detail-url-plain {
   color: #7f1d1d;
 }
 
-.audit-usernames-item {
-  background: var(--bg-card);
-  border-color: var(--border);
-  color: var(--text-primary);
-}
-
-[data-theme="light"] .audit-usernames-item {
-  background: #ffffff;
-  border-color: #e5e7eb;
-  color: var(--text-primary);
-}
-
-.audit-usernames-link {
-  color: var(--text-primary);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.audit-usernames-link:hover {
-  color: var(--accent);
-  text-decoration: underline;
-}
-
-.audit-usernames-item .audit-usernames-link::after {
-  content: ' ↗';
-  font-size: 0.75rem;
-  opacity: 0.6;
-}
-
 /* ── Générateur ────────────────────────────────────────── */
 .generator-view {
   position: relative;
@@ -1222,68 +1193,5 @@ a.detail-url-plain {
 [data-theme="light"] .generator-status.is-pwned {
   color: #b91c1c;
   background: #fee2e2;
-}
-
-.generator-user-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-}
-
-.generator-user-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.9rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.generator-user-item:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-subtle);
-  transform: translateY(-1px);
-}
-
-.generator-user-item.copied {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.generator-user-badge {
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.generator-user-item.is-free .generator-user-badge {
-  color: var(--success);
-  border-color: color-mix(in srgb, var(--success) 35%, var(--border));
-  background: var(--success-subtle);
-}
-
-.generator-user-item.is-taken .generator-user-badge {
-  color: var(--error);
-  border-color: color-mix(in srgb, var(--error) 35%, var(--border));
-  background: var(--error-subtle);
-}
-
-.generator-user-item.is-checking .generator-user-badge {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
 }
 

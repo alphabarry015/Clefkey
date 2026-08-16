@@ -109,7 +109,6 @@ export function formatEmailResult(result) {
 export const PRIVACY_TEXT = {
   password: 'Le mot de passe est hashé localement. Seuls 5 caractères du hash SHA-1 sont transmis.',
   email: "L'adresse est interrogée auprès de XposedOrNot. Elle n'est ni stockée ni associée à votre compte.",
-  username: "Le username est vérifié via le serveur (base open-source WhatsMyName). Il n'est ni stocké ni associé à votre compte.",
 };
 
 export const ADVICE_EXPLAIN = {
@@ -150,11 +149,6 @@ export function bindBreachWidget(root, sel) {
   const breachesPanel = sel.breachesPanel ? root.querySelector(sel.breachesPanel) : null;
   const breachesList = sel.breachesList ? root.querySelector(sel.breachesList) : null;
   const breachesClose = sel.breachesClose ? root.querySelector(sel.breachesClose) : null;
-  const usernamesBackdrop = sel.usernamesBackdrop ? root.querySelector(sel.usernamesBackdrop) : null;
-  const usernamesPanel = sel.usernamesPanel ? root.querySelector(sel.usernamesPanel) : null;
-  const usernamesList = sel.usernamesList ? root.querySelector(sel.usernamesList) : null;
-  const usernamesClose = sel.usernamesClose ? root.querySelector(sel.usernamesClose) : null;
-  const usernameCheck = typeof sel.usernameCheck === 'function' ? sel.usernameCheck : null;
   const classes = sel.classes || {};
   const visibleClass = classes.visible || 'is-visible';
   const safeClass = classes.safe || 'is-safe';
@@ -164,11 +158,9 @@ export function bindBreachWidget(root, sel) {
   let mode = 'password';
   let revealed = false;
   let lastTone = null;
-  const usernameAvailable = Boolean(usernameCheck);
 
   function normalizeMode(next) {
     if (next === 'email') return 'email';
-    if (usernameAvailable && next === 'username') return 'username';
     return 'password';
   }
 
@@ -184,8 +176,6 @@ export function bindBreachWidget(root, sel) {
     if (adviceBackdrop) adviceBackdrop.hidden = true;
     if (breachesPanel) breachesPanel.hidden = true;
     if (breachesBackdrop) breachesBackdrop.hidden = true;
-    if (usernamesPanel) usernamesPanel.hidden = true;
-    if (usernamesBackdrop) usernamesBackdrop.hidden = true;
   }
 
   function render(icon, text, tone, action) {
@@ -207,7 +197,7 @@ export function bindBreachWidget(root, sel) {
     result.classList.toggle(safeClass, tone === 'safe');
     result.classList.toggle(pwnedClass, tone === 'pwned');
 
-    const hasAdvice = mode !== 'username' && (icon === 'safe' || icon === 'pwned');
+    const hasAdvice = icon === 'safe' || icon === 'pwned';
     lastTone = hasAdvice ? (tone === 'safe' ? 'safe' : 'pwned') : null;
     if (adviceBtn) {
       adviceBtn.hidden = !hasAdvice;
@@ -217,8 +207,6 @@ export function bindBreachWidget(root, sel) {
     if (adviceBackdrop) adviceBackdrop.hidden = true;
     if (breachesPanel) breachesPanel.hidden = true;
     if (breachesBackdrop) breachesBackdrop.hidden = true;
-    if (usernamesPanel) usernamesPanel.hidden = true;
-    if (usernamesBackdrop) usernamesBackdrop.hidden = true;
   }
 
   function showMessage(safe, text, action) {
@@ -227,7 +215,7 @@ export function bindBreachWidget(root, sel) {
 
   function applyReveal() {
     if (!toggle) return;
-    if (mode === 'email' || mode === 'username') return;
+    if (mode === 'email') return;
     input.type = revealed ? 'text' : 'password';
     toggle.setAttribute('aria-pressed', String(revealed));
     root.dataset.reveal = String(revealed);
@@ -239,23 +227,15 @@ export function bindBreachWidget(root, sel) {
     revealed = false;
 
     input.value = '';
-    if (mode === 'username') {
-      input.type = 'text';
-    } else {
-      input.type = mode === 'email' ? 'email' : (revealed ? 'text' : 'password');
-    }
-    input.placeholder = mode === 'password' ? 'Entrez un mot de passe…'
-      : mode === 'email' ? 'Entrez une adresse e-mail…'
-      : 'Entrez un username…';
-    input.setAttribute('aria-label', mode === 'password' ? 'Mot de passe à vérifier'
-      : mode === 'email' ? 'Adresse e-mail à vérifier'
-      : 'Username à vérifier');
+    input.type = mode === 'email' ? 'email' : (revealed ? 'text' : 'password');
+    input.placeholder = mode === 'password' ? 'Entrez un mot de passe…' : 'Entrez une adresse e-mail…';
+    input.setAttribute('aria-label', mode === 'password' ? 'Mot de passe à vérifier' : 'Adresse e-mail à vérifier');
     input.autocomplete = 'off';
     input.inputMode = mode === 'email' ? 'email' : 'text';
-    input.pattern = mode === 'username' ? '[A-Za-z0-9_.\\-]{3,30}' : null;
-    input.maxLength = mode === 'username' ? 30 : undefined;
+    input.removeAttribute('pattern');
+    input.removeAttribute('maxlength');
 
-    if (toggle) toggle.hidden = mode === 'email' || mode === 'username';
+    if (toggle) toggle.hidden = mode === 'email';
     if (privacy) privacy.textContent = PRIVACY_TEXT[mode] || PRIVACY_TEXT.password;
 
     tabs.forEach((tab) => {
@@ -335,34 +315,6 @@ export function bindBreachWidget(root, sel) {
     if (adviceClose) adviceClose.addEventListener('click', closeAdvice);
   }
 
-  function closeUsernames() {
-    if (usernamesPanel) usernamesPanel.hidden = true;
-    if (usernamesBackdrop) usernamesBackdrop.hidden = true;
-  }
-
-  function openUsernames(found) {
-    if (!usernamesPanel || !usernamesBackdrop) return;
-    closeAdvice();
-    closeBreaches();
-    if (usernamesList) {
-      usernamesList.textContent = '';
-      found.forEach((item) => {
-        const entry = document.createElement('li');
-        entry.className = 'audit-breaches-item audit-usernames-item';
-        const link = document.createElement('a');
-        link.className = 'audit-usernames-link';
-        link.href = item.uri;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.textContent = String(item.name || item.uri);
-        entry.appendChild(link);
-        usernamesList.appendChild(entry);
-      });
-    }
-    usernamesPanel.hidden = false;
-    usernamesBackdrop.hidden = false;
-  }
-
   if (breachesBackdrop && breachesPanel) {
     if (breachesBackdrop) {
       breachesBackdrop.addEventListener('click', (event) => {
@@ -372,20 +324,10 @@ export function bindBreachWidget(root, sel) {
     if (breachesClose) breachesClose.addEventListener('click', closeBreaches);
   }
 
-  if (usernamesBackdrop && usernamesPanel) {
-    if (usernamesBackdrop) {
-      usernamesBackdrop.addEventListener('click', (event) => {
-        if (event.target === usernamesBackdrop) closeUsernames();
-      });
-    }
-    if (usernamesClose) usernamesClose.addEventListener('click', closeUsernames);
-  }
-
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
     if (advicePanel && !advicePanel.hidden) closeAdvice();
     if (breachesPanel && !breachesPanel.hidden) closeBreaches();
-    if (usernamesPanel && !usernamesPanel.hidden) closeUsernames();
   });
 
   form.addEventListener('submit', async (event) => {
@@ -396,22 +338,7 @@ export function bindBreachWidget(root, sel) {
     render('pending', 'Vérification en cours…', 'pending');
 
     try {
-      if (mode === 'username') {
-        if (!usernameCheck) throw new Error('Vérification username indisponible.');
-        const result = await usernameCheck(value);
-        const attempted = result.attempted || 0;
-        const foundCount = result.found_count || 0;
-        const failed = result.failed || 0;
-        const failures = failed > 0 ? ` (${failed} échec${failed > 1 ? 's' : ''})` : '';
-        if (foundCount > 0) {
-          showMessage(false, `${result.username} est utilisé sur ${foundCount} site(s) (${attempted} vérifiés${failures}).`, {
-            label: 'Voir les comptes',
-            onClick: () => openUsernames(result.found || []),
-          });
-        } else {
-          showMessage(true, `${result.username} : aucun compte trouvé parmi ${attempted} sites vérifiés${failures}.`);
-        }
-      } else if (mode === 'email') {
+      if (mode === 'email') {
         const checked = await checkEmail(value);
         const outcome = formatEmailResult(checked);
         let action = null;

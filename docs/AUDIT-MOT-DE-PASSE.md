@@ -59,16 +59,6 @@ Contrairement au mode mot de passe, **l'adresse e-mail est transmise en clair** 
 2. Saisissez l'adresse à tester (le bouton œil disparaît, le champ passe en type `email`).
 3. Cliquez sur **Vérifier**.
 
-## Mode username
-
-Disponible dans le coffre connecté uniquement (page Audit, onglet **Username**). Le serveur Clefkey fait office de **proxy Sherlock** (`GET /vault/username-check`) : il interroge ~60 sites publics pour savoir si le username est déjà pris, en déduisant la réponse depuis le code HTTP, le message d’erreur ou la redirection de chaque site.
-
-Le résultat indique si le username est **disponible**, **déjà utilisé** ou **indéterminé** (sites inaccessibles), et le serveur applique un rate limit de 20 requêtes/min.
-
-- La même vérification alimente l'onglet **Username** du Générateur (vérification en lot de variantes).
-- Aucune donnée du coffre n'accompagne la requête : seul le username public est transmis aux sites tiers.
-- Voir [API.md](./API.md) pour les paramètres (`username`, `limit`).
-
 ## Limites
 
 - Le test indique une fuite **connue et publique** : un résultat « non compromis » peut malgré tout correspondre à une base non répertoriée.

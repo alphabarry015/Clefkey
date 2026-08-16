@@ -269,7 +269,7 @@ const PAGE_TITLES = {
   contacts: { title: 'Contacts', subtitle: 'Destinataires de vos partages' },
   profile: { title: 'Mon profil', subtitle: 'Informations de votre compte' },
   audit: { title: 'Audit', subtitle: 'Vérifiez si un mot de passe a fuité' },
-  generator: { title: 'Générateur', subtitle: 'Mots de passe et usernames sécurisés' },
+  generator: { title: 'Générateur', subtitle: 'Mots de passe et passphrases sécurisés' },
 };
 
 function updatePageTitle() {

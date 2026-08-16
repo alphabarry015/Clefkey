@@ -10,6 +10,4 @@ urlpatterns = [
     path("shares/sent", views.shares_sent, name="vault-shares-sent"),
     path("shares/<str:share_id>", views.share_detail, name="vault-share-detail"),
     path("favicon", views.site_favicon, name="vault-site-favicon"),
-    path("username-check", views.username_check, name="vault-username-check"),
-    path("usernames-check", views.usernames_check, name="vault-usernames-check"),
 ]

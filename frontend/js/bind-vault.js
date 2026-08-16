@@ -122,7 +122,7 @@ export function bindVault(deps) {
         openAddModal();
         return;
       }
-      if (action === 'dash-action' && (target === 'password' || target === 'username' || target === 'passphrase')) {
+      if (action === 'dash-action' && (target === 'password' || target === 'passphrase')) {
         switchPage('generator');
         const tab = document.querySelector(`#generator-view [data-gen-mode="${target}"]`);
         if (tab) tab.click();
@@ -134,7 +134,6 @@ export function bindVault(deps) {
         contacts: 'contacts',
         'shares-received': 'shares-received',
         password: 'generator',
-        username: 'generator',
         passphrase: 'generator',
         audit: 'audit',
         project: 'projects',

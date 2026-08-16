@@ -1,18 +1,15 @@
 /**
- * Générateur — mots de passe forts (combinés à des textes) et usernames.
+ * Générateur — mots de passe forts (combinés à des textes) et passphrases.
  * 100 % local ; vérification anti-fuite zéro-connaissance via HIBP (k-anonymity).
  */
 
 import { checkPassword } from './breach-check.js';
-import { api } from './api.js';
 
 const LOWER = 'abcdefghijklmnopqrstuvwxyz';
 const UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const DIGITS = '0123456789';
 const SYMBOLS = '!@#$%^&*-_=+?';
 const SEPARATORS = ['-', '_', '.'];
-const USER_PREFIXES = ['', '', '', 'the', 'x', 'mr', 'my', 'super', 'neo', 'pro', 'cool', 'tech'];
-const LEET_MAP = { a: '4', e: '3', i: '1', o: '0', s: '5' };
 const PASSPHRASE_WORDS = [
   'abeille', 'abricot', 'accord', 'acier', 'action', 'aigle', 'aiguille', 'alarme', 'alchimie', 'algue',
   'alliance', 'amande', 'amour', 'ancre', 'ange', 'animal', 'annonce', 'antenne', 'appareil',
@@ -175,40 +172,8 @@ export function generatePassphrase(count = 5) {
   return pickWords(clampWordCount(count));
 }
 
-/**
- * Génère des variantes d'username à partir d'un mot de base. 100 % local.
- */
-export function generateUsernames(base, count = 8) {
-  const clean = String(base || '').trim().replace(/\s+/g, ' ').toLowerCase();
-  if (!clean) return [];
-  const words = clean.split(' ').filter(Boolean);
-  const stem = words.join('');
-  const dotted = words.join('.');
-  const underscored = words.join('_');
-  const dashed = words.join('-');
-
-  function leetify(s) {
-    return s.split('').map((c) => LEET_MAP[c] || c).join('');
-  }
-
-  const variants = [dotted, underscored, dashed, leetify(stem)];
-  const out = new Set();
-  out.add(dotted);
-  out.add(underscored);
-  out.add(dashed);
-
-  while (out.size < count) {
-    const prefix = USER_PREFIXES[randomInt(USER_PREFIXES.length)];
-    const sep = ['', '', '_', '.', '-'][randomInt(5)];
-    const digits = randomChars(2 + randomInt(3), DIGITS);
-    out.add(`${prefix ? prefix + sep : ''}${variants[randomInt(variants.length)]}${digits}`);
-  }
-
-  return Array.from(out).slice(0, count);
-}
-
 export function createGenerator(deps) {
-  const { $, refreshIcons, toast, copyText, state } = deps;
+  const { $, refreshIcons, toast, copyText } = deps;
 
   let bound = false;
 
@@ -269,9 +234,6 @@ export function createGenerator(deps) {
     const ppValue = $('#gen-passphrase-value');
     const ppCopy = $('#gen-passphrase-copy');
     const ppStatus = $('#gen-passphrase-status');
-    const userBase = $('#gen-user-base');
-    const userBtn = $('#gen-username-btn');
-    const userList = $('#gen-username-list');
 
     async function generateAndCheck() {
       genBtn.disabled = true;
@@ -363,79 +325,6 @@ export function createGenerator(deps) {
       if (!v) return;
       if (await copyText(v, ppCopy)) toast('Passphrase copiée', 'success');
     });
-
-    const USER_STATUS = {
-      checking: { text: 'Vérification…', cls: 'is-checking' },
-      free: { text: 'Disponible', cls: 'is-free' },
-      taken: { text: 'Utilisé', cls: 'is-taken' },
-      unknown: { text: 'Indéterminé', cls: 'is-unknown' },
-    };
-
-    function createUserRow(name) {
-      const row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'generator-user-item is-checking';
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'generator-user-name';
-      nameSpan.textContent = name;
-      const badge = document.createElement('span');
-      badge.className = 'generator-user-badge';
-      row.append(nameSpan, badge);
-      setUserStatus(row, 'checking');
-      row.addEventListener('click', async () => {
-        if (await copyText(name, row)) toast('Username copié', 'success');
-      });
-      return { row, name };
-    }
-
-    function setUserStatus(row, status) {
-      const cfg = USER_STATUS[status] || USER_STATUS.unknown;
-      row.classList.remove('is-checking', 'is-free', 'is-taken', 'is-unknown');
-      row.classList.add(cfg.cls);
-      const badge = row.querySelector('.generator-user-badge');
-      if (badge) badge.textContent = cfg.text;
-    }
-
-    function renderUsernames() {
-      const base = userBase.value;
-      if (!base.trim()) {
-        toast('Entrez un mot de base', 'error');
-        return;
-      }
-      const names = generateUsernames(base, 8);
-      // Le nom de base est vérifié en premier (« avant de générer »).
-      const clean = base.trim().replace(/\s+/g, ' ').toLowerCase();
-      const candidates = names.slice();
-      if (/^[A-Za-z0-9][A-Za-z0-9_.-]{1,29}$/.test(clean)) candidates.unshift(clean);
-
-      const rows = candidates.map((name) => createUserRow(name));
-      userList.replaceChildren(...rows.map(({ row }) => row));
-      refreshIcons(userList);
-
-      (async () => {
-        try {
-          const payload = await api.checkUsernames(state.token, candidates);
-          const byUser = new Map(payload.usernames.map((u) => [u.username, u]));
-          rows.forEach(({ row, name }) => {
-            const data = byUser.get(name);
-            if (!data) {
-              setUserStatus(row, 'unknown');
-            } else if (data.found_count > 0) {
-              setUserStatus(row, 'taken');
-            } else if (data.not_found_count > 0) {
-              setUserStatus(row, 'free');
-            } else {
-              setUserStatus(row, 'unknown');
-            }
-          });
-        } catch (err) {
-          rows.forEach(({ row }) => setUserStatus(row, 'unknown'));
-          toast(err.message || 'Vérification indisponible.', 'error');
-        }
-      })();
-    }
-
-    userBtn.addEventListener('click', renderUsernames);
   }
 
   function renderGenerator() {

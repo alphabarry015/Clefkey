@@ -52,7 +52,6 @@ from .shares import (
     vault_shares,
 )
 from .static_pages import docs_app, favicon, health, index, manifest, service_worker
-from .username_check import usernames_check, username_check
 
 __all__ = [
     "KEY_PROOF_SEAL_PREFIX",
@@ -81,6 +80,4 @@ __all__ = [
     "shares_sent",
     "share_detail",
     "site_favicon",
-    "username_check",
-    "usernames_check",
 ]
