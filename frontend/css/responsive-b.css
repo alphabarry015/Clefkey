@@ -119,8 +119,6 @@
   .vault-topbar { padding: calc(0.55rem + env(safe-area-inset-top)) 0.65rem 0.55rem; }
   .topbar-title h1 { font-size: 1rem; }
   .topbar-subtitle { display: none; }
-  .topbar-total { display: none; }
-  .topbar-total strong { font-size: 0.85rem; }
 
   .lp-header {
     padding: calc(0.72rem + env(safe-area-inset-top)) 0.78rem 0.72rem;
@@ -306,11 +304,6 @@
 }
 
 @media (max-width: 360px) {
-  .topbar-total svg,
-  .topbar-total .lucide {
-    display: none;
-  }
-
   .profile-status {
     font-size: 0.68rem;
   }

@@ -566,9 +566,8 @@
   background: var(--bg-elevated);
 }
 
-.folders-manage-child {
-  background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
-  border-left: 3px solid var(--accent);
+.folders-manage-item {
+  margin-left: calc(var(--m-depth, 0) * 1.15rem);
 }
 
 .folder-manage-main {

@@ -11,7 +11,7 @@ import {
   isFoldersMetaEntry, isVaultMetaEntry, foldersFromMetaEntry, entryFolderId, folderNameById,
 } from './folders.js';
 import {
-  prepareEntry, preloadFavicon, setupFaviconImages, getSiteDomain, normalizeEntryUrl,
+  prepareEntry, preloadFavicon, setupFaviconImages, normalizeEntryUrl,
 } from './favicon.js';
 import { copyToClipboard } from './compat.js';
 import {
@@ -83,7 +83,6 @@ export function createVaultViews(deps) {
   }
 
   function updateEntryCounts() {
-    $('#entry-count').textContent = state.entries.length;
     $('#nav-count-all').textContent = state.entries.length;
     const projectsCount = $('#nav-count-projects');
     if (projectsCount) projectsCount.textContent = state.folders.length;
@@ -149,26 +148,9 @@ export function createVaultViews(deps) {
     updateEntryCounts();
     if (state.page === 'shares-received' || state.page === 'shares-sent' || state.page === 'contacts') {
       refreshCurrentView();
+    } else if (state.page === 'dashboard') {
+      renderDashboard();
     }
-  }
-
-  function getDashboardEntries() {
-    const list = deps.filterEntriesByQuery(state.entries, state.dashSearch);
-    if (state.dashTab === 'az') {
-      return [...list].sort((a, b) => a.title.localeCompare(b.title, 'fr', { sensitivity: 'base' }));
-    }
-    if (state.dashTab === 'popular') {
-      // Sites avec URL / favicon d’abord, puis récents
-      return [...list].sort((a, b) => {
-        const score = (e) => (getSiteDomain(e.url) ? 2 : 0) + (deps.entryType(e) === 'login' ? 1 : 0);
-        const diff = score(b) - score(a);
-        if (diff) return diff;
-        return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
-      });
-    }
-    return [...list].sort(
-      (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)
-    );
   }
 
   function dashTileMetaMarkup(entry) {
@@ -183,68 +165,100 @@ export function createVaultViews(deps) {
     return `${badges.join('')}${project}`;
   }
 
+  function renderDashboardStats() {
+    const stats = $('#dash-stats-grid');
+    const graphTypes = $('#dash-graph-types');
+    const graphProjects = $('#dash-graph-projects');
+    if (!stats) return;
+
+    const contacts = deps.getShareContacts().length;
+    const shares = state.sharesReceived.length + state.sharesSent.length;
+    setHtml(stats, `
+      <button type="button" class="dash-stat" data-action="dash-stat" data-target="vault" title="Voir toutes les clés">
+        <span class="dash-stat-icon"><i data-lucide="key-square"></i></span>
+        <span class="dash-stat-value">${state.entries.length}</span>
+        <span class="dash-stat-label">Clés</span>
+      </button>
+      <button type="button" class="dash-stat" data-action="dash-stat" data-target="projects" title="Voir les projets">
+        <span class="dash-stat-icon"><i data-lucide="layers"></i></span>
+        <span class="dash-stat-value">${state.folders.length}</span>
+        <span class="dash-stat-label">Projets</span>
+      </button>
+      <button type="button" class="dash-stat" data-action="dash-stat" data-target="contacts" title="Voir les contacts">
+        <span class="dash-stat-icon"><i data-lucide="users"></i></span>
+        <span class="dash-stat-value">${contacts}</span>
+        <span class="dash-stat-label">Contacts</span>
+      </button>
+      <button type="button" class="dash-stat" data-action="dash-stat" data-target="shares-received" title="Voir les partages">
+        <span class="dash-stat-icon"><i data-lucide="mail"></i></span>
+        <span class="dash-stat-value">${shares}</span>
+        <span class="dash-stat-label">Partages</span>
+      </button>`);
+    refreshIcons(stats);
+
+    if (graphTypes) {
+      const counts = { login: 0, api_key: 0, ssh_key: 0 };
+      for (const e of state.entries) {
+        const t = deps.entryType(e);
+        if (counts[t] !== undefined) counts[t] += 1;
+      }
+      const total = Math.max(1, state.entries.length);
+      const pct = (n) => Math.round((n / total) * 100);
+      setHtml(graphTypes, `
+        <div class="dash-bar-row">
+          <span class="dash-bar-label">Connexions</span>
+          <span class="dash-bar-track"><span class="dash-bar-fill" style="width:${pct(counts.login)}%"></span></span>
+          <span class="dash-bar-value">${counts.login}</span>
+        </div>
+        <div class="dash-bar-row">
+          <span class="dash-bar-label">API</span>
+          <span class="dash-bar-track"><span class="dash-bar-fill is-success" style="width:${pct(counts.api_key)}%"></span></span>
+          <span class="dash-bar-value">${counts.api_key}</span>
+        </div>
+        <div class="dash-bar-row">
+          <span class="dash-bar-label">SSH</span>
+          <span class="dash-bar-track"><span class="dash-bar-fill is-error" style="width:${pct(counts.ssh_key)}%"></span></span>
+          <span class="dash-bar-value">${counts.ssh_key}</span>
+        </div>`);
+    }
+
+    if (graphProjects) {
+      const perProject = state.folders
+        .map((f) => ({
+          name: f.name,
+          count: state.entries.filter((e) => entryFolderId(e) === f.id).length,
+        }))
+        .filter((p) => p.count > 0)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+      const unassigned = state.entries.filter((e) => !entryFolderId(e)).length;
+      const rows = [...perProject];
+      if (unassigned > 0) rows.push({ name: 'Sans projet', count: unassigned });
+      if (rows.length === 0) {
+        setHtml(graphProjects, '<p class="dash-graph-empty">Aucune clé pour l\'instant.</p>');
+        return;
+      }
+      const max = Math.max(1, ...rows.map((r) => r.count));
+      setHtml(graphProjects, rows.map((r) => `
+        <div class="dash-bar-row" title="${esc(r.name)}">
+          <span class="dash-bar-label">${esc(r.name)}</span>
+          <span class="dash-bar-track"><span class="dash-bar-fill" style="width:${Math.round((r.count / max) * 100)}%"></span></span>
+          <span class="dash-bar-value">${r.count}</span>
+        </div>`).join(''));
+    }
+  }
+
   function renderDashboard() {
     updateEntryCounts();
-    deps.syncTypeFilterButtons();
-    deps.syncFolderFilterButtons();
-    deps.syncAddEntryButtonLabels();
-    deps.syncTransferEntryButtons();
-    const entries = getDashboardEntries();
-    const grid = $('#dash-tiles-grid');
-    const empty = $('#dash-tiles-empty');
+    renderDashboardStats();
+  }
 
-    $$('.dash-tab').forEach(tab => {
-      tab.classList.toggle('active', tab.dataset.dashTab === state.dashTab);
-    });
-
-    if (entries.length === 0 && state.entries.length === 0) {
-      setHtml(grid, `
-        <button type="button" class="dash-tile dash-tile-add dash-tile-add-hero" id="dash-tile-add-only">
-          <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
-          <span class="dash-tile-name">${esc(deps.addEntryTileLabel())}</span>
-          <span class="dash-tile-add-hint">Connexion, API ou SSH</span>
-        </button>`);
-      empty.classList.add('hidden');
-      $('#dash-tile-add-only')?.addEventListener('click', openAddModal);
-      refreshIcons(grid);
-      return;
-    }
-
-    if (entries.length === 0) {
-      grid.replaceChildren();
-      empty.classList.remove('hidden');
-      const title = $('#dash-empty-title');
-      const text = $('#dash-empty-text');
-      if (state.dashSearch.trim()) {
-        if (title) title.textContent = 'Aucun résultat';
-        if (text) text.textContent = 'Essayez un autre terme, ou élargissez type / projet.';
-      } else if (state.typeFilter !== 'all' || state.folderFilter !== 'all') {
-        if (title) title.textContent = 'Aucune clé ici';
-        if (text) text.textContent = 'Rien ne correspond à ces filtres. Changez de type ou de projet.';
-      } else {
-        if (title) title.textContent = 'Aucune clé';
-        if (text) text.textContent = 'Ajoutez votre première clé pour commencer.';
-      }
-      deps.syncAddEntryButtonLabels();
-      refreshIcons(empty);
-      return;
-    }
-
-    empty.classList.add('hidden');
-    deps.syncAddEntryButtonLabels();
-    setHtml(grid, entries.map((e, i) => `
-        <button type="button" class="${deps.dashTileClassName(e)}" style="${deps.dashTileStyle(e, i)}" data-action="show-entry" data-id="${esc(e.id)}" title="${esc(e.title)}">
-          ${deps.dashTileIconMarkup(e)}
-          <span class="dash-tile-name">${esc(e.title)}</span>
-          ${dashTileMetaMarkup(e)}
-        </button>`).join('') + `
-      <button type="button" class="dash-tile dash-tile-add" data-action="add-entry">
-        <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
-        <span class="dash-tile-name">${esc(deps.addEntryTileLabel())}</span>
-      </button>`);
-
-    refreshIcons(grid);
-    setupFaviconImages(grid);
+  function entryListRowMarkup(entry, index) {
+    return `
+      <button type="button" class="entry-list-row" data-action="show-entry" data-id="${esc(entry.id)}" title="Ouvrir ${esc(entry.title)}" style="animation-delay:${index * 0.02}s">
+        <span class="entry-list-marker" aria-hidden="true"></span>
+        <span class="entry-list-name">${esc(entry.title)}</span>
+      </button>`;
   }
 
   function renderEntries() {
@@ -258,6 +272,7 @@ export function createVaultViews(deps) {
     deps.syncFolderFilterButtons();
     deps.syncAddEntryButtonLabels();
     deps.syncTransferEntryButtons();
+    syncViewModeToggle();
 
     empty.classList.add('hidden');
     noResults.classList.add('hidden');
@@ -274,36 +289,50 @@ export function createVaultViews(deps) {
       return;
     }
 
-    setHtml(container, list.map((e, i) => `
-      <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-entry">
-        ${deps.entryAvatarMarkup(e)}
-        <div class="entry-info">
-          <div class="entry-title-row">
-            <div class="entry-title">${esc(e.title)}</div>
-            ${deps.entryTypeBadgeMarkup(e)}
-            ${folderNameById(state.folders, entryFolderId(e))
-              ? `<span class="entry-folder-badge">${esc(folderNameById(state.folders, entryFolderId(e)))}</span>`
-              : ''}
-          </div>
-          <div class="entry-username">${esc(
-            deps.entryType(e) === 'api_key' && deps.displayUsername(e.username) === 'none'
-              ? 'Secret API'
-              : deps.entryType(e) === 'ssh_key' && deps.displayUsername(e.username) === 'none'
-                ? 'Clé SSH / stockage'
-                : deps.displayUsername(e.username)
-          )}</div>
-        </div>
-        <div class="entry-actions">
-          <button type="button" class="btn-icon" title="Copier" data-action="copy-password" data-id="${esc(e.id)}">
-            <i data-lucide="copy"></i>
-          </button>
-          <button type="button" class="btn-icon btn-danger" title="Supprimer" data-action="delete-entry" data-id="${esc(e.id)}">
-            <i data-lucide="trash-2"></i>
-          </button>
-        </div>
-      </div>`).join(''));
+    const isList = state.viewMode === 'list';
+    const entriesMarkup = list.map((e, i) => (
+      isList
+        ? entryListRowMarkup(e, i)
+        : `<button type="button" class="${deps.dashTileClassName(e)}" style="${deps.dashTileStyle(e, i)}" data-action="show-entry" data-id="${esc(e.id)}" title="${esc(e.title)}">
+          ${deps.dashTileIconMarkup(e)}
+          <span class="dash-tile-name">${esc(e.title)}</span>
+          ${dashTileMetaMarkup(e)}
+        </button>`
+    )).join('');
+
+    const addMarkup = isList
+      ? `<button type="button" class="entry-list-row entry-list-row-add" data-action="add-entry">
+          <span class="entry-list-name">${esc(deps.addEntryTileLabel())}</span>
+        </button>`
+      : `<button type="button" class="dash-tile dash-tile-add" data-action="add-entry">
+          <span class="dash-tile-add-icon"><i data-lucide="plus"></i></span>
+          <span class="dash-tile-name">${esc(deps.addEntryTileLabel())}</span>
+        </button>`;
+
+    container.classList.toggle('is-list', isList);
+    setHtml(container, entriesMarkup + addMarkup);
     refreshIcons(container);
     setupFaviconImages(container);
+  }
+
+  function setViewMode(mode) {
+    const next = mode === 'list' ? 'list' : 'grid';
+    if (next === state.viewMode) {
+      syncViewModeToggle();
+      return;
+    }
+    state.viewMode = next;
+    try { localStorage.setItem('clefkey.viewMode', next); } catch { /* ignore */ }
+    syncViewModeToggle();
+    if (state.page === 'vault') renderEntries();
+  }
+
+  function syncViewModeToggle() {
+    $$('.view-mode-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.viewMode === state.viewMode);
+    });
+    const container = $('#entries-list');
+    if (container) container.classList.toggle('is-list', state.viewMode === 'list');
   }
 
   function showEntry(id) {
@@ -443,7 +472,8 @@ export function createVaultViews(deps) {
 
   return {
     loadEntries, loadShares, getFilteredEntries, refreshCurrentView, updateEntryCounts,
-    getDashboardEntries, dashTileMetaMarkup, renderDashboard, renderEntries,
+    dashTileMetaMarkup, renderDashboard, renderEntries,
+    setViewMode, syncViewModeToggle,
     showEntry, copyPassword, openAddModal, openEditModal, readEntryFormData, deleteEntry,
     installVaultGlobals,
   };

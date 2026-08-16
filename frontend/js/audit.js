@@ -1,13 +1,14 @@
 /**
- * Vue Audit — vérification de compromission (mot de passe ou e-mail).
+ * Vue Audit — vérification de compromission (mot de passe, e-mail ou username).
  *
  * La logique réseau est partagée avec la landing page via `breach-check.js`.
  */
 
 import { bindBreachWidget } from './breach-check.js';
+import { api } from './api.js';
 
 export function createAudit(deps) {
-  const { $, refreshIcons } = deps;
+  const { $, refreshIcons, state } = deps;
 
   let bound = false;
 
@@ -24,6 +25,21 @@ export function createAudit(deps) {
       tabs: '[data-breach-mode]',
       toggle: '#audit-toggle',
       privacy: '#audit-info-popover',
+      adviceBtn: '#audit-advice-btn',
+      advicePanel: '#audit-advice-panel',
+      adviceBackdrop: '#audit-advice-backdrop',
+      adviceClose: '#audit-advice-close',
+      adviceExplain: '#audit-advice-explain',
+      adviceTips: '#audit-advice-tips',
+      breachesBackdrop: '#audit-breaches-backdrop',
+      breachesPanel: '#audit-breaches-panel',
+      breachesList: '#audit-breaches-list',
+      breachesClose: '#audit-breaches-close',
+      usernamesBackdrop: '#audit-usernames-backdrop',
+      usernamesPanel: '#audit-usernames-panel',
+      usernamesList: '#audit-usernames-list',
+      usernamesClose: '#audit-usernames-close',
+      usernameCheck: (username) => api.checkUsername(state.token, username),
     });
     if (!widget) return;
 

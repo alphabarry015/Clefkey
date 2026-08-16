@@ -225,14 +225,65 @@
 
 .project-sub-item {
   display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-radius: 10px;
+  transition: var(--transition);
+}
+
+.project-sub-row {
+  display: flex;
   align-items: center;
   gap: 0.3rem;
   border-radius: 10px;
   transition: var(--transition);
 }
 
-.project-sub-item:hover {
+.project-sub-row:hover {
   background: var(--bg-hover);
+}
+
+.project-sub-toggle {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.project-sub-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.project-sub-spacer {
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.project-sub-toggle .project-subs-chevron {
+  transform: rotate(90deg);
+}
+
+.project-sub-item.is-collapsed > .project-sub-row .project-sub-toggle .project-subs-chevron {
+  transform: rotate(0deg);
+}
+
+.project-sub-item.is-collapsed > .project-sub-list {
+  display: none;
+}
+
+.project-sub-item > .project-sub-list {
+  margin-left: 0.85rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--border);
 }
 
 .project-sub-main {
@@ -286,7 +337,8 @@
 }
 
 .project-sub-item:hover .project-sub-actions,
-.project-sub-item:focus-within .project-sub-actions {
+.project-sub-row:hover .project-sub-actions,
+.project-sub-row:focus-within .project-sub-actions {
   opacity: 1;
 }
 

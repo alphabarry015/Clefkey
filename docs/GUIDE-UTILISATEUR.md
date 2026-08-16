@@ -8,7 +8,7 @@ Clefkey. stocke vos identifiants (sites, emails, mots de passe, notes, clés API
 
 ### 1. Landing
 
-Page d’accueil avec le nom **Clefkey.**, un lien vers le dépôt GitHub public du projet, et les actions **Créer un compte** / **Se connecter**.
+Page d’accueil avec le nom **Clefkey.**, un lien vers le dépôt GitHub public du projet, et les actions **Créer un compte** / **Se connecter**. Un widget **Audit** (fuite de mot de passe / e-mail) est aussi disponible directement.
 
 ### 2. Inscription
 
@@ -28,26 +28,50 @@ Après **F5**, inactivité (15 min) ou onglet en arrière-plan, un écran demand
 
 Sur `localhost` uniquement : laisser les champs **vides** charge un mode démo (données **fictives** en mémoire). Désactiver avec `?dev=0`.
 
-### 4. Dashboard
+### 4. Coffre (espace connecté)
 
-Tuiles des clés (populaires, récents, A à Z), recherche, ajout rapide. Filtres **Tous**, **Connexions**, **Clés API**, **SSH / stockage**, et **projets** (Tous les projets / Sans projet / chaque projet).
+Une fois connecté, la **topbar** et la **sidebar** donnent accès à toutes les pages. La topbar contient le bouton **thème clair/sombre** et l’**avatar** (ouvre la page Profil). La sidebar liste : **Dashboard**, **Toutes les clés**, **Projets**, **Audit**, **Générateur**, puis **Partages reçus**, **Partages envoyés**, **Contacts**.
 
-### Audit
+#### Dashboard
 
-L'entrée **Audit** de la sidebar permet de vérifier si un mot de passe **ou une adresse e-mail** a fuité en ligne. Un switch bascule entre les deux modes :
+Page d’accueil : vue d’ensemble et actions rapides, sans liste de clés.
+
+- **Aperçu** — 4 compteurs cliquables : **Clés**, **Projets**, **Contacts**, **Partages**. Cliquer sur un compteur ouvre la page correspondante.
+- **Actions rapides** — boutons : **Nouvelle clé**, **Mot de passe fort**, **Username**, **Passphrase**, **Audit**, **Projet**. Les trois boutons « générer » ouvrent le Générateur sur l’onglet correspondant.
+- **Analyse** — deux graphiques (barres, sans données personnelles exposées) : **Clés par type** (Connexions / API / SSH) et **Clés par projet**.
+
+#### Toutes les clés
+
+Liste complète des clés sous forme de **tuiles** (même rendu que l’ancien dashboard), avec recherche instantanée et filtres **Tous**, **Connexions**, **Clés API**, **SSH / stockage**, et **projets** (Tous les projets / Sans projet / chaque projet). Cliquer sur une tuile ouvre le détail ; le bouton **+** ajoute une clé.
+
+#### Audit
+
+L’entrée **Audit** de la sidebar vérifie si un mot de passe, une adresse e-mail **ou un username** a fuité en ligne. Un switch bascule entre les trois modes :
 
 - **Mot de passe** — API Have I Been Pwned en mode **k-anonymity** : le mot de passe est hashé localement et seuls 5 caractères du hash sont transmis.
-- **Adresse e-mail** — API publique XposedOrNot, qui liste les fuites connues associées à l'adresse.
+- **Adresse e-mail** — API publique XposedOrNot, qui liste les fuites connues associées à l’adresse.
+- **Username** — vérification de disponibilité d’un pseudo via le proxy Sherlock intégré (voir [API](./API.md)).
 
-Le même widget est disponible sur la landing page. Voir la [documentation dédiée](./AUDIT-MOT-DE-PASSE.md).
+Le widget de l’Audit est aussi disponible sur la landing page (modes mot de passe / e-mail). Voir la [documentation dédiée](./AUDIT-MOT-DE-PASSE.md).
 
-### 5. Toutes les clés
+#### Générateur
 
-Liste complète, recherche (raccourci **Ctrl+K**), ouverture du détail. Chaque entrée affiche un badge selon son type (connexion, clé API ou SSH / stockage) et son projet le cas échéant.
+Outil intégré pour créer des secrets forts, avec trois onglets :
 
-### 6. Profil
+- **Mot de passe** — longueur, minuscules, majuscules, chiffres, symboles ; affiche la robustesse.
+- **Username** — propose un nom de base et génère plusieurs variantes, puis **vérifie leur disponibilité** sur ~15 sites (badge « Disponible », « Utilisé » ou « Indéterminé »). Si le nom de base est déjà pris, il propose un ajout.
+- **Passphrase** — phrase de plusieurs mots (ex. XKCD), plus facile à retenir.
 
-Infos compte (édition inline), tags techniques, **Verrouiller le coffre** (soft lock : le maître suffit pour rouvrir).
+Les raccourcis du Dashboard (**Mot de passe fort**, **Username**, **Passphrase**) ouvrent directement l’onglet correspondant.
+
+#### Partages & Contacts
+
+- **Partages reçus / envoyés** — clés partagées avec d’autres comptes, avec états (en attente, acceptés, refusés, révoqués).
+- **Contacts** — destinataires mémorisés pour accélérer un futur partage.
+
+#### Profil
+
+Ouvert depuis l’**avatar** en haut à droite (ou « Profil » dans la sidebar) : infos compte (édition inline), tags techniques, **Verrouiller le coffre** (soft lock : le maître suffit pour rouvrir).
 
 ## Types d’entrées
 
@@ -67,14 +91,21 @@ Les clés peuvent être rangées dans un **projet**. La liste des projets et l�
 - Supprimer un projet envoie ses clés en **Sans projet** (elles ne sont pas effacées).
 - Les **partages** restent hors des projets.
 
+## Raccourcis clavier
+
+| Raccourci | Effet |
+|-----------|-------|
+| **Ctrl+K** (ou **Ctrl+N**, ⌘ sur Mac) | Ouvre le formulaire « Nouvelle clé », depuis n’importe quelle page |
+| **Échap** | Ferme la modale ouverte |
+
 ## Actions courantes
 
 | Action | Comment |
 |--------|---------|
-| Ajouter une entrée | Bouton **+** / Nouvelle clé ; choisir le type |
+| Ajouter une entrée | Bouton **+** / Nouvelle clé, ou raccourci **Ctrl+N** ; choisir le type |
 | Copier un secret | Icône copier sur une carte ou dans le détail |
 | Supprimer | Demande de confirmation en retapant le titre |
-| Verrouiller | Sidebar ou profil → session fermée |
+| Verrouiller | Sidebar, profil ou topbar → session fermée |
 
 ## PWA
 

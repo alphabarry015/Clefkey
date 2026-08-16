@@ -32,11 +32,15 @@ export function createTransfer(deps) {
     if (allowUnassign) {
       options.push({ value: '__unassign__', label: 'Sans projet' });
     }
+    const walk = (f, depth) => {
+      folderChildren(state.folders, f.id).filter(valid).forEach((c) => {
+        options.push({ value: c.id, label: `${'— '.repeat(depth)}${c.name}` });
+        walk(c, depth + 1);
+      });
+    };
     topLevelFolders(state.folders).filter(valid).forEach((f) => {
       options.push({ value: f.id, label: f.name });
-      folderChildren(state.folders, f.id).filter(valid).forEach((c) => {
-        options.push({ value: c.id, label: `— ${c.name}` });
-      });
+      walk(f, 1);
     });
     const folders = state.folders.filter(valid);
     let pick = selectedId || '';
@@ -70,7 +74,7 @@ export function createTransfer(deps) {
       </div>`;
 
     const row = (f, { selected = false, child = false, expanded = true } = {}) => {
-      const children = child ? [] : folderChildren(state.folders, f.id);
+      const children = folderChildren(state.folders, f.id);
       const hasChildren = children.length > 0;
       return `
       <div class="entry-folder-tree-children${expanded ? ' is-expanded' : ''}" data-folder-id="${esc(f.id)}">

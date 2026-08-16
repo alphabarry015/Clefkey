@@ -5,14 +5,15 @@ Clefkey propose un **audit de compromission** intégré au site, accessible :
 - depuis la **landing page**, juste en dessous du champ principal ;
 - depuis le **coffre connecté**, via le menu **Audit** de la sidebar.
 
-Un **switch** permet de basculer entre deux modes :
+Un **switch** permet de basculer entre les modes :
 
 | Mode | Service interrogé | Donnée transmise |
 | --- | --- | --- |
 | Mot de passe (icône cadenas) | [Have I Been Pwned — Pwned Passwords](https://haveibeenpwned.com/Passwords) | 5 caractères du hash SHA-1 |
 | Adresse e-mail (icône enveloppe) | [XposedOrNot](https://xposedornot.com/) | l'adresse e-mail |
+| Username (icône utilisateur) | Proxy Sherlock intégré | le username public (+ aucune donnée du coffre) |
 
-Le widget est implémenté dans `frontend/js/breach-check.js` et partagé entre la landing page et la page d'audit du coffre.
+Le widget est implémenté dans `frontend/js/breach-check.js` et partagé entre la landing page et la page d'audit du coffre. Sur la landing page, seuls les modes mot de passe et e-mail sont proposés.
 
 ## Mode mot de passe
 
@@ -58,6 +59,16 @@ Contrairement au mode mot de passe, **l'adresse e-mail est transmise en clair** 
 2. Saisissez l'adresse à tester (le bouton œil disparaît, le champ passe en type `email`).
 3. Cliquez sur **Vérifier**.
 
+## Mode username
+
+Disponible dans le coffre connecté uniquement (page Audit, onglet **Username**). Le serveur Clefkey fait office de **proxy Sherlock** (`GET /vault/username-check`) : il interroge ~60 sites publics pour savoir si le username est déjà pris, en déduisant la réponse depuis le code HTTP, le message d’erreur ou la redirection de chaque site.
+
+Le résultat indique si le username est **disponible**, **déjà utilisé** ou **indéterminé** (sites inaccessibles), et le serveur applique un rate limit de 20 requêtes/min.
+
+- La même vérification alimente l'onglet **Username** du Générateur (vérification en lot de variantes).
+- Aucune donnée du coffre n'accompagne la requête : seul le username public est transmis aux sites tiers.
+- Voir [API.md](./API.md) pour les paramètres (`username`, `limit`).
+
 ## Limites
 
 - Le test indique une fuite **connue et publique** : un résultat « non compromis » peut malgré tout correspondre à une base non répertoriée.
@@ -74,5 +85,6 @@ Le switch, le champ d'audit et le message de résultat s'adaptent automatiquemen
 - Le calcul SHA-1 est réalisé **côté client**.
 - En mode mot de passe, l'appel réseau envoie 5 caractères de hash uniquement (`https://api.pwnedpasswords.com/range/…`).
 - En mode e-mail, seule l'adresse saisie est transmise à XposedOrNot ; elle n'est ni stockée ni liée à votre compte.
+- En mode username, le navigateur n'appelle que **votre** serveur Clefkey (même origine) ; c'est le serveur qui interroge les sites tiers, avec rate limit.
 - Aucune information liée au compte Clefkey n'est transmise à ces services.
 - La CSP (`vault/middleware.py`) autorise explicitement `api.pwnedpasswords.com` et `api.xposedornot.com` dans `connect-src`.

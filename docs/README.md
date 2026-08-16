@@ -7,9 +7,9 @@ Le dépôt GitHub est **public**. Ne committez jamais `.env`, clés API, jetons 
 | Document | Contenu |
 |----------|---------|
 | [CARTOGRAPHIE-COFFRE.md](./CARTOGRAPHIE-COFFRE.md) | Concepts, flux, rôles (récit d’architecture) |
-| [GUIDE-UTILISATEUR.md](./GUIDE-UTILISATEUR.md) | Utilisation du site (landing, compte, coffre) |
+| [GUIDE-UTILISATEUR.md](./GUIDE-UTILISATEUR.md) | Utilisation du site (landing, compte, coffre, générateur, partages, raccourcis) |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Stack, dossiers, flux crypto |
-| [API.md](./API.md) | Endpoints HTTP |
+| [API.md](./API.md) | Endpoints HTTP (dont vérification d’usernames / Sherlock) |
 | [DEPLOIEMENT.md](./DEPLOIEMENT.md) | Local, Supabase, Vercel |
 | [SECURITE.md](./SECURITE.md) | Modèle de menace et bonnes pratiques |
 | [AUDIT-MOT-DE-PASSE.md](./AUDIT-MOT-DE-PASSE.md) | Audit de compromission mot de passe (HIBP, k-anonymity) et e-mail (XposedOrNot) |

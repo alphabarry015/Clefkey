@@ -355,3 +355,101 @@
 
 .entry-avatar.sm { width: 36px; height: 36px; font-size: 0.95rem; border-radius: 10px; }
 
+/* ——— Toggle vue cartes / liste ——— */
+.vault-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+}
+
+.view-mode-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.view-mode-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.view-mode-btn.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.view-mode-btn svg,
+.view-mode-btn .lucide {
+  width: 16px;
+  height: 16px;
+}
+
+/* ——— Vue liste des clés ——— */
+#entries-list.is-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.entry-list-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition: var(--transition);
+  animation: slideUp 0.28s ease backwards;
+}
+
+.entry-list-row:hover {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+  background: var(--bg-hover);
+}
+
+.entry-list-marker {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.55;
+}
+
+.entry-list-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry-list-row-add {
+  justify-content: center;
+  border-style: dashed;
+  color: var(--accent);
+}
+

@@ -42,7 +42,7 @@ Inscription. L’utilisateur remplit le formulaire, le front refuse un maître t
 
 Connexion. Email et maître, dérivation, `POST /auth/login`, JWT, déchiffrement de la clé de coffre, chargement des entrées. En local uniquement, laisser les champs vides peut activer un mode démo sans toucher la vraie base : utile pour développer l’UI, dangereux à ne jamais activer en production avec des données réelles.
 
-Usage du coffre. Recherche, filtres de type, copie presse-papiers, détail, génération de mot de passe (local WebCrypto ou endpoint authentifié). Verrouillage : fin de session côté client.
+Usage du coffre. Recherche, filtres de type, copie presse-papiers, détail, génération de mot de passe (local WebCrypto ou endpoint authentifié). Le **Générateur** (onglets Mot de passe / Username / Passphrase) aide à créer des secrets forts : pour l’onglet Username, le navigateur demande au serveur (proxy Sherlock) de vérifier la disponibilité de variantes — aucun secret du coffre n’est impliqué, seul un pseudo public est envoyé à des sites tiers. Le **Dashboard** affiche un aperçu (compteurs, actions rapides, graphiques) et renvoie la liste des clés vers « Toutes les clés ». Verrouillage : fin de session côté client.
 
 ## Ce que le serveur voit vraiment
 

@@ -3,6 +3,7 @@
  */
 import {
   normalizeFolderName, normalizeFoldersList, folderNameById,
+  isFolderDescendant,
 } from './folders.js';
 import {
   $, $$, toast, showLoading, hideLoading, openModal, closeModal,
@@ -169,7 +170,9 @@ export function bindProjects(deps) {
       if (set.has(parentId)) set.delete(parentId);
       else set.add(parentId);
       state.collapsedProjectIds = [...set];
-      const box = toggleSubs.closest('.project-subs');
+      const group = toggleSubs.closest('.project-sub-item') ?? toggleSubs.closest('.project-group');
+      const box = group?.querySelector(':scope > .project-sub-list, :scope > .project-subs');
+      group?.classList.toggle('is-collapsed', set.has(parentId));
       box?.classList.toggle('is-collapsed', set.has(parentId));
       toggleSubs.setAttribute('aria-expanded', set.has(parentId) ? 'false' : 'true');
       return;
@@ -485,8 +488,8 @@ export function bindProjects(deps) {
         toast('Nom du projet requis', 'error');
         return;
       }
-      if (state.folders.some((f) => f.id !== folderId && f.name.toLowerCase() === name.toLowerCase())) {
-        toast('Ce projet existe déjà', 'error');
+      if (state.folders.some((f) => f.id !== folderId && (f.parentId || '') === (folder.parentId || '') && f.name.toLowerCase() === name.toLowerCase())) {
+        toast('Ce projet existe déjà à cet emplacement', 'error');
         return;
       }
       try {
@@ -513,12 +516,11 @@ export function bindProjects(deps) {
       }
       if (newParentId) {
         const target = state.folders.find((f) => f.id === newParentId);
-        if (!target || target.parentId) {
+        if (!target) {
           toast('Projet parent invalide', 'error');
           return;
         }
-        const childIds = state.folders.filter((f) => f.parentId === folderId).map((c) => c.id);
-        if (childIds.includes(newParentId)) {
+        if (isFolderDescendant(state.folders, folderId, newParentId)) {
           toast('Impossible de déplacer dans un sous-projet', 'error');
           return;
         }

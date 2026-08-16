@@ -33,6 +33,9 @@
         <button class="nav-item" data-page="audit" title="Audit">
                     <i data-lucide="shield-check"></i><span class="sidebar-text">Audit</span>
         </button>
+        <button class="nav-item" data-page="generator" title="Générateur">
+                    <i data-lucide="dices"></i><span class="sidebar-text">Générateur</span>
+        </button>
 
         <div class="sidebar-section-label">Partage</div>
         <button class="nav-item nav-item-sub" data-page="shares-received" title="Partages reçus">
@@ -50,13 +53,6 @@
       </nav>
 
       <div class="sidebar-footer">
-        <button type="button" id="btn-profile-sidebar" class="sidebar-user" title="Mon profil">
-          <div id="user-avatar" class="user-avatar" title=""></div>
-          <div class="sidebar-user-info sidebar-text">
-            <div id="user-name" class="user-name"></div>
-            <div id="user-email" class="user-email"></div>
-          </div>
-        </button>
         <button id="btn-lock" class="sidebar-lock-btn" title="Verrouiller le coffre">
                     <i data-lucide="log-out"></i><span class="sidebar-text">Verrouiller</span>
         </button>
@@ -65,7 +61,7 @@
 
     <div class="vault-layout">
       <header class="vault-topbar">
-        <button id="btn-menu" class="btn-menu" aria-label="Menu">
+        <button id="btn-menu" class="btn-menu" aria-label="Réduire ou agrandir la sidebar" title="Réduire / agrandir la sidebar">
           <i data-lucide="menu"></i>
         </button>
         <div class="topbar-title">
@@ -73,85 +69,79 @@
           <p id="page-subtitle" class="topbar-subtitle"></p>
         </div>
         <div class="topbar-actions">
-          <div class="topbar-total" id="topbar-total">
-                        <span class="topbar-total-label">Total</span>
-            <strong id="entry-count">0</strong>
-          </div>
           <div class="theme-switch-host topbar-theme" data-theme-switch></div>
+          <button type="button" id="btn-profile-sidebar" class="sidebar-user topbar-user" title="Mon profil" aria-label="Mon profil">
+            <div id="user-avatar" class="user-avatar" title=""></div>
+          </button>
         </div>
       </header>
 
       <main class="vault-main">
         <div id="dashboard-view" class="dashboard-view">
-          <section class="dash-hero-panel" aria-label="Coffre">
-            <div class="dash-toolbar">
-              <div class="search-box dash-search">
-                <span class="search-icon"><i data-lucide="search"></i></span>
-                <input type="text" id="dash-search-input" placeholder="Rechercher une clé, un site, un projet…">
-                <button type="button" id="btn-clear-dash-search" class="btn-clear hidden" aria-label="Effacer la recherche">
-                  <i data-lucide="x"></i>
-                </button>
-              </div>
-              <div class="dash-toolbar-actions">
-                <button type="button" class="btn btn-secondary btn-sm dash-toolbar-project" id="btn-dash-create-project" title="Créer un projet">
-                                    <span>Projet</span>
-                </button>
-                <button type="button" class="btn btn-primary btn-sm dash-toolbar-add" id="btn-dash-add">
-                                    <span class="add-entry-label">Nouveau</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="dash-filters" aria-label="Filtres du coffre">
-              <div class="dash-filter-row dash-filter-sort">
-                <span class="dash-filter-caption">Tri</span>
-                <div class="dash-tabs" role="tablist" aria-label="Trier les clés">
-                  <button type="button" class="dash-tab active" data-dash-tab="recent" role="tab">Récents</button>
-                  <button type="button" class="dash-tab" data-dash-tab="popular" role="tab">Populaires</button>
-                  <button type="button" class="dash-tab" data-dash-tab="az" role="tab">A–Z</button>
-                </div>
-              </div>
-              <div class="dash-filter-divider" aria-hidden="true"></div>
-              <div class="dash-filter-row dash-filter-combo">
-                <div class="dash-filter-group">
-                  <span class="dash-filter-caption">Type</span>
-                  <div class="type-filters dash-type-filters" role="group" aria-label="Filtrer par type">
-                    <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
-                    <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
-                    <button type="button" class="type-filter" data-type-filter="api_key">API</button>
-                    <button type="button" class="type-filter" data-type-filter="ssh_key">SSH</button>
-                  </div>
-                </div>
-                <div class="dash-filter-sep" aria-hidden="true"></div>
-                <div class="dash-filter-group">
-                  <span class="dash-filter-caption">Projet</span>
-                  <div class="folder-filters dash-folder-filters" role="group" aria-label="Filtrer par projet">
-                    <button type="button" class="folder-filter active" data-folder-filter="all">Tous</button>
-                    <button type="button" class="folder-filter" data-folder-filter="none">Sans</button>
-                    <span id="dash-folder-filter-list" class="folder-filter-list"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <section class="dash-stats" aria-label="Aperçu">
+            <div id="dash-stats-grid" class="dash-stats-grid"></div>
           </section>
 
-          <div id="dash-tiles-grid" class="dash-tiles-grid"></div>
-          <div id="dash-tiles-empty" class="dash-tiles-empty hidden">
-            <div class="dash-empty-icon"><i data-lucide="key-round"></i></div>
-            <h3 id="dash-empty-title">Aucune clé</h3>
-            <p id="dash-empty-text">Ajoutez votre première clé pour commencer.</p>
-            <button type="button" class="btn btn-primary btn-sm" id="btn-dash-add-empty">
-                            <span class="add-entry-label">Ajouter une clé</span>
+          <section class="dash-actions" aria-label="Actions rapides">
+            <button type="button" class="dash-action-btn" data-action="dash-action" data-target="new-key" title="Ajouter une nouvelle clé">
+              <span class="dash-action-icon"><i data-lucide="plus"></i></span>
+              <span class="dash-action-label">Nouvelle clé</span>
             </button>
-          </div>
+            <button type="button" class="dash-action-btn" data-action="dash-action" data-target="password" title="Générer un mot de passe fort">
+              <span class="dash-action-icon"><i data-lucide="key-round"></i></span>
+              <span class="dash-action-label">Mot de passe fort</span>
+            </button>
+            <button type="button" class="dash-action-btn" data-action="dash-action" data-target="username" title="Trouver un username disponible">
+              <span class="dash-action-icon"><i data-lucide="user-round"></i></span>
+              <span class="dash-action-label">Username</span>
+            </button>
+            <button type="button" class="dash-action-btn" data-action="dash-action" data-target="passphrase" title="Générer une passphrase">
+              <span class="dash-action-icon"><i data-lucide="dices"></i></span>
+              <span class="dash-action-label">Passphrase</span>
+            </button>
+            <button type="button" class="dash-action-btn" data-action="dash-action" data-target="audit" title="Vérifier fuites et usernames">
+              <span class="dash-action-icon"><i data-lucide="shield-check"></i></span>
+              <span class="dash-action-label">Audit</span>
+            </button>
+            <button type="button" class="dash-action-btn" data-action="dash-action" data-target="project" title="Créer un projet">
+              <span class="dash-action-icon"><i data-lucide="layers"></i></span>
+              <span class="dash-action-label">Projet</span>
+            </button>
+          </section>
+
+          <section class="dash-insights" aria-label="Analyse">
+            <div class="dash-insight-card">
+              <h3 class="dash-insight-title">Clés par type</h3>
+              <div id="dash-graph-types" class="dash-graph"></div>
+            </div>
+            <div class="dash-insight-card">
+              <h3 class="dash-insight-title">Clés par projet</h3>
+              <div id="dash-graph-projects" class="dash-graph"></div>
+            </div>
+          </section>
         </div>
 
         <div id="vault-view" class="vault-view hidden">
         <div class="vault-toolbar">
           <div class="search-box">
             <span class="search-icon"><i data-lucide="search"></i></span>
-            <input type="text" id="search-input" placeholder="Rechercher un site, identifiant...  (Ctrl+K)">
+            <input type="text" id="search-input" placeholder="Rechercher un site, identifiant...">
             <button id="btn-clear-search" class="btn-clear hidden" aria-label="Effacer"><i data-lucide="x"></i></button>
+          </div>
+          <div class="vault-view-toggle" role="group" aria-label="Format d'affichage">
+            <button type="button" class="view-mode-btn active" data-view-mode="grid" title="Vue cartes" aria-label="Vue cartes">
+              <i data-lucide="layout-dashboard"></i>
+            </button>
+            <button type="button" class="view-mode-btn" data-view-mode="list" title="Vue liste" aria-label="Vue liste">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+            </button>
           </div>
           <div class="vault-filter-combo dash-filter-combo" aria-label="Filtres">
             <div class="dash-filter-group">
@@ -176,7 +166,7 @@
         </div>
 
         <div class="vault-content">
-          <div id="entries-list" class="entries-grid"></div>
+          <div id="entries-list" class="dash-tiles-grid"></div>
           <div id="entries-empty" class="entries-empty hidden">
             <div class="empty-illustration">
                           </div>

@@ -138,4 +138,17 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     });
   },
+
+  checkUsername(token, username) {
+    return request(`/vault/username-check?username=${encodeURIComponent(username)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  checkUsernames(token, usernames, limit = 15) {
+    const names = usernames.map((u) => encodeURIComponent(u)).join(',');
+    return request(`/vault/usernames-check?usernames=${names}&limit=${limit}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
 };

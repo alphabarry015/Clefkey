@@ -38,11 +38,28 @@ export function normalizeFoldersList(list) {
     let parentId = (typeof item?.parentId === 'string' ? item.parentId.trim() : '');
     if (parentId === id) parentId = '';
     const parent = byId.get(parentId);
-    if (!parentId || !parent || parent.parentId) parentId = '';
+    if (!parentId || !parent) {
+      parentId = '';
+    } else if (folderHasAncestor(parent, byId, new Set([id]))) {
+      // Cycle détecté (parent ou ascendant pointe vers ce dossier) → dossier racine.
+      parentId = '';
+    }
     seen.add(id);
     out.push({ id, name, parentId });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+}
+
+function folderHasAncestor(folder, byId, visited) {
+  let cursor = folder;
+  while (cursor) {
+    if (visited.has(cursor.id)) return true;
+    visited.add(cursor.id);
+    const parentId = typeof cursor?.parentId === 'string' ? cursor.parentId.trim() : '';
+    if (!parentId || parentId === cursor.id) return false;
+    cursor = byId.get(parentId) || null;
+  }
+  return false;
 }
 
 export function foldersFromMetaEntry(entry) {
@@ -92,4 +109,40 @@ export function folderChildren(folders, parentId) {
 
 export function hasFolderChildren(folders, parentId) {
   return (folders || []).some((f) => f.parentId === parentId);
+}
+
+/** Ids de tous les descendants (toutes profondeurs) d’un dossier, lui-même exclu. */
+export function folderDescendantIds(folders, folderId) {
+  const ids = new Set();
+  const walk = (id) => {
+    for (const f of folders || []) {
+      if (f.parentId === id && !ids.has(f.id)) {
+        ids.add(f.id);
+        walk(f.id);
+      }
+    }
+  };
+  walk(folderId);
+  return ids;
+}
+
+/** true si `maybeDescendantId` est un descendant (ou lui-même) de `folderId`. */
+export function isFolderDescendant(folders, folderId, maybeDescendantId) {
+  const ids = folderDescendantIds(folders, folderId);
+  ids.add(folderId);
+  return ids.has(maybeDescendantId);
+}
+
+/** Profondeur d’un dossier (0 = racine). */
+export function folderDepth(folders, folderId) {
+  const byId = new Map((folders || []).map((f) => [f.id, f]));
+  let depth = 0;
+  let cursor = byId.get(folderId);
+  const guard = 0;
+  while (cursor && cursor.parentId && depth < 1000) {
+    depth += 1;
+    cursor = byId.get(cursor.parentId);
+    if (!cursor || cursor.id === folderId) break;
+  }
+  return depth;
 }

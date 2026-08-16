@@ -318,7 +318,7 @@
             <div class="audit-card-header">
               <div>
                 <h2 class="audit-card-title">Audit de compromission</h2>
-                <p class="audit-card-subtitle">Vérifiez si un mot de passe ou une adresse e-mail a fuité.</p>
+                <p class="audit-card-subtitle">Vérifiez un mot de passe, une adresse e-mail ou un username.</p>
               </div>
             </div>
             <div class="breach-switch breach-switch-vault" role="tablist" aria-label="Type de vérification">
@@ -329,6 +329,10 @@
               <button type="button" class="breach-switch-tab" data-breach-mode="email" role="tab" aria-selected="false">
                 <svg class="breach-switch-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                 <span>Adresse e-mail</span>
+              </button>
+              <button type="button" class="breach-switch-tab" data-breach-mode="username" role="tab" aria-selected="false">
+                <svg class="breach-switch-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>Username</span>
               </button>
             </div>
             <form id="audit-form" class="audit-form-vault" novalidate>
@@ -342,7 +346,155 @@
               </div>
             </form>
             <div id="audit-result" class="audit-result-vault" role="status" aria-live="polite"></div>
+            <div class="audit-advice-wrap">
+              <button type="button" id="audit-advice-btn" class="audit-advice-btn" hidden aria-expanded="false" aria-controls="audit-advice-panel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5"/></svg>
+                <span>Conseils</span>
+              </button>
+            </div>
+            <div id="audit-advice-backdrop" class="audit-advice-backdrop" hidden>
+              <div id="audit-advice-panel" class="audit-advice-panel" role="dialog" aria-modal="true" aria-labelledby="audit-advice-title">
+                <div class="audit-advice-panel-header">
+                  <p id="audit-advice-title" class="audit-advice-title">Conseils de sécurité</p>
+                  <button type="button" id="audit-advice-close" class="audit-advice-close" aria-label="Fermer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </button>
+                </div>
+                <p class="audit-advice-label">Comment ce contrôle fonctionne-t-il ?</p>
+                <p id="audit-advice-explain" class="audit-advice-text"></p>
+                <p class="audit-advice-label">Conseils</p>
+                <p id="audit-advice-tips" class="audit-advice-text"></p>
+              </div>
+            </div>
+            <div id="audit-breaches-backdrop" class="audit-breaches-backdrop" hidden>
+              <div id="audit-breaches-panel" class="audit-breaches-panel" role="dialog" aria-modal="true" aria-labelledby="audit-breaches-title">
+                <div class="audit-breaches-header">
+                  <p id="audit-breaches-title" class="audit-breaches-title">Fuite(s) détectée(s)</p>
+                  <button type="button" id="audit-breaches-close" class="audit-breaches-close" aria-label="Fermer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </button>
+                </div>
+                <p class="audit-breaches-subtitle">Votre adresse a été exposée dans les fuites suivantes :</p>
+                <ul id="audit-breaches-list" class="audit-breaches-list"></ul>
+              </div>
+            </div>
+            <div id="audit-usernames-backdrop" class="audit-breaches-backdrop" hidden>
+              <div id="audit-usernames-panel" class="audit-breaches-panel" role="dialog" aria-modal="true" aria-labelledby="audit-usernames-title">
+                <div class="audit-breaches-header">
+                  <p id="audit-usernames-title" class="audit-breaches-title">Compte(s) trouvé(s)</p>
+                  <button type="button" id="audit-usernames-close" class="audit-breaches-close" aria-label="Fermer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </button>
+                </div>
+                <p class="audit-breaches-subtitle">Ce username est utilisé sur les sites suivants :</p>
+                <ul id="audit-usernames-list" class="audit-breaches-list"></ul>
+              </div>
+            </div>
           </section>
+        </div>
+
+        <div id="generator-view" class="generator-view hidden">
+          <div class="breach-switch generator-switch" role="tablist" aria-label="Type de génération">
+            <button type="button" class="breach-switch-tab is-active" data-gen-mode="password" role="tab" aria-selected="true">
+              <svg class="breach-switch-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Mot de passe</span>
+            </button>
+            <button type="button" class="breach-switch-tab" data-gen-mode="username" role="tab" aria-selected="false">
+              <svg class="breach-switch-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>Username</span>
+            </button>
+            <button type="button" class="breach-switch-tab" data-gen-mode="passphrase" role="tab" aria-selected="false">
+              <svg class="breach-switch-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18H3"/></svg>
+              <span>Passphrase</span>
+            </button>
+          </div>
+
+          <div class="generator-card">
+            <div class="generator-panel" data-gen-panel="password">
+              <div class="generator-options">
+                <div class="generator-length-wrap">
+                  <span class="generator-option-label">Longueur</span>
+                  <div class="generator-stepper">
+                    <button type="button" id="gen-length-minus" class="generator-stepper-btn" aria-label="Réduire la longueur">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                    </button>
+                    <input id="gen-length" class="generator-length" type="number" min="8" max="64" value="20" aria-label="Longueur du mot de passe">
+                    <button type="button" id="gen-length-plus" class="generator-stepper-btn" aria-label="Augmenter la longueur">
+                      <i data-lucide="plus"></i>
+                    </button>
+                  </div>
+                </div>
+                <p class="generator-hint">Entre 8 et 64 caractères — majuscules, chiffres et symboles inclus automatiquement.</p>
+              </div>
+
+              <div class="generator-field-inline">
+                <div class="generator-field-wrap">
+                  <input id="gen-password-value" class="generator-password-value" type="text" readonly placeholder="Cliquez sur le bouton pour générer…" aria-label="Mot de passe généré">
+                  <button id="gen-password-copy" type="button" class="generator-field-copy" title="Copier" aria-label="Copier le mot de passe" hidden>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  </button>
+                </div>
+                <button id="gen-password-btn" type="button" class="generator-gen-btn" title="Générer un mot de passe" aria-label="Générer un mot de passe">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                </button>
+              </div>
+
+              <p class="generator-note">
+                <i data-lucide="shield-check"></i>
+                Vérifié anti-fuite localement — seuls 5 caractères du hash quittent votre appareil.
+              </p>
+
+              <p id="gen-password-status" class="generator-status" role="status" hidden></p>
+            </div>
+
+            <div class="generator-panel" data-gen-panel="username" hidden>
+              <div class="generator-field-inline">
+                <input id="gen-user-base" class="generator-password-value" type="text" autocomplete="off" spellcheck="false" placeholder="Ex : julie martin" aria-label="Mot de base">
+                <button id="gen-username-btn" type="button" class="generator-gen-btn" title="Générer des usernames" aria-label="Générer des usernames">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
+                </button>
+              </div>
+
+              <div id="gen-username-list" class="generator-user-list"></div>
+            </div>
+
+            <div class="generator-panel" data-gen-panel="passphrase" hidden>
+              <div class="generator-options">
+                <div class="generator-length-wrap">
+                  <span class="generator-option-label">Mots</span>
+                  <div class="generator-stepper">
+                    <button type="button" id="gen-pp-count-minus" class="generator-stepper-btn" aria-label="Réduire le nombre de mots">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                    </button>
+                    <input id="gen-pp-count" class="generator-length" type="number" min="3" max="10" value="5" aria-label="Nombre de mots">
+                    <button type="button" id="gen-pp-count-plus" class="generator-stepper-btn" aria-label="Augmenter le nombre de mots">
+                      <i data-lucide="plus"></i>
+                    </button>
+                  </div>
+                </div>
+                <p class="generator-hint">Entre 3 et 10 mots courants — une phrase longue, facile à retenir.</p>
+              </div>
+
+              <div class="generator-field-inline">
+                <div class="generator-field-wrap">
+                  <input id="gen-passphrase-value" class="generator-password-value" type="text" readonly placeholder="Cliquez sur le bouton pour générer…" aria-label="Passphrase générée">
+                  <button id="gen-passphrase-copy" type="button" class="generator-field-copy" title="Copier" aria-label="Copier la passphrase" hidden>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  </button>
+                </div>
+                <button id="gen-passphrase-btn" type="button" class="generator-gen-btn" title="Générer une passphrase" aria-label="Générer une passphrase">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18H3"/></svg>
+                </button>
+              </div>
+
+              <p class="generator-note">
+                <i data-lucide="shield-check"></i>
+                100 % local — vos passphrases ne quittent jamais votre appareil.
+              </p>
+
+              <p id="gen-passphrase-status" class="generator-status" role="status" hidden></p>
+            </div>
+          </div>
         </div>
       </main>
     </div>

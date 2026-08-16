@@ -132,8 +132,10 @@ export function createProfile(deps) {
     $('#profile-detail-last-name').textContent = normalized.last_name || EMPTY_VALUE;
     $('#profile-email').textContent = normalized.email;
     $('#profile-detail-email').textContent = normalized.email;
-    $('#user-name').textContent = normalized.display_name;
-    $('#user-email').textContent = normalized.email;
+    const userNameEl = $('#user-name');
+    const userEmailEl = $('#user-email');
+    if (userNameEl) userNameEl.textContent = normalized.display_name;
+    if (userEmailEl) userEmailEl.textContent = normalized.email;
     $('#user-avatar').title = `${normalized.display_name} (${normalized.email})`;
   }
 
@@ -164,7 +166,6 @@ export function createProfile(deps) {
       $('#profile-detail-id').dataset.full = profile.user_id;
       $('#profile-detail-created').textContent = formatProfileDate(profile.created_at);
       $('#profile-member-since').textContent = formatMemberSince(profile.created_at);
-      $('#profile-chip-entries').textContent = profile.entries_count;
     } catch {
       $('#profile-detail-created').textContent = EMPTY_VALUE;
       $('#profile-member-since').textContent = EMPTY_VALUE;
@@ -245,7 +246,6 @@ export function createProfile(deps) {
       saveSession(state);
       $('#profile-detail-created').textContent = formatProfileDate(profile.created_at);
       $('#profile-member-since').textContent = formatMemberSince(profile.created_at);
-      $('#profile-chip-entries').textContent = profile.entries_count;
       closeAllProfileFieldEdits();
       toast('Profil mis à jour', 'success');
     } catch (err) {

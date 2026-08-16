@@ -13,6 +13,7 @@ Django (coffre/ + vault/)  ──JWT──► PostgreSQL (Supabase)
   ├─ Auth (register / login / me / recovery)
   ├─ Entrées (blobs chiffrés) + shares
   ├─ Favicon proxy (anti-SSRF)
+  ├─ Username-check proxy (base Sherlock)
   └─ Rate limit (Upstash en prod)
 ```
 
@@ -64,12 +65,20 @@ Schéma SQL de référence : `supabase/schema.sql`.
 ## Frontend
 
 - UI vanilla dans `frontend/` (HTML / CSS / modules ES)
-- Modules notables : `crypto.js`, `session.js`, `auth-screens.js`, `recovery-input.js`, `app.js`, `api.js`
+- Modules notables : `crypto.js`, `session.js`, `auth-screens.js`, `recovery-input.js`, `app.js`, `api.js`, `vault-views.js`, `generator.js`, `shortcuts.js`
 - Crypto & icônes **vendored** dans `frontend/vendor/` (pas de CDN)
 - Listes SecLists (sélection) : `frontend/data/` + chargement 2 phases
 - Sync listes : `python scripts/sync_common_password_lists.py`
 - Régénération vendor : `python scripts/vendor_frontend_deps.py`
 - Archive : `backend/` (FastAPI) n’est **pas** déployé
+
+## Générateur & vérification d’usernames
+
+- Moteur de vérification : `vault/username_check.py` (asyncio + `httpx`) — déduit la disponibilité d’un username depuis la réponse des sites (code HTTP, message d’erreur ou redirection).
+- Base des sites : `vault/data/sherlock-data.json` (~480 sites, format officiel Sherlock).
+- Sync base : `python scripts/sync_sherlock_data.py` (télécharge le `data.json` officiel, exclut `$schema` et les sites NSFW).
+- Endpoints : `GET /vault/username-check` (1 username) et `GET /vault/usernames-check` (lot ≤ 12, 1 requête), rate limit 20/min.
+- Utilisé par l’onglet **Username** du Générateur et le mode **Username** de l’Audit.
 
 ## Mode développement UI
 

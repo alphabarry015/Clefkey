@@ -18,7 +18,7 @@ import {
 export function bindVault(deps) {
   const {
     state,
-    renderDashboard, renderEntries, renderContactsPage,
+    renderDashboard, renderEntries, setViewMode, renderContactsPage,
     openAddModal, openEditModal, readEntryFormData, resetEntryFormModal,
     setEntryFormType, syncTypeFilterButtons, syncAddEntryButtonLabels,
     syncFolderFilterButtons, refreshCurrentView, loadEntries,
@@ -46,7 +46,7 @@ export function bindVault(deps) {
     const target = resolveEventElement(event);
     if (!target) return;
 
-    const root = target.closest('#dash-tiles-grid, #entries-list, #project-detail-list, #shares-received-list, #shares-sent-list, #contacts-list, #contacts-detail-shares, #share-pick-entry-list, #share-contacts-chips');
+    const root = target.closest('#dashboard-view, #dash-tiles-grid, #entries-list, #project-detail-list, #shares-received-list, #shares-sent-list, #contacts-list, #contacts-detail-shares, #share-pick-entry-list, #share-contacts-chips');
     if (!root) return;
 
     const actionEl = target.closest('[data-action]');
@@ -113,10 +113,43 @@ export function bindVault(deps) {
     }
     if (action === 'add-entry') {
       openAddModal();
+      return;
+    }
+    if (action === 'dash-stat' || action === 'dash-action') {
+      const target = actionEl.dataset.target;
+      if (!target) return;
+      if (action === 'dash-action' && target === 'new-key') {
+        openAddModal();
+        return;
+      }
+      if (action === 'dash-action' && (target === 'password' || target === 'username' || target === 'passphrase')) {
+        switchPage('generator');
+        const tab = document.querySelector(`#generator-view [data-gen-mode="${target}"]`);
+        if (tab) tab.click();
+        return;
+      }
+      const pageMap = {
+        vault: 'vault',
+        projects: 'projects',
+        contacts: 'contacts',
+        'shares-received': 'shares-received',
+        password: 'generator',
+        username: 'generator',
+        passphrase: 'generator',
+        audit: 'audit',
+        project: 'projects',
+      };
+      const page = pageMap[target];
+      if (page) switchPage(page);
+      return;
     }
   }
 
   document.addEventListener('click', handleEntryClick);
+
+  $$('.view-mode-btn').forEach((btn) => {
+    btn.addEventListener('click', () => setViewMode(btn.dataset.viewMode));
+  });
 
 
   $$('.nav-item').forEach(btn => {
@@ -128,36 +161,12 @@ export function bindVault(deps) {
     });
   });
 
-  $('#btn-dash-add').addEventListener('click', openAddModal);
-  $('#btn-dash-add-empty').addEventListener('click', openAddModal);
   $('#btn-entries-empty-add')?.addEventListener('click', openAddModal);
 
-  $$('.dash-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      state.dashTab = tab.dataset.dashTab;
-      renderDashboard();
-    });
-  });
-
-  const debouncedRenderDashboard = debounce(() => renderDashboard());
   const debouncedRenderEntries = debounce(() => renderEntries());
-
-  $('#dash-search-input').addEventListener('input', (e) => {
-    state.dashSearch = e.target.value;
-    $('#btn-clear-dash-search').classList.toggle('hidden', !state.dashSearch);
-    debouncedRenderDashboard();
-  });
-
-  $('#btn-clear-dash-search').addEventListener('click', () => {
-    $('#dash-search-input').value = '';
-    state.dashSearch = '';
-    $('#btn-clear-dash-search').classList.add('hidden');
-    renderDashboard();
-  });
 
   $('#btn-profile-sidebar').addEventListener('click', () => {
     switchPage('profile');
-    if (window.innerWidth <= 900) collapseSidebar();
   });
 
   $('#btn-profile-lock').addEventListener('click', () => lockVault('manual'));
@@ -215,13 +224,6 @@ export function bindVault(deps) {
     state.search = '';
     $('#btn-clear-search').classList.add('hidden');
     renderEntries();
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      if (state.token && state.page === 'vault') { $('#search-input').focus(); }
-    }
   });
 
   $('#btn-edit-detail')?.addEventListener('click', () => {

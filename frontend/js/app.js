@@ -38,12 +38,14 @@ import { createShares } from './shares-ui.js';
 import { createVaultViews } from './vault-views.js';
 import { createProfile } from './profile-ui.js';
 import { createAudit } from './audit.js';
+import { createGenerator } from './generator.js';
 import { bindBreachWidget } from './breach-check.js';
 import { createAuthSession } from './auth-session.js';
 import { bindAuth } from './bind-auth.js';
 import { bindVault } from './bind-vault.js';
 import { bindProjects } from './bind-projects.js';
 import { bindShares } from './bind-shares.js';
+import { bindGlobalShortcuts } from './shortcuts.js';
 
 const state = {
   token: null,
@@ -60,6 +62,10 @@ const state = {
   devMode: false,
   page: 'dashboard',
   search: '',
+  viewMode: (() => {
+    try { return localStorage.getItem('clefkey.viewMode') === 'list' ? 'list' : 'grid'; }
+    catch { return 'grid'; }
+  })(),
   dashTab: 'recent',
   dashSearch: '',
   typeFilter: 'all',
@@ -111,6 +117,7 @@ Object.assign(deps, createTransfer(deps));
 Object.assign(deps, createShares(deps));
 Object.assign(deps, createVaultViews(deps));
 Object.assign(deps, createAudit(deps));
+Object.assign(deps, createGenerator(deps));
 
 const {
   fillEntryDetailCommon,
@@ -129,7 +136,7 @@ const {
   openShareModal, openSharePickEntryModal, renderSharePickEntryList,
   installShareGlobals,
   loadEntries, refreshCurrentView, updateEntryCounts,
-  renderDashboard, renderEntries, openAddModal, openEditModal, readEntryFormData,
+  renderDashboard, renderEntries, setViewMode, openAddModal, openEditModal, readEntryFormData,
   installVaultGlobals, showEntry, entryType,
   syncTypeFilterButtons, syncAddEntryButtonLabels, setEntryFormType,
   resetEntryFormModal,
@@ -142,6 +149,7 @@ const {
   showDeleteConfirm, clearLoginForm, validateLoginForm, restoreSessionIfAny,
   verifyMasterPasswordForCurrentVault,
   renderAudit,
+  renderGenerator,
 } = deps;
 
 installVaultGlobals();
@@ -193,6 +201,7 @@ deps.entryType = entryType;
 deps.showEntry = showEntry;
 deps.renderDashboard = renderDashboard;
 deps.renderEntries = renderEntries;
+deps.setViewMode = setViewMode;
 deps.openShareModal = openShareModal;
 deps.openSharePickEntryModal = openSharePickEntryModal;
 deps.renderSharePickEntryList = renderSharePickEntryList;
@@ -260,6 +269,7 @@ const PAGE_TITLES = {
   contacts: { title: 'Contacts', subtitle: 'Destinataires de vos partages' },
   profile: { title: 'Mon profil', subtitle: 'Informations de votre compte' },
   audit: { title: 'Audit', subtitle: 'Vérifiez si un mot de passe a fuité' },
+  generator: { title: 'Générateur', subtitle: 'Mots de passe et usernames sécurisés' },
 };
 
 function updatePageTitle() {
@@ -270,7 +280,6 @@ function updatePageTitle() {
       ? state.entries.filter((e) => !e.isShare && !isVaultMetaEntry(e) && entryFolderId(e) === folder.id).length
       : 0;
     $('#page-subtitle').textContent = n <= 1 ? `${n} clé dans ce projet` : `${n} clés dans ce projet`;
-    $('#topbar-total').classList.add('hidden');
     $('#fab-add').classList.remove('hidden');
     return;
   }
@@ -279,10 +288,10 @@ function updatePageTitle() {
   $('#page-subtitle').textContent = page.subtitle;
   const onProfile = state.page === 'profile';
   const onAudit = state.page === 'audit';
+  const onGenerator = state.page === 'generator';
   const onShares = state.page === 'shares-received' || state.page === 'shares-sent' || state.page === 'contacts';
   const onProjects = state.page === 'projects';
-  $('#topbar-total').classList.toggle('hidden', onProfile || onShares || onAudit);
-  $('#fab-add').classList.toggle('hidden', onProfile || onShares || onProjects || onAudit);
+  $('#fab-add').classList.toggle('hidden', onProfile || onShares || onProjects || onAudit || onGenerator);
 }
 
 function switchPage(page) {
@@ -308,6 +317,7 @@ function switchPage(page) {
   $('#contacts-view')?.classList.toggle('hidden', page !== 'contacts');
   $('#profile-view').classList.toggle('hidden', page !== 'profile');
   $('#audit-view')?.classList.toggle('hidden', page !== 'audit');
+  $('#generator-view')?.classList.toggle('hidden', page !== 'generator');
   updatePageTitle();
   updateEntryCounts();
   $('.vault-main')?.scrollTo(0, 0);
@@ -321,6 +331,7 @@ function switchPage(page) {
     else if (page === 'contacts') renderContactsPage();
     else if (page === 'profile') renderProfile();
     else if (page === 'audit') renderAudit();
+    else if (page === 'generator') renderGenerator();
   } catch (err) {
     console.error('Erreur affichage page:', err);
     toast('Impossible d\'afficher cette page', 'error');
@@ -332,12 +343,22 @@ deps.updatePageTitle = updatePageTitle;
 
 const MOBILE_BREAKPOINT = 900;
 
+const SIDEBAR_STORAGE_KEY = 'clefkey.sidebarCollapsed';
+
 function isMobileLayout() {
   return window.innerWidth <= MOBILE_BREAKPOINT;
 }
 
+function getSidebarPreference() {
+  return localStorage.getItem(SIDEBAR_STORAGE_KEY) !== '1';
+}
+
 function setSidebarExpanded(expanded) {
   $('#screen-vault').classList.toggle('sidebar-expanded', expanded);
+}
+
+function applySidebarState() {
+  setSidebarExpanded(isMobileLayout() ? false : getSidebarPreference());
 }
 
 function collapseSidebar() {
@@ -345,7 +366,11 @@ function collapseSidebar() {
 }
 
 function toggleSidebar() {
-  setSidebarExpanded(!$('#screen-vault').classList.contains('sidebar-expanded'));
+  const expanded = !$('#screen-vault').classList.contains('sidebar-expanded');
+  setSidebarExpanded(expanded);
+  if (!isMobileLayout()) {
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, expanded ? '0' : '1');
+  }
 }
 
 deps.isMobileLayout = isMobileLayout;
@@ -356,8 +381,7 @@ $('#sidebar-overlay').addEventListener('click', collapseSidebar);
 
 window.addEventListener('resize', () => {
   if (!$('#screen-vault').classList.contains('active')) return;
-  if (isMobileLayout()) collapseSidebar();
-  else setSidebarExpanded(true);
+  applySidebarState();
 });
 
 function showVault() {
@@ -366,7 +390,7 @@ function showVault() {
   const user = normalizeUser(state.user);
   state.user = user;
   applyUserToUI(user);
-  setSidebarExpanded(!isMobileLayout());
+  applySidebarState();
   state.page = 'dashboard';
   switchPage('dashboard');
   if (!state.devMode) {
@@ -382,6 +406,7 @@ bindAuth(deps);
 bindVault(deps);
 bindProjects(deps);
 bindShares(deps);
+bindGlobalShortcuts(deps);
 
 showScreen('landing');
 clearLoginForm();

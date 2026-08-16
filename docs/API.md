@@ -66,10 +66,29 @@ Profil uniquement (noms, email, `entries_count`). Le matériel crypto n’est **
 | GET | `/vault/shares/received` | Oui | Partages reçus |
 | GET | `/vault/shares/sent` | Oui | Partages envoyés |
 | GET / DELETE / … | `/vault/shares/<id>` | Oui | Détail / actions sur un partage |
+| GET | `/vault/username-check?username=…&limit=` | Oui | Disponibilité d’un username (proxy Sherlock) |
+| GET | `/vault/usernames-check?usernames=a,b,c&limit=` | Oui | Disponibilité en lot (1 requête pour ≤ 12 usernames) |
 
 \* Le proxy favicon est public mais restreint (pas d’IP privées) et rate-limité.
 
 Le **type** d’entrée (`login` ou `api_key`) vit uniquement dans le JSON chiffré côté client. L’API ne le distingue pas : elle stocke un blob opaque (plafond ~256 KiB décodés).
+
+## Vérification d’usernames — `/vault/username-check` et `/vault/usernames-check`
+
+Proxy côté serveur de la base [Sherlock](https://sherlockproject.xyz) (`vault/data/sherlock-data.json`, ~480 sites). Le serveur interroge chaque site avec le username fourni et déduit la disponibilité à partir de la réponse (code HTTP, message d’erreur ou URL de redirection).
+
+### GET `/vault/username-check?username=…&limit=…`
+
+- `username` : 3–30 caractères (lettres, chiffres, `.`, `_`, `-`) — sinon **400**.
+- `limit` : nombre de sites vérifiés, par défaut **60**, max **300**.
+- Réponse : `{ "username", "attempted", "checked", "failed", "found", "found_count", "not_found_count", "inconclusive_count" }`.
+
+### GET `/vault/usernames-check?usernames=a,b,c&limit=…`
+
+- `usernames` : liste séparée par des virgules, **≤ 12** noms (les suivants sont ignorés).
+- `limit` : sites par nom, par défaut **15**, max **30**.
+- Compte pour **1 requête** de rate limit.
+- Réponse : `{ "usernames": [ {…mêmes champs…} ], "sites_per_name": limit }`.
 
 ## Rate limiting
 
@@ -82,6 +101,7 @@ Réponses **429** si trop de requêtes (par IP, fenêtre ~60 s) :
 | Salt | 20 |
 | Favicon | 60 |
 | Generate-password | 30 |
+| Username-check | 20 (1 requête lot = 1) |
 
 En production Vercel, le compteur est partagé via Upstash (fail-closed si mal configuré).
 

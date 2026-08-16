@@ -109,6 +109,18 @@ export function formatEmailResult(result) {
 export const PRIVACY_TEXT = {
   password: 'Le mot de passe est hashé localement. Seuls 5 caractères du hash SHA-1 sont transmis.',
   email: "L'adresse est interrogée auprès de XposedOrNot. Elle n'est ni stockée ni associée à votre compte.",
+  username: "Le username est vérifié via le serveur (base open-source WhatsMyName). Il n'est ni stocké ni associé à votre compte.",
+};
+
+export const ADVICE_EXPLAIN = {
+  password: 'Le mot de passe est hashé en SHA-1 sur votre appareil. Seuls 5 caractères de ce hash sont transmis au service Have I Been Pwned, qui les compare aux mots de passe présents dans les fuites de données connues. Votre mot de passe ne quitte jamais votre appareil.',
+  email: "L'adresse est interrogée auprès du service public XposedOrNot, qui référence les fuites de données connues. Elle n'est ni stockée ni associée à votre compte.",
+};
+
+export const ADVICE_TIPS = {
+  safe: 'Bonnes pratiques : utilisez un mot de passe long et unique pour chaque site, activez la double authentification (2FA) et renouvelez vos mots de passe régulièrement.',
+  passwordPwned: 'Ce mot de passe a été exposé dans une fuite : changez-le immédiatement, partout où il est utilisé, et ne le réutilisez jamais. Activez la double authentification (2FA) sur les comptes concernés, puis générez un mot de passe unique et fort avec votre coffre.',
+  emailPwned: "Votre adresse apparaît dans une ou plusieurs fuites de données. Changez les mots de passe des comptes associés à cette adresse, activez la double authentification (2FA) et méfiez-vous des e-mails de hameçonnage ciblé (phishing).",
 };
 
 /**
@@ -128,6 +140,21 @@ export function bindBreachWidget(root, sel) {
   const tabs = Array.from(root.querySelectorAll(sel.tabs || '[data-breach-mode]'));
   const toggle = sel.toggle ? root.querySelector(sel.toggle) : null;
   const privacy = sel.privacy ? root.querySelector(sel.privacy) : null;
+  const adviceBtn = sel.adviceBtn ? root.querySelector(sel.adviceBtn) : null;
+  const advicePanel = sel.advicePanel ? root.querySelector(sel.advicePanel) : null;
+  const adviceBackdrop = sel.adviceBackdrop ? root.querySelector(sel.adviceBackdrop) : null;
+  const adviceClose = sel.adviceClose ? root.querySelector(sel.adviceClose) : null;
+  const adviceExplain = sel.adviceExplain ? root.querySelector(sel.adviceExplain) : null;
+  const adviceTips = sel.adviceTips ? root.querySelector(sel.adviceTips) : null;
+  const breachesBackdrop = sel.breachesBackdrop ? root.querySelector(sel.breachesBackdrop) : null;
+  const breachesPanel = sel.breachesPanel ? root.querySelector(sel.breachesPanel) : null;
+  const breachesList = sel.breachesList ? root.querySelector(sel.breachesList) : null;
+  const breachesClose = sel.breachesClose ? root.querySelector(sel.breachesClose) : null;
+  const usernamesBackdrop = sel.usernamesBackdrop ? root.querySelector(sel.usernamesBackdrop) : null;
+  const usernamesPanel = sel.usernamesPanel ? root.querySelector(sel.usernamesPanel) : null;
+  const usernamesList = sel.usernamesList ? root.querySelector(sel.usernamesList) : null;
+  const usernamesClose = sel.usernamesClose ? root.querySelector(sel.usernamesClose) : null;
+  const usernameCheck = typeof sel.usernameCheck === 'function' ? sel.usernameCheck : null;
   const classes = sel.classes || {};
   const visibleClass = classes.visible || 'is-visible';
   const safeClass = classes.safe || 'is-safe';
@@ -136,49 +163,100 @@ export function bindBreachWidget(root, sel) {
 
   let mode = 'password';
   let revealed = false;
+  let lastTone = null;
+  const usernameAvailable = Boolean(usernameCheck);
+
+  function normalizeMode(next) {
+    if (next === 'email') return 'email';
+    if (usernameAvailable && next === 'username') return 'username';
+    return 'password';
+  }
 
   function clearResult() {
     result.textContent = '';
     result.classList.remove(visibleClass, safeClass, pwnedClass);
+    lastTone = null;
+    if (adviceBtn) {
+      adviceBtn.hidden = true;
+      adviceBtn.setAttribute('aria-expanded', 'false');
+    }
+    if (advicePanel) advicePanel.hidden = true;
+    if (adviceBackdrop) adviceBackdrop.hidden = true;
+    if (breachesPanel) breachesPanel.hidden = true;
+    if (breachesBackdrop) breachesBackdrop.hidden = true;
+    if (usernamesPanel) usernamesPanel.hidden = true;
+    if (usernamesBackdrop) usernamesBackdrop.hidden = true;
   }
 
-  function render(icon, text, tone) {
+  function render(icon, text, tone, action) {
     const label = document.createElement('span');
     label.className = 'breach-result-text';
     label.textContent = text;
 
     result.innerHTML = RESULT_ICONS[icon] || '';
     result.appendChild(label);
+    if (action) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'breach-result-more';
+      btn.textContent = action.label;
+      btn.addEventListener('click', action.onClick);
+      result.appendChild(btn);
+    }
     result.classList.add(visibleClass);
     result.classList.toggle(safeClass, tone === 'safe');
     result.classList.toggle(pwnedClass, tone === 'pwned');
+
+    const hasAdvice = mode !== 'username' && (icon === 'safe' || icon === 'pwned');
+    lastTone = hasAdvice ? (tone === 'safe' ? 'safe' : 'pwned') : null;
+    if (adviceBtn) {
+      adviceBtn.hidden = !hasAdvice;
+      adviceBtn.setAttribute('aria-expanded', 'false');
+    }
+    if (advicePanel) advicePanel.hidden = true;
+    if (adviceBackdrop) adviceBackdrop.hidden = true;
+    if (breachesPanel) breachesPanel.hidden = true;
+    if (breachesBackdrop) breachesBackdrop.hidden = true;
+    if (usernamesPanel) usernamesPanel.hidden = true;
+    if (usernamesBackdrop) usernamesBackdrop.hidden = true;
   }
 
-  function showMessage(safe, text) {
-    render(safe ? 'safe' : 'pwned', text, safe ? 'safe' : 'pwned');
+  function showMessage(safe, text, action) {
+    render(safe ? 'safe' : 'pwned', text, safe ? 'safe' : 'pwned', action);
   }
 
   function applyReveal() {
     if (!toggle) return;
-    input.type = mode === 'email' ? 'email' : (revealed ? 'text' : 'password');
+    if (mode === 'email' || mode === 'username') return;
+    input.type = revealed ? 'text' : 'password';
     toggle.setAttribute('aria-pressed', String(revealed));
     root.dataset.reveal = String(revealed);
   }
 
   function setMode(next) {
-    mode = next === 'email' ? 'email' : 'password';
+    mode = normalizeMode(next);
     root.dataset.breachActiveMode = mode;
     revealed = false;
 
     input.value = '';
-    input.type = mode === 'email' ? 'email' : 'password';
-    input.placeholder = mode === 'email' ? 'Entrez une adresse e-mail…' : 'Entrez un mot de passe…';
-    input.setAttribute('aria-label', mode === 'email' ? 'Adresse e-mail à vérifier' : 'Mot de passe à vérifier');
+    if (mode === 'username') {
+      input.type = 'text';
+    } else {
+      input.type = mode === 'email' ? 'email' : (revealed ? 'text' : 'password');
+    }
+    input.placeholder = mode === 'password' ? 'Entrez un mot de passe…'
+      : mode === 'email' ? 'Entrez une adresse e-mail…'
+      : 'Entrez un username…';
+    input.setAttribute('aria-label', mode === 'password' ? 'Mot de passe à vérifier'
+      : mode === 'email' ? 'Adresse e-mail à vérifier'
+      : 'Username à vérifier');
     input.autocomplete = 'off';
     input.inputMode = mode === 'email' ? 'email' : 'text';
+    input.pattern = mode === 'username' ? '[A-Za-z0-9_.\\-]{3,30}' : null;
+    input.maxLength = mode === 'username' ? 30 : undefined;
 
-    if (toggle) toggle.hidden = mode === 'email';
-    if (privacy) privacy.textContent = PRIVACY_TEXT[mode];
+    if (toggle) toggle.hidden = mode === 'email' || mode === 'username';
+    if (privacy) privacy.textContent = PRIVACY_TEXT[mode] || PRIVACY_TEXT.password;
 
     tabs.forEach((tab) => {
       const isActive = tab.dataset.breachMode === mode;
@@ -201,6 +279,115 @@ export function bindBreachWidget(root, sel) {
     });
   }
 
+  function closeAdvice() {
+    if (advicePanel) advicePanel.hidden = true;
+    if (adviceBackdrop) adviceBackdrop.hidden = true;
+    if (adviceBtn) adviceBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function openAdvice() {
+    if (breachesBackdrop) breachesBackdrop.hidden = true;
+    if (breachesPanel) breachesPanel.hidden = true;
+    if (advicePanel) advicePanel.hidden = false;
+    if (adviceBackdrop) adviceBackdrop.hidden = false;
+    if (adviceBtn) adviceBtn.setAttribute('aria-expanded', 'true');
+    if (adviceExplain) adviceExplain.textContent = ADVICE_EXPLAIN[mode];
+    if (adviceTips) {
+      const key = lastTone === 'safe' ? 'safe' : (mode === 'email' ? 'emailPwned' : 'passwordPwned');
+      adviceTips.textContent = ADVICE_TIPS[key];
+    }
+  }
+
+  function closeBreaches() {
+    if (breachesPanel) breachesPanel.hidden = true;
+    if (breachesBackdrop) breachesBackdrop.hidden = true;
+  }
+
+  function openBreaches(breaches) {
+    if (!breachesPanel || !breachesBackdrop) return;
+    closeAdvice();
+    if (breachesList) {
+      breachesList.textContent = '';
+      breaches
+        .slice()
+        .sort((a, b) => String(a).localeCompare(String(b)))
+        .forEach((b) => {
+          const item = document.createElement('li');
+          item.className = 'audit-breaches-item';
+          item.textContent = String(b);
+          breachesList.appendChild(item);
+        });
+    }
+    breachesPanel.hidden = false;
+    breachesBackdrop.hidden = false;
+  }
+
+  if (adviceBtn && advicePanel) {
+    adviceBtn.addEventListener('click', () => {
+      if (advicePanel.hidden) openAdvice();
+      else closeAdvice();
+    });
+    if (adviceBackdrop) {
+      adviceBackdrop.addEventListener('click', (event) => {
+        if (event.target === adviceBackdrop) closeAdvice();
+      });
+    }
+    if (adviceClose) adviceClose.addEventListener('click', closeAdvice);
+  }
+
+  function closeUsernames() {
+    if (usernamesPanel) usernamesPanel.hidden = true;
+    if (usernamesBackdrop) usernamesBackdrop.hidden = true;
+  }
+
+  function openUsernames(found) {
+    if (!usernamesPanel || !usernamesBackdrop) return;
+    closeAdvice();
+    closeBreaches();
+    if (usernamesList) {
+      usernamesList.textContent = '';
+      found.forEach((item) => {
+        const entry = document.createElement('li');
+        entry.className = 'audit-breaches-item audit-usernames-item';
+        const link = document.createElement('a');
+        link.className = 'audit-usernames-link';
+        link.href = item.uri;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = String(item.name || item.uri);
+        entry.appendChild(link);
+        usernamesList.appendChild(entry);
+      });
+    }
+    usernamesPanel.hidden = false;
+    usernamesBackdrop.hidden = false;
+  }
+
+  if (breachesBackdrop && breachesPanel) {
+    if (breachesBackdrop) {
+      breachesBackdrop.addEventListener('click', (event) => {
+        if (event.target === breachesBackdrop) closeBreaches();
+      });
+    }
+    if (breachesClose) breachesClose.addEventListener('click', closeBreaches);
+  }
+
+  if (usernamesBackdrop && usernamesPanel) {
+    if (usernamesBackdrop) {
+      usernamesBackdrop.addEventListener('click', (event) => {
+        if (event.target === usernamesBackdrop) closeUsernames();
+      });
+    }
+    if (usernamesClose) usernamesClose.addEventListener('click', closeUsernames);
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (advicePanel && !advicePanel.hidden) closeAdvice();
+    if (breachesPanel && !breachesPanel.hidden) closeBreaches();
+    if (usernamesPanel && !usernamesPanel.hidden) closeUsernames();
+  });
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const value = input.value;
@@ -209,9 +396,32 @@ export function bindBreachWidget(root, sel) {
     render('pending', 'Vérification en cours…', 'pending');
 
     try {
-      if (mode === 'email') {
-        const outcome = formatEmailResult(await checkEmail(value));
-        showMessage(outcome.safe, outcome.text);
+      if (mode === 'username') {
+        if (!usernameCheck) throw new Error('Vérification username indisponible.');
+        const result = await usernameCheck(value);
+        const attempted = result.attempted || 0;
+        const foundCount = result.found_count || 0;
+        const failed = result.failed || 0;
+        const failures = failed > 0 ? ` (${failed} échec${failed > 1 ? 's' : ''})` : '';
+        if (foundCount > 0) {
+          showMessage(false, `${result.username} est utilisé sur ${foundCount} site(s) (${attempted} vérifiés${failures}).`, {
+            label: 'Voir les comptes',
+            onClick: () => openUsernames(result.found || []),
+          });
+        } else {
+          showMessage(true, `${result.username} : aucun compte trouvé parmi ${attempted} sites vérifiés${failures}.`);
+        }
+      } else if (mode === 'email') {
+        const checked = await checkEmail(value);
+        const outcome = formatEmailResult(checked);
+        let action = null;
+        if (!checked.safe && checked.breaches.length > 4) {
+          action = {
+            label: 'Voir plus',
+            onClick: () => openBreaches(checked.breaches),
+          };
+        }
+        showMessage(outcome.safe, outcome.text, action);
       } else {
         const outcome = formatPasswordResult(await checkPassword(value));
         showMessage(outcome.safe, outcome.text);
