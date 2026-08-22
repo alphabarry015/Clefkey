@@ -7,7 +7,8 @@ export function getCryptoSupportIssues() {
   const issues = [];
   if (!window.isSecureContext) {
     issues.push(
-      'Cette page doit être ouverte en HTTPS (ou sur localhost). Le chiffrement ne fonctionne pas en HTTP ni en fichier local.',
+      'Cette page doit être ouverte en HTTPS (ou sur localhost). '
+      + 'Le chiffrement ne fonctionne pas en HTTP ni en fichier local.',
     );
   }
   if (!window.crypto || typeof window.crypto.getRandomValues !== 'function') {

@@ -155,10 +155,18 @@ export function createVaultViews(deps) {
 
   function dashTileMetaMarkup(entry) {
     const badges = [];
-    if (deps.entryType(entry) === 'login') badges.push('<span class="dash-tile-badge dash-tile-badge-login">Connexion</span>');
-    if (deps.entryType(entry) === 'api_key') badges.push('<span class="dash-tile-badge dash-tile-badge-api">API</span>');
-    if (deps.entryType(entry) === 'ssh_key') badges.push('<span class="dash-tile-badge dash-tile-badge-ssh">SSH</span>');
-    if (deps.entryType(entry) === 'oauth') badges.push('<span class="dash-tile-badge dash-tile-badge-oauth">OAuth</span>');
+    if (deps.entryType(entry) === 'login') {
+      badges.push('<span class="dash-tile-badge dash-tile-badge-login">Connexion</span>');
+    }
+    if (deps.entryType(entry) === 'api_key') {
+      badges.push('<span class="dash-tile-badge dash-tile-badge-api">API</span>');
+    }
+    if (deps.entryType(entry) === 'ssh_key') {
+      badges.push('<span class="dash-tile-badge dash-tile-badge-ssh">SSH</span>');
+    }
+    if (deps.entryType(entry) === 'oauth') {
+      badges.push('<span class="dash-tile-badge dash-tile-badge-oauth">OAuth</span>');
+    }
     const folder = folderNameById(state.folders, entryFolderId(entry));
     const project = folder
       ? `<span class="dash-tile-meta"><span class="dash-tile-project">${esc(folder)}</span></span>`
@@ -191,7 +199,13 @@ export function createVaultViews(deps) {
         <span class="dash-stat-value">${contacts}</span>
         <span class="dash-stat-label">Contacts</span>
       </button>
-      <button type="button" class="dash-stat" data-action="dash-stat" data-target="shares-received" title="Voir les partages">
+      <button
+        type="button"
+        class="dash-stat"
+        data-action="dash-stat"
+        data-target="shares-received"
+        title="Voir les partages"
+      >
         <span class="dash-stat-icon"><i data-lucide="mail"></i></span>
         <span class="dash-stat-value">${shares}</span>
         <span class="dash-stat-label">Partages</span>
@@ -214,17 +228,23 @@ export function createVaultViews(deps) {
         </div>
         <div class="dash-bar-row">
           <span class="dash-bar-label">OAuth</span>
-          <span class="dash-bar-track"><span class="dash-bar-fill is-orange" style="width:${pct(counts.oauth)}%"></span></span>
+          <span class="dash-bar-track">
+            <span class="dash-bar-fill is-orange" style="width:${pct(counts.oauth)}%"></span>
+          </span>
           <span class="dash-bar-value">${counts.oauth}</span>
         </div>
         <div class="dash-bar-row">
           <span class="dash-bar-label">API</span>
-          <span class="dash-bar-track"><span class="dash-bar-fill is-success" style="width:${pct(counts.api_key)}%"></span></span>
+          <span class="dash-bar-track">
+            <span class="dash-bar-fill is-success" style="width:${pct(counts.api_key)}%"></span>
+          </span>
           <span class="dash-bar-value">${counts.api_key}</span>
         </div>
         <div class="dash-bar-row">
           <span class="dash-bar-label">SSH</span>
-          <span class="dash-bar-track"><span class="dash-bar-fill is-indigo" style="width:${pct(counts.ssh_key)}%"></span></span>
+          <span class="dash-bar-track">
+            <span class="dash-bar-fill is-indigo" style="width:${pct(counts.ssh_key)}%"></span>
+          </span>
           <span class="dash-bar-value">${counts.ssh_key}</span>
         </div>`);
     }
@@ -249,7 +269,9 @@ export function createVaultViews(deps) {
       setHtml(graphProjects, rows.map((r) => `
         <div class="dash-bar-row" title="${esc(r.name)}">
           <span class="dash-bar-label">${esc(r.name)}</span>
-          <span class="dash-bar-track"><span class="dash-bar-fill" style="width:${Math.round((r.count / max) * 100)}%"></span></span>
+          <span class="dash-bar-track">
+            <span class="dash-bar-fill" style="width:${Math.round((r.count / max) * 100)}%"></span>
+          </span>
           <span class="dash-bar-value">${r.count}</span>
         </div>`).join(''));
     }
@@ -262,7 +284,14 @@ export function createVaultViews(deps) {
 
   function entryListRowMarkup(entry, index) {
     return `
-      <button type="button" class="entry-list-row" data-action="show-entry" data-id="${esc(entry.id)}" title="Ouvrir ${esc(entry.title)}" style="animation-delay:${index * 0.02}s">
+      <button
+        type="button"
+        class="entry-list-row"
+        data-action="show-entry"
+        data-id="${esc(entry.id)}"
+        title="Ouvrir ${esc(entry.title)}"
+        style="animation-delay:${index * 0.02}s"
+      >
         <span class="entry-list-marker" aria-hidden="true"></span>
         <span class="entry-list-name">${esc(entry.title)}</span>
       </button>`;
@@ -300,7 +329,9 @@ export function createVaultViews(deps) {
     const entriesMarkup = list.map((e, i) => (
       isList
         ? entryListRowMarkup(e, i)
-        : `<button type="button" class="${deps.dashTileClassName(e)}" style="${deps.dashTileStyle(e, i)}" data-action="show-entry" data-id="${esc(e.id)}" title="${esc(e.title)}">
+        : `<button type="button" class="${deps.dashTileClassName(e)}"
+            style="${deps.dashTileStyle(e, i)}" data-action="show-entry"
+            data-id="${esc(e.id)}" title="${esc(e.title)}">
           ${deps.dashTileIconMarkup(e)}
           <span class="dash-tile-name">${esc(e.title)}</span>
           ${dashTileMetaMarkup(e)}

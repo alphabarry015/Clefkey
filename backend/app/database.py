@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
+from .base import Base
 from .config import DATABASE_URL
 
 engine = create_engine(
@@ -8,10 +9,6 @@ engine = create_engine(
     connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 def get_db():
@@ -23,9 +20,7 @@ def get_db():
 
 
 def init_db():
-    # Importer les modèles pour enregistrer les tables sur Base.metadata.
-    from .models.user import User
-    from .models.vault_entry import VaultEntry
+    # Enregistre les tables (User, VaultEntry) sans importer les modules modèles ici.
+    from . import models as _models  # noqa: F401
 
-    _ = (User, VaultEntry)
     Base.metadata.create_all(bind=engine)

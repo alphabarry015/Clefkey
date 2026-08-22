@@ -111,7 +111,11 @@ export function createProjects(deps) {
       };
       topLevelFolders(state.folders).forEach((f) => walk(f, 0));
       setHtml(el, buttons.map((f) => `
-        <button type="button" class="folder-filter${state.folderFilter === f.id ? ' active' : ''}${f.depth ? ' child' : ''}" data-folder-filter="${esc(f.id)}">${'&nbsp;&nbsp;'.repeat(f.depth)}${esc(f.name)}</button>
+        <button
+          type="button"
+          class="folder-filter${state.folderFilter === f.id ? ' active' : ''}${f.depth ? ' child' : ''}"
+          data-folder-filter="${esc(f.id)}"
+        >${'&nbsp;&nbsp;'.repeat(f.depth)}${esc(f.name)}</button>
       `).join(''));
     };
     renderList('#dash-folder-filter-list');
@@ -143,7 +147,13 @@ export function createProjects(deps) {
     const pick = current && state.folders.some((f) => f.id === current) ? current : '';
 
     const rootRow = (selected) => `
-      <div class="entry-folder-tree-row entry-folder-tree-row-root${selected ? ' is-selected' : ''}" data-folder-id="" role="radio" aria-checked="${selected ? 'true' : 'false'}" tabindex="0">
+      <div
+        class="entry-folder-tree-row entry-folder-tree-row-root${selected ? ' is-selected' : ''}"
+        data-folder-id=""
+        role="radio"
+        aria-checked="${selected ? 'true' : 'false'}"
+        tabindex="0"
+      >
         <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
         <span class="entry-folder-tree-name">Sans projet</span>
         <span class="entry-folder-tree-check" aria-hidden="true"><i data-lucide="check-circle"></i></span>
@@ -154,9 +164,22 @@ export function createProjects(deps) {
       const hasChildren = children.length > 0;
       return `
       <div class="entry-folder-tree-children${expanded ? ' is-expanded' : ''}" data-folder-id="${esc(f.id)}">
-        <div class="entry-folder-tree-row${selected ? ' is-selected' : ''}${child ? ' is-child' : ''}" data-folder-id="${esc(f.id)}" role="radio" aria-checked="${selected ? 'true' : 'false'}" tabindex="0">
+        <div
+          class="entry-folder-tree-row${selected ? ' is-selected' : ''}${child ? ' is-child' : ''}"
+          data-folder-id="${esc(f.id)}"
+          role="radio"
+          aria-checked="${selected ? 'true' : 'false'}"
+          tabindex="0"
+        >
           ${hasChildren ? `
-          <button type="button" class="entry-folder-tree-toggle" data-action="toggle-folder-tree" data-parent-id="${esc(f.id)}" aria-expanded="${expanded ? 'true' : 'false'}" tabindex="-1">
+          <button
+            type="button"
+            class="entry-folder-tree-toggle"
+            data-action="toggle-folder-tree"
+            data-parent-id="${esc(f.id)}"
+            aria-expanded="${expanded ? 'true' : 'false'}"
+            tabindex="-1"
+          >
             <i data-lucide="chevron-right" class="entry-folder-tree-chevron"></i>
           </button>` : '<span class="entry-folder-tree-spacer" aria-hidden="true"></span>'}
           <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
@@ -170,7 +193,11 @@ export function createProjects(deps) {
       </div>`;
     };
 
-    tree.innerHTML = rootRow(pick === '') + topLevelFolders(state.folders).map((f) => row(f, { selected: f.id === pick })).join('');
+    tree.replaceChildren();
+    setHtml(
+      tree,
+      rootRow(pick === '') + topLevelFolders(state.folders).map((f) => row(f, { selected: f.id === pick })).join(''),
+    );
     hidden.value = pick;
     refreshIcons(tree);
     tree.classList.add('is-collapsed');
@@ -279,7 +306,7 @@ export function createProjects(deps) {
     return targets.length;
   }
 
-  function indentedFolderOptions(excludeId = '', selectedId = '', { excludeTree = false } = {}) {
+  function folderSelectEntries(excludeId = '', { excludeTree = false } = {}) {
     const blocked = new Set();
     if (excludeId) {
       blocked.add(excludeId);
@@ -287,20 +314,34 @@ export function createProjects(deps) {
         folderDescendantIds(state.folders, excludeId).forEach((id) => blocked.add(id));
       }
     }
-    const lines = [];
+    const entries = [];
     const walk = (folder, depth) => {
       folderChildren(state.folders, folder.id).forEach((c) => {
         if (blocked.has(c.id)) return;
-        lines.push(`<option value="${esc(c.id)}" ${c.id === selectedId ? 'selected' : ''}>${'&nbsp;&nbsp;'.repeat(depth)}${esc(c.name)}</option>`);
+        entries.push({ value: c.id, label: `${'\u00a0\u00a0'.repeat(depth)}${c.name}` });
         walk(c, depth + 1);
       });
     };
     topLevelFolders(state.folders).forEach((f) => {
       if (blocked.has(f.id)) return;
-      lines.push(`<option value="${esc(f.id)}" ${f.id === selectedId ? 'selected' : ''}>${esc(f.name)}</option>`);
+      entries.push({ value: f.id, label: f.name });
       walk(f, 1);
     });
-    return lines.join('');
+    return entries;
+  }
+
+  function fillFolderSelect(sel, {
+    excludeId = '',
+    selectedId = '',
+    excludeTree = false,
+    rootLabel = 'Projet principal',
+  } = {}) {
+    if (!sel) return;
+    fillSelect(
+      sel,
+      [{ value: '', label: rootLabel }, ...folderSelectEntries(excludeId, { excludeTree })],
+      selectedId || '',
+    );
   }
 
   function renderFoldersManageList() {
@@ -316,20 +357,38 @@ export function createProjects(deps) {
     const manageItem = (f, depth) => `
       <li class="folders-manage-item" data-folder-id="${esc(f.id)}" style="--m-depth:${depth}">
         <div class="folder-manage-main">
-          <input type="text" class="folder-rename-input" value="${esc(f.name)}" maxlength="80" aria-label="Nom du projet">
+          <input
+            type="text"
+            class="folder-rename-input"
+            value="${esc(f.name)}"
+            maxlength="80"
+            aria-label="Nom du projet"
+          >
         </div>
         <div class="folder-manage-actions">
-          <button type="button" class="btn btn-ghost btn-icon btn-sm folder-rename-save" title="Enregistrer" aria-label="Enregistrer">
+          <button
+            type="button"
+            class="btn btn-ghost btn-icon btn-sm folder-rename-save"
+            title="Enregistrer"
+            aria-label="Enregistrer"
+          >
             <i data-lucide="check-circle"></i>
           </button>
-          <select class="folder-move-parent" aria-label="Déplacer sous">
-            <option value="" ${!f.parentId ? 'selected' : ''}>Projet principal</option>
-            ${indentedFolderOptions(f.id, f.parentId, { excludeTree: true })}
-          </select>
-          <button type="button" class="btn btn-ghost btn-icon btn-sm folder-move-save" title="Déplacer" aria-label="Déplacer">
+          <select class="folder-move-parent" aria-label="Déplacer sous"></select>
+          <button
+            type="button"
+            class="btn btn-ghost btn-icon btn-sm folder-move-save"
+            title="Déplacer"
+            aria-label="Déplacer"
+          >
             <i data-lucide="arrow-right"></i>
           </button>
-          <button type="button" class="btn btn-ghost btn-icon btn-sm btn-danger folder-delete-btn" title="Supprimer" aria-label="Supprimer">
+          <button
+            type="button"
+            class="btn btn-ghost btn-icon btn-sm btn-danger folder-delete-btn"
+            title="Supprimer"
+            aria-label="Supprimer"
+          >
             <i data-lucide="trash-2"></i>
           </button>
         </div>
@@ -341,6 +400,16 @@ export function createProjects(deps) {
     };
     topLevelFolders(state.folders).forEach((f) => walk(f, 0));
     setHtml(list, items.join(''));
+    list.querySelectorAll('select.folder-move-parent').forEach((sel) => {
+      const id = sel.closest('[data-folder-id]')?.dataset.folderId;
+      const folder = state.folders.find((f) => f.id === id);
+      if (!folder) return;
+      fillFolderSelect(sel, {
+        excludeId: folder.id,
+        selectedId: folder.parentId || '',
+        excludeTree: true,
+      });
+    });
     refreshIcons(list);
   }
 
@@ -351,7 +420,7 @@ export function createProjects(deps) {
     if (input) input.value = '';
     const parentSel = $('#folder-new-parent');
     if (parentSel) {
-      parentSel.innerHTML = `<option value="">Projet principal</option>${indentedFolderOptions('', parentId)}`;
+      fillFolderSelect(parentSel, { selectedId: parentId || '' });
       if (parentId && state.folders.some((f) => f.id === parentId)) {
         parentSel.value = parentId;
       }
@@ -409,10 +478,25 @@ export function createProjects(deps) {
   function entryListCardMarkup(e, i, { selectable = false, selected = false } = {}) {
     const selectMarkup = selectable ? `
         <label class="entry-card-select" data-action="toggle-select" data-id="${esc(e.id)}" title="Sélectionner">
-          <input type="checkbox" data-action="toggle-select" data-id="${esc(e.id)}" ${selected ? 'checked' : ''} aria-label="Sélectionner ${esc(e.title)}">
+          <input
+            type="checkbox"
+            data-action="toggle-select"
+            data-id="${esc(e.id)}"
+            ${selected
+            ?
+            'checked'
+            :
+            ''}
+            aria-label="Sélectionner ${esc(e.title)}"
+          >
         </label>` : '';
     return `
-      <div class="entry-card${selectable ? ' entry-card-selectable' : ''}${selected ? ' is-selected' : ''}" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-entry">
+      <div
+        class="entry-card${selectable ? ' entry-card-selectable' : ''}${selected ? ' is-selected' : ''}"
+        data-id="${esc(e.id)}"
+        style="animation-delay:${i * 0.04}s"
+        data-action="show-entry"
+      >
         ${selectMarkup}
         ${deps.entryAvatarMarkup(e)}
         <div class="entry-info">
@@ -436,7 +520,13 @@ export function createProjects(deps) {
           <button type="button" class="btn-icon" title="Copier" data-action="copy-password" data-id="${esc(e.id)}">
             <i data-lucide="copy"></i>
           </button>
-          <button type="button" class="btn-icon btn-danger" title="Supprimer" data-action="delete-entry" data-id="${esc(e.id)}">
+          <button
+            type="button"
+            class="btn-icon btn-danger"
+            title="Supprimer"
+            data-action="delete-entry"
+            data-id="${esc(e.id)}"
+          >
             <i data-lucide="trash-2"></i>
           </button>
         </div>
@@ -584,17 +674,37 @@ export function createProjects(deps) {
       return count <= 1 ? `${count} clé` : `${count} clés`;
     };
 
-    const folderSvg = `<svg class="project-folder-svg" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
+    const folderSvg = `
+      <svg class="project-folder-svg" xmlns="http://www.w3.org/2000/svg"
+        width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9
+          L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+      </svg>`;
 
     const folderRow = (f, depth) => {
       const children = folderChildren(state.folders, f.id);
       const collapsed = state.collapsedProjectIds?.includes(f.id);
       const childCount = children.length;
       return `
-      <div class="project-folder${collapsed ? ' is-collapsed' : ''}" data-folder-id="${esc(f.id)}" role="listitem" style="--folder-depth:${depth}">
+      <div
+        class="project-folder${collapsed ? ' is-collapsed' : ''}"
+        data-folder-id="${esc(f.id)}"
+        role="listitem"
+        style="--folder-depth:${depth}"
+      >
         <div class="project-folder-row">
           ${childCount ? `
-          <button type="button" class="project-folder-toggle" data-action="toggle-subs" data-parent-id="${esc(f.id)}" aria-expanded="${collapsed ? 'false' : 'true'}" title="Déplier / replier" aria-label="Déplier / replier">
+          <button
+            type="button"
+            class="project-folder-toggle"
+            data-action="toggle-subs"
+            data-parent-id="${esc(f.id)}"
+            aria-expanded="${collapsed ? 'false' : 'true'}"
+            title="Déplier / replier"
+            aria-label="Déplier / replier"
+          >
             <i data-lucide="chevron-right" class="project-subs-chevron"></i>
           </button>` : `<span class="project-folder-toggle-spacer" aria-hidden="true"></span>`}
           <button type="button" class="project-folder-main" data-action="open-project" title="Ouvrir ${esc(f.name)}">
@@ -605,13 +715,31 @@ export function createProjects(deps) {
             }</span>
           </button>
           <div class="project-folder-actions">
-            <button type="button" class="project-row-btn" data-action="toggle-move-project" title="Déplacer" aria-label="Déplacer">
+            <button
+              type="button"
+              class="project-row-btn"
+              data-action="toggle-move-project"
+              title="Déplacer"
+              aria-label="Déplacer"
+            >
               <i data-lucide="arrow-right"></i>
             </button>
-            <button type="button" class="project-row-btn" data-action="rename-project" title="Renommer" aria-label="Renommer">
+            <button
+              type="button"
+              class="project-row-btn"
+              data-action="rename-project"
+              title="Renommer"
+              aria-label="Renommer"
+            >
               <i data-lucide="pencil"></i>
             </button>
-            <button type="button" class="project-row-btn project-row-btn-danger" data-action="delete-project" title="Supprimer le projet" aria-label="Supprimer le projet">
+            <button
+              type="button"
+              class="project-row-btn project-row-btn-danger"
+              data-action="delete-project"
+              title="Supprimer le projet"
+              aria-label="Supprimer le projet"
+            >
               <i data-lucide="trash-2"></i>
             </button>
           </div>
@@ -635,7 +763,15 @@ export function createProjects(deps) {
         <li class="project-sub-item${subCollapsed ? ' is-collapsed' : ''}" data-folder-id="${esc(c.id)}">
           <div class="project-sub-row">
             ${subChildren.length ? `
-            <button type="button" class="project-sub-toggle" data-action="toggle-subs" data-parent-id="${esc(c.id)}" aria-expanded="${subCollapsed ? 'false' : 'true'}" title="Déplier / replier" aria-label="Déplier / replier">
+            <button
+              type="button"
+              class="project-sub-toggle"
+              data-action="toggle-subs"
+              data-parent-id="${esc(c.id)}"
+              aria-expanded="${subCollapsed ? 'false' : 'true'}"
+              title="Déplier / replier"
+              aria-label="Déplier / replier"
+            >
               <i data-lucide="chevron-right" class="project-subs-chevron"></i>
             </button>` : `<span class="project-sub-spacer" aria-hidden="true"></span>`}
             <button type="button" class="project-sub-main" data-action="open-project" title="Ouvrir ${esc(c.name)}">
@@ -644,13 +780,31 @@ export function createProjects(deps) {
               <span class="project-sub-meta">${esc(countLabelFor(c.id))}</span>
             </button>
             <div class="project-sub-actions">
-              <button type="button" class="project-row-btn" data-action="toggle-move-project" title="Déplacer" aria-label="Déplacer">
+              <button
+                type="button"
+                class="project-row-btn"
+                data-action="toggle-move-project"
+                title="Déplacer"
+                aria-label="Déplacer"
+              >
                 <i data-lucide="arrow-right"></i>
               </button>
-              <button type="button" class="project-row-btn" data-action="rename-project" title="Renommer" aria-label="Renommer">
+              <button
+                type="button"
+                class="project-row-btn"
+                data-action="rename-project"
+                title="Renommer"
+                aria-label="Renommer"
+              >
                 <i data-lucide="pencil"></i>
               </button>
-              <button type="button" class="project-row-btn project-row-btn-danger" data-action="delete-project" title="Supprimer le sous-projet" aria-label="Supprimer le sous-projet">
+              <button
+                type="button"
+                class="project-row-btn project-row-btn-danger"
+                data-action="delete-project"
+                title="Supprimer le sous-projet"
+                aria-label="Supprimer le sous-projet"
+              >
                 <i data-lucide="trash-2"></i>
               </button>
             </div>
@@ -664,7 +818,13 @@ export function createProjects(deps) {
       return `
         <div class="project-group${collapsed ? ' is-collapsed' : ''}" role="listitem">
           <article class="project-row" data-folder-id="${esc(f.id)}">
-            <button type="button" class="project-row-delete" data-action="delete-project" title="Supprimer le projet" aria-label="Supprimer le projet">
+            <button
+              type="button"
+              class="project-row-delete"
+              data-action="delete-project"
+              title="Supprimer le projet"
+              aria-label="Supprimer le projet"
+            >
               <i data-lucide="trash-2"></i>
             </button>
             <button type="button" class="project-row-main" data-action="open-project" title="Ouvrir ${esc(f.name)}">
@@ -680,7 +840,13 @@ export function createProjects(deps) {
           </article>
           ${children.length ? `
           <div class="project-subs${collapsed ? ' is-collapsed' : ''}" data-parent-id="${esc(f.id)}">
-            <button type="button" class="project-subs-toggle" data-action="toggle-subs" data-parent-id="${esc(f.id)}" aria-expanded="${collapsed ? 'false' : 'true'}">
+            <button
+              type="button"
+              class="project-subs-toggle"
+              data-action="toggle-subs"
+              data-parent-id="${esc(f.id)}"
+              aria-expanded="${collapsed ? 'false' : 'true'}"
+            >
               <i data-lucide="chevron-right" class="project-subs-chevron"></i>
               <span>${children.length} sous-projet${children.length > 1 ? 's' : ''}</span>
             </button>
@@ -748,7 +914,9 @@ export function createProjects(deps) {
         <input type="checkbox" id="confirm-keep-children">
         <span class="confirm-option-body">
           <span class="confirm-option-title">Conserver les sous-projets et leurs clés</span>
-          <span class="confirm-option-hint">${descendants.size} sous-projet(s) seront conservés, le premier niveau devenant projet principal.</span>
+          <span class="confirm-option-hint">
+            ${descendants.size} sous-projet(s) conservés, premier niveau en projet principal.
+          </span>
         </span>
       </label>` : ''}`;
     deps.showDeleteConfirm(
@@ -808,8 +976,11 @@ export function createProjects(deps) {
     }
     const select = $('#move-project-parent');
     if (select) {
-      setHtml(select, `<option value="">Projet principal</option>${indentedFolderOptions(folderId, folder.parentId, { excludeTree: true })}`);
-      select.value = folder.parentId || '';
+      fillFolderSelect(select, {
+        excludeId: folderId,
+        selectedId: folder.parentId || '',
+        excludeTree: true,
+      });
     }
     syncMoveProjectPreview();
     openModal($('#modal-move-project'));

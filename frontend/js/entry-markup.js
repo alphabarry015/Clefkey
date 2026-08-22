@@ -58,7 +58,17 @@ export function createEntryMarkup(deps) {
     }
     return `
       <div class="entry-avatar entry-icon entry-icon-branded">
-        <img class="entry-favicon" src="${esc(faviconUrl)}" alt="" width="24" height="24" loading="lazy" decoding="async" data-site-url="${esc(siteUrl)}" onerror="window.onFaviconError(this)">
+        <img
+          class="entry-favicon"
+          src="${esc(faviconUrl)}"
+          alt=""
+          width="24"
+          height="24"
+          loading="lazy"
+          decoding="async"
+          data-site-url="${esc(siteUrl)}"
+          onerror="window.onFaviconError(this)"
+        >
         <span class="entry-letter">${letter}</span>
       </div>`;
   }

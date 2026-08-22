@@ -220,7 +220,11 @@ function splitBlock(block, firstCapacity, capacity) {
         room -= fieldHeight(field);
       } else {
         taken.push({ ...field, lines: field.lines.slice(0, maxLines) });
-        rest.push({ ...field, label: `${field.label.replace(' : ', '')} (suite) : `, lines: field.lines.slice(maxLines) });
+        rest.push({
+          ...field,
+          label: `${field.label.replace(' : ', '')} (suite) : `,
+          lines: field.lines.slice(maxLines),
+        });
         room = 0;
       }
     }

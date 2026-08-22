@@ -12,7 +12,7 @@ import {
 import { setRecoveryCodeValue } from './recovery-input.js';
 import { setLucideIcon } from './icons.js';
 import {
-  $, $$, toast, openModal, closeModal, syncBodyModalLock,
+  $, $$, toast, openModal, closeModal, syncBodyModalLock, setHtml,
 } from './ui.js';
 
 export function createAuthSession(deps) {
@@ -209,7 +209,7 @@ export function createAuthSession(deps) {
     $('#btn-confirm-ok').disabled = true;
     const options = $('#confirm-options');
     if (options) {
-      options.innerHTML = '';
+      options.replaceChildren();
       options.classList.add('hidden');
     }
     state.confirmDeleteName = null;
@@ -247,7 +247,7 @@ export function createAuthSession(deps) {
     if (input) input.placeholder = options.placeholder || 'Nom de la clé';
     const optionsBox = $('#confirm-options');
     if (optionsBox) {
-      optionsBox.innerHTML = options.optionsHtml || '';
+      setHtml(optionsBox, options.optionsHtml || '');
       optionsBox.classList.toggle('hidden', !options.optionsHtml);
     }
     state.confirmDeleteName = entry.title;

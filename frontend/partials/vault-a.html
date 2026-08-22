@@ -68,7 +68,13 @@
         </div>
         <div class="topbar-actions">
           <div class="theme-switch-host topbar-theme" data-theme-switch></div>
-          <button type="button" id="btn-profile-sidebar" class="sidebar-user topbar-user" title="Mon profil" aria-label="Mon profil">
+          <button
+            type="button"
+            id="btn-profile-sidebar"
+            class="sidebar-user topbar-user"
+            title="Mon profil"
+            aria-label="Mon profil"
+          >
             <div id="user-avatar" class="user-avatar" title=""></div>
           </button>
         </div>
@@ -81,23 +87,53 @@
           </section>
 
           <section class="dash-actions" aria-label="Actions rapides">
-            <button type="button" class="dash-action-btn" data-action="dash-action" data-target="new-key" title="Ajouter une nouvelle clé">
+            <button
+              type="button"
+              class="dash-action-btn"
+              data-action="dash-action"
+              data-target="new-key"
+              title="Ajouter une nouvelle clé"
+            >
               <span class="dash-action-icon"><i data-lucide="plus"></i></span>
               <span class="dash-action-label">Nouvelle clé</span>
             </button>
-            <button type="button" class="dash-action-btn" data-action="dash-action" data-target="password" title="Générer un mot de passe fort">
+            <button
+              type="button"
+              class="dash-action-btn"
+              data-action="dash-action"
+              data-target="password"
+              title="Générer un mot de passe fort"
+            >
               <span class="dash-action-icon"><i data-lucide="key-round"></i></span>
               <span class="dash-action-label">Mot de passe fort</span>
             </button>
-            <button type="button" class="dash-action-btn" data-action="dash-action" data-target="passphrase" title="Générer une passphrase">
+            <button
+              type="button"
+              class="dash-action-btn"
+              data-action="dash-action"
+              data-target="passphrase"
+              title="Générer une passphrase"
+            >
               <span class="dash-action-icon"><i data-lucide="dices"></i></span>
               <span class="dash-action-label">Passphrase</span>
             </button>
-            <button type="button" class="dash-action-btn" data-action="dash-action" data-target="audit" title="Vérifier fuites et compromissions">
+            <button
+              type="button"
+              class="dash-action-btn"
+              data-action="dash-action"
+              data-target="audit"
+              title="Vérifier fuites et compromissions"
+            >
               <span class="dash-action-icon"><i data-lucide="shield-check"></i></span>
               <span class="dash-action-label">Audit</span>
             </button>
-            <button type="button" class="dash-action-btn" data-action="dash-action" data-target="project" title="Créer un projet">
+            <button
+              type="button"
+              class="dash-action-btn"
+              data-action="dash-action"
+              data-target="project"
+              title="Créer un projet"
+            >
               <span class="dash-action-icon"><i data-lucide="layers"></i></span>
               <span class="dash-action-label">Projet</span>
             </button>
@@ -123,11 +159,28 @@
             <button id="btn-clear-search" class="btn-clear hidden" aria-label="Effacer"><i data-lucide="x"></i></button>
           </div>
           <div class="vault-view-toggle" role="group" aria-label="Format d'affichage">
-            <button type="button" class="view-mode-btn active" data-view-mode="grid" title="Vue cartes" aria-label="Vue cartes">
+            <button
+              type="button"
+              class="view-mode-btn active"
+              data-view-mode="grid"
+              title="Vue cartes"
+              aria-label="Vue cartes"
+            >
               <i data-lucide="layout-dashboard"></i>
             </button>
             <button type="button" class="view-mode-btn" data-view-mode="list" title="Vue liste" aria-label="Vue liste">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <line x1="8" y1="6" x2="21" y2="6"></line>
                 <line x1="8" y1="12" x2="21" y2="12"></line>
                 <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -184,7 +237,13 @@
         <div id="projects-view" class="projects-view hidden">
           <form id="form-project-page-create" class="projects-create" autocomplete="off">
             <label class="sr-only" for="project-page-new-name">Nom du projet</label>
-            <input type="text" id="project-page-new-name" maxlength="80" placeholder="Nom du projet (ex. Perso, Travail…)" required>
+            <input
+              type="text"
+              id="project-page-new-name"
+              maxlength="80"
+              placeholder="Nom du projet (ex. Perso, Travail…)"
+              required
+            >
             <button type="submit" class="btn btn-primary" id="btn-project-page-create">
                             <span>Créer</span>
             </button>
@@ -196,11 +255,34 @@
               <div class="projects-section-tools">
                 <span id="projects-count-label" class="projects-section-count">0</span>
                 <div class="vault-view-toggle" role="group" aria-label="Format d'affichage des projets">
-                  <button type="button" class="view-mode-btn" data-projects-view="grid" title="Vue cartes" aria-label="Vue cartes">
+                  <button
+                    type="button"
+                    class="view-mode-btn"
+                    data-projects-view="grid"
+                    title="Vue cartes"
+                    aria-label="Vue cartes"
+                  >
                     <i data-lucide="layout-dashboard"></i>
                   </button>
-                  <button type="button" class="view-mode-btn" data-projects-view="list" title="Vue liste" aria-label="Vue liste">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <button
+                    type="button"
+                    class="view-mode-btn"
+                    data-projects-view="list"
+                    title="Vue liste"
+                    aria-label="Vue liste"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
                       <line x1="8" y1="6" x2="21" y2="6"></line>
                       <line x1="8" y1="12" x2="21" y2="12"></line>
                       <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -234,18 +316,38 @@
                 <p id="project-detail-meta" class="project-detail-meta">0 clé</p>
               </div>
               <div class="project-detail-heading-actions">
-                <button type="button" id="btn-project-detail-subproject" class="btn btn-ghost btn-sm" title="Créer un sous-projet">
+                <button
+                  type="button"
+                  id="btn-project-detail-subproject"
+                  class="btn btn-ghost btn-sm"
+                  title="Créer un sous-projet"
+                >
                                     <span>Sous-projet</span>
                 </button>
-                <button type="button" id="btn-project-detail-move" class="btn btn-ghost btn-sm" title="Déplacer ce projet">
+                <button
+                  type="button"
+                  id="btn-project-detail-move"
+                  class="btn btn-ghost btn-sm"
+                  title="Déplacer ce projet"
+                >
                   <i data-lucide="arrow-right"></i>
                   <span>Déplacer</span>
                 </button>
-                <button type="button" id="btn-project-detail-rename" class="btn btn-ghost btn-sm" title="Renommer ce projet">
+                <button
+                  type="button"
+                  id="btn-project-detail-rename"
+                  class="btn btn-ghost btn-sm"
+                  title="Renommer ce projet"
+                >
                   <i data-lucide="pencil"></i>
                   <span>Renommer</span>
                 </button>
-                <button type="button" id="btn-project-detail-transfer" class="btn btn-secondary btn-sm" title="Transférer des clés">
+                <button
+                  type="button"
+                  id="btn-project-detail-transfer"
+                  class="btn btn-secondary btn-sm"
+                  title="Transférer des clés"
+                >
                                     <span>Transférer</span>
                 </button>
                 <button type="button" id="btn-project-detail-add" class="btn btn-primary btn-sm">

@@ -67,7 +67,13 @@ export function createTransfer(deps) {
     hidden.value = pick;
 
     const rootRow = (selected) => `
-      <div class="entry-folder-tree-row entry-folder-tree-row-root${selected ? ' is-selected' : ''}" data-folder-id="" role="radio" aria-checked="${selected ? 'true' : 'false'}" tabindex="0">
+      <div
+        class="entry-folder-tree-row entry-folder-tree-row-root${selected ? ' is-selected' : ''}"
+        data-folder-id=""
+        role="radio"
+        aria-checked="${selected ? 'true' : 'false'}"
+        tabindex="0"
+      >
         <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
         <span class="entry-folder-tree-name">Sans projet</span>
         <span class="entry-folder-tree-check" aria-hidden="true"><i data-lucide="check-circle"></i></span>
@@ -78,9 +84,22 @@ export function createTransfer(deps) {
       const hasChildren = children.length > 0;
       return `
       <div class="entry-folder-tree-children${expanded ? ' is-expanded' : ''}" data-folder-id="${esc(f.id)}">
-        <div class="entry-folder-tree-row${selected ? ' is-selected' : ''}${child ? ' is-child' : ''}" data-folder-id="${esc(f.id)}" role="radio" aria-checked="${selected ? 'true' : 'false'}" tabindex="0">
+        <div
+          class="entry-folder-tree-row${selected ? ' is-selected' : ''}${child ? ' is-child' : ''}"
+          data-folder-id="${esc(f.id)}"
+          role="radio"
+          aria-checked="${selected ? 'true' : 'false'}"
+          tabindex="0"
+        >
           ${hasChildren ? `
-          <button type="button" class="entry-folder-tree-toggle" data-action="toggle-folder-tree" data-parent-id="${esc(f.id)}" aria-expanded="${expanded ? 'true' : 'false'}" tabindex="-1">
+          <button
+            type="button"
+            class="entry-folder-tree-toggle"
+            data-action="toggle-folder-tree"
+            data-parent-id="${esc(f.id)}"
+            aria-expanded="${expanded ? 'true' : 'false'}"
+            tabindex="-1"
+          >
             <i data-lucide="chevron-right" class="entry-folder-tree-chevron"></i>
           </button>` : '<span class="entry-folder-tree-spacer" aria-hidden="true"></span>'}
           <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="layers"></i></span>
@@ -94,7 +113,11 @@ export function createTransfer(deps) {
       </div>`;
     };
 
-    tree.innerHTML = rootRow(pick === '') + topLevelFolders(state.folders).map((f) => row(f, { selected: f.id === pick })).join('');
+    tree.replaceChildren();
+    setHtml(
+      tree,
+      rootRow(pick === '') + topLevelFolders(state.folders).map((f) => row(f, { selected: f.id === pick })).join(''),
+    );
     refreshIcons(tree);
     tree.classList.add('is-collapsed');
     tree.classList.remove('is-open');

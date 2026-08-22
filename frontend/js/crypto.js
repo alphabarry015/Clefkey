@@ -165,10 +165,13 @@ export async function deriveKey(masterPassword, salt) {
     const msg = err && err.message ? String(err.message) : '';
     if (/memory|out of memory|Array buffer|Wasm|WebAssembly/i.test(msg)) {
       throw new Error(
-        'Dérivation de clé interrompue (mémoire insuffisante). Fermez des onglets, réessayez, ou utilisez Chrome / Firefox / Edge à jour.',
+        'Dérivation de clé interrompue (mémoire insuffisante). Fermez des onglets, '
+        + 'réessayez, ou utilisez Chrome / Firefox / Edge à jour.',
       );
     }
-    throw new Error(msg || 'Échec de la dérivation Argon2. Navigateur non supporté ou trop ancien (Safari 16+ recommandé).');
+    throw new Error(
+      msg || 'Échec de la dérivation Argon2. Navigateur trop ancien (Safari 16+ recommandé).',
+    );
   }
 }
 

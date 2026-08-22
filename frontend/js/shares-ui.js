@@ -23,17 +23,40 @@ export function createShares(deps) {
     }
     empty.classList.add('hidden');
     setHtml(list, state.sharesReceived.map((e, i) => `
-      <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-share-received">
+      <div
+        class="entry-card"
+        data-id="${esc(e.id)}"
+        style="animation-delay:${i * 0.04}s"
+        data-action="show-share-received"
+      >
         ${deps.entryAvatarMarkup(e)}
         <div class="entry-info">
           <div class="entry-title">${esc(e.title)}</div>
-          <div class="entry-username">De ${esc(e.sender_display_name || e.sender_email)}${e.share_note ? ` · ${esc(e.share_note.length > 60 ? `${e.share_note.slice(0, 60)}…` : e.share_note)}` : ''}</div>
+          <div class="entry-username">
+            De ${esc(e.sender_display_name || e.sender_email)}${
+              e.share_note
+                ? ` · ${esc(e.share_note.length > 60 ? `${e.share_note.slice(0, 60)}…` : e.share_note)}`
+                : ''
+            }
+          </div>
         </div>
         <div class="entry-actions">
-          <button type="button" class="btn-icon" title="Copier" data-action="copy-share-received" data-id="${esc(e.id)}">
+          <button
+            type="button"
+            class="btn-icon"
+            title="Copier"
+            data-action="copy-share-received"
+            data-id="${esc(e.id)}"
+          >
             <i data-lucide="copy"></i>
           </button>
-          <button type="button" class="btn-icon btn-danger" title="Retirer" data-action="delete-share" data-id="${esc(e.id)}">
+          <button
+            type="button"
+            class="btn-icon btn-danger"
+            title="Retirer"
+            data-action="delete-share"
+            data-id="${esc(e.id)}"
+          >
             <i data-lucide="trash-2"></i>
           </button>
         </div>
@@ -61,7 +84,13 @@ export function createShares(deps) {
           <div class="entry-username">À ${esc(e.recipient_display_name || e.recipient_email)}</div>
         </div>
         <div class="entry-actions">
-          <button type="button" class="btn-icon btn-danger" title="Révoquer" data-action="delete-share" data-id="${esc(e.id)}">
+          <button
+            type="button"
+            class="btn-icon btn-danger"
+            title="Révoquer"
+            data-action="delete-share"
+            data-id="${esc(e.id)}"
+          >
             <i data-lucide="trash-2"></i>
           </button>
         </div>
@@ -231,8 +260,18 @@ export function createShares(deps) {
       const when = formatContactDate(c.last_shared_at);
       const [c1, c2] = getAvatarColor(label);
       return `
-        <button type="button" class="contact-card" data-action="show-contact" data-email="${esc(c.email)}" style="animation-delay:${i * 0.04}s">
-          <div class="contact-avatar" aria-hidden="true" style="background:linear-gradient(135deg,${c1},${c2})">${esc(contactInitials(c))}</div>
+        <button
+          type="button"
+          class="contact-card"
+          data-action="show-contact"
+          data-email="${esc(c.email)}"
+          style="animation-delay:${i * 0.04}s"
+        >
+          <div
+            class="contact-avatar"
+            aria-hidden="true"
+            style="background:linear-gradient(135deg,${c1},${c2})"
+          >${esc(contactInitials(c))}</div>
           <div class="contact-info">
             <div class="contact-name">${esc(label)}</div>
             <div class="contact-email">${esc(c.email)}</div>
@@ -284,14 +323,25 @@ export function createShares(deps) {
       } else {
         sharesEmpty.classList.add('hidden');
         setHtml(sharesList, contact.shares.map((e, i) => `
-          <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-share-sent">
+          <div
+            class="entry-card"
+            data-id="${esc(e.id)}"
+            style="animation-delay:${i * 0.04}s"
+            data-action="show-share-sent"
+          >
             ${deps.entryAvatarMarkup(e)}
             <div class="entry-info">
               <div class="entry-title">${esc(e.title)}</div>
               <div class="entry-username">${esc(e.username || e.recipient_email || '')}</div>
             </div>
             <div class="entry-actions">
-              <button type="button" class="btn-icon btn-danger" title="Révoquer" data-action="delete-share" data-id="${esc(e.id)}">
+              <button
+                type="button"
+                class="btn-icon btn-danger"
+                title="Révoquer"
+                data-action="delete-share"
+                data-id="${esc(e.id)}"
+              >
                 <i data-lucide="trash-2"></i>
               </button>
             </div>
@@ -316,7 +366,10 @@ export function createShares(deps) {
     wrap.classList.remove('hidden');
     setHtml(chips, contacts.map((c) => {
       const label = c.display_name || c.email;
-      return `<button type="button" class="share-contact-chip" data-action="pick-share-contact" data-email="${esc(c.email)}" title="${esc(c.email)}">${esc(label)}</button>`;
+      return `
+        <button type="button" class="share-contact-chip"
+          data-action="pick-share-contact" data-email="${esc(c.email)}"
+          title="${esc(c.email)}">${esc(label)}</button>`;
     }).join(''));
   }
 

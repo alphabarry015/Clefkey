@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v235';
+const CACHE_VERSION = 'v236';
 const CACHE_STATIC = `clefkey-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
@@ -30,6 +30,8 @@ const PRECACHE = [
   '/css/vault-ds.css',
   '/css/docs.css',
   '/js/app.js',
+  '/js/app-compose.js',
+  '/js/app-nav.js',
   '/js/api.js',
   '/js/crypto.js',
   '/js/crypto-ssh.js',

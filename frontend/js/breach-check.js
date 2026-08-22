@@ -1,7 +1,7 @@
 /**
  * Vérification de compromission — logique partagée landing + coffre.
  *
- * Mot de passe : k-anonymity Have I Been Pwned (SHA-1 local, 5 caractères transmis).
+ * Mot de passe : k-anonymity Have I Been Pwned (empreinte locale, 5 caractères transmis).
  * E-mail       : API publique XposedOrNot (sans clé API).
  */
 
@@ -10,14 +10,46 @@ const XON_CHECK_URL = 'https://api.xposedornot.com/v1/check-email/';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-const SVG_ATTRS = 'xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
-export const RESULT_ICONS = {
-  safe: `<svg class="breach-result-icon" ${SVG_ATTRS}><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg>`,
-  pwned: `<svg class="breach-result-icon" ${SVG_ATTRS}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
-  error: `<svg class="breach-result-icon" ${SVG_ATTRS}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`,
-  pending: `<svg class="breach-result-icon breach-result-icon-spin" ${SVG_ATTRS}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`,
-};
+function svgEl(name, attrs = {}) {
+  const el = document.createElementNS(SVG_NS, name);
+  Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+  return el;
+}
+
+function breachResultIcon(kind) {
+  const spinning = kind === 'pending';
+  const svg = svgEl('svg', {
+    class: spinning ? 'breach-result-icon breach-result-icon-spin' : 'breach-result-icon',
+    xmlns: SVG_NS,
+    width: '16',
+    height: '16',
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    'stroke-width': '2',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+    'aria-hidden': 'true',
+  });
+  const addPath = (d) => svg.appendChild(svgEl('path', { d }));
+  if (kind === 'safe') {
+    addPath('M21.801 10A10 10 0 1 1 17 3.335');
+    addPath('m9 11 3 3L22 4');
+  } else if (kind === 'pwned') {
+    addPath('m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3');
+    addPath('M12 9v4');
+    addPath('M12 17h.01');
+  } else if (kind === 'error') {
+    svg.appendChild(svgEl('circle', { cx: '12', cy: '12', r: '10' }));
+    addPath('m15 9-6 6');
+    addPath('m9 9 6 6');
+  } else {
+    addPath('M21 12a9 9 0 1 1-6.219-8.56');
+  }
+  return svg;
+}
 
 export function isValidEmail(value) {
   return EMAIL_RE.test(String(value || '').trim());
@@ -32,7 +64,12 @@ function toHex(buffer) {
   return hex.toUpperCase();
 }
 
-export async function sha1(value) {
+/**
+ * Empreinte exigée par l’API k-anonymity Have I Been Pwned (Pwned Passwords).
+ * Ce n’est pas le hash du coffre (Argon2id + AES-GCM). SHA-256 ne matcherait pas
+ * l’index public HIBP, qui n’expose que des préfixes SHA-1.
+ */
+async function hibpRangeDigest(value) {
   if (!window.crypto || !window.crypto.subtle) {
     throw new Error('Web Crypto non disponible. Utilisez HTTPS ou un navigateur récent.');
   }
@@ -44,7 +81,7 @@ export async function sha1(value) {
  * @returns {Promise<number>} nombre d'occurrences dans les fuites (0 = non compromis).
  */
 export async function checkPassword(password) {
-  const hash = await sha1(password);
+  const hash = await hibpRangeDigest(password);
   const prefix = hash.substring(0, 5);
   const suffix = hash.substring(5);
   const response = await fetch(`${HIBP_RANGE_URL}${prefix}`);
@@ -107,19 +144,40 @@ export function formatEmailResult(result) {
 }
 
 export const PRIVACY_TEXT = {
-  password: 'Le mot de passe est hashé localement. Seuls 5 caractères du hash SHA-1 sont transmis.',
+  password: 'Le mot de passe est hashé localement. Seuls 5 caractères du hash k-anonymity HIBP sont transmis.',
   email: "L'adresse est interrogée auprès de XposedOrNot. Elle n'est ni stockée ni associée à votre compte.",
 };
 
 export const ADVICE_EXPLAIN = {
-  password: 'Le mot de passe est hashé en SHA-1 sur votre appareil. Seuls 5 caractères de ce hash sont transmis au service Have I Been Pwned, qui les compare aux mots de passe présents dans les fuites de données connues. Votre mot de passe ne quitte jamais votre appareil.',
-  email: "L'adresse est interrogée auprès du service public XposedOrNot, qui référence les fuites de données connues. Elle n'est ni stockée ni associée à votre compte.",
+  password: (
+    'Le mot de passe est hashé sur votre appareil selon le protocole '
+    + 'k-anonymity de Have I Been Pwned. Seuls 5 caractères de ce hash '
+    + 'sont transmis ; votre mot de passe ne quitte jamais l’appareil. '
+    + 'Le coffre, lui, utilise Argon2id et AES-GCM — pas cet empreinte d’audit.'
+  ),
+  email: (
+    "L'adresse est interrogée auprès du service public XposedOrNot, "
+    + "qui référence les fuites de données connues. Elle n'est ni stockée "
+    + "ni associée à votre compte."
+  ),
 };
 
 export const ADVICE_TIPS = {
-  safe: 'Bonnes pratiques : utilisez un mot de passe long et unique pour chaque site, activez la double authentification (2FA) et renouvelez vos mots de passe régulièrement.',
-  passwordPwned: 'Ce mot de passe a été exposé dans une fuite : changez-le immédiatement, partout où il est utilisé, et ne le réutilisez jamais. Activez la double authentification (2FA) sur les comptes concernés, puis générez un mot de passe unique et fort avec votre coffre.',
-  emailPwned: "Votre adresse apparaît dans une ou plusieurs fuites de données. Changez les mots de passe des comptes associés à cette adresse, activez la double authentification (2FA) et méfiez-vous des e-mails de hameçonnage ciblé (phishing).",
+  safe: (
+    'Bonnes pratiques : utilisez un mot de passe long et unique pour chaque site, '
+    + 'activez la double authentification (2FA) et renouvelez vos mots de passe '
+    + 'régulièrement.'
+  ),
+  passwordPwned: (
+    'Ce mot de passe a été exposé dans une fuite : changez-le immédiatement, '
+    + 'partout où il est utilisé, et ne le réutilisez jamais. Activez la 2FA '
+    + 'sur les comptes concernés, puis générez un mot de passe unique avec le coffre.'
+  ),
+  emailPwned: (
+    "Votre adresse apparaît dans une ou plusieurs fuites de données. "
+    + "Changez les mots de passe des comptes associés, activez la 2FA "
+    + "et méfiez-vous des e-mails de hameçonnage ciblé (phishing)."
+  ),
 };
 
 /**
@@ -183,7 +241,8 @@ export function bindBreachWidget(root, sel) {
     label.className = 'breach-result-text';
     label.textContent = text;
 
-    result.innerHTML = RESULT_ICONS[icon] || '';
+    result.replaceChildren();
+    result.appendChild(breachResultIcon(icon));
     result.appendChild(label);
     if (action) {
       const btn = document.createElement('button');

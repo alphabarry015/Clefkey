@@ -178,14 +178,19 @@ export function bindProjects(deps) {
       const group = toggleSubs.closest('.project-folder')
         ?? toggleSubs.closest('.project-sub-item')
         ?? toggleSubs.closest('.project-group');
-      const box = group?.querySelector(':scope > .project-folder-children, :scope > .project-sub-list, :scope > .project-subs');
+      const box = group?.querySelector(
+        ':scope > .project-folder-children, :scope > .project-sub-list, :scope > .project-subs',
+      );
       group?.classList.toggle('is-collapsed', set.has(parentId));
       box?.classList.toggle('is-collapsed', set.has(parentId));
       toggleSubs.setAttribute('aria-expanded', set.has(parentId) ? 'false' : 'true');
       return;
     }
 
-    const card = e.target.closest('.project-folder[data-folder-id], .project-sub-item[data-folder-id], .project-row[data-folder-id], .project-card[data-folder-id]');
+    const card = e.target.closest(
+      '.project-folder[data-folder-id], .project-sub-item[data-folder-id], '
+      + '.project-row[data-folder-id], .project-card[data-folder-id]',
+    );
     if (!card) return;
     const folderId = card.dataset.folderId;
     const folder = state.folders.find((f) => f.id === folderId);
@@ -335,7 +340,9 @@ export function bindProjects(deps) {
     if (toggle) {
       e.stopPropagation();
       const parentId = toggle.dataset.parentId;
-      const branch = treeRoot.querySelector(`.entry-folder-tree-children[data-folder-id="${parentId}"] > .entry-folder-tree-branch`);
+      const sel = `.entry-folder-tree-children[data-folder-id="${parentId}"]`
+        + ' > .entry-folder-tree-branch';
+      const branch = treeRoot.querySelector(sel);
       const parentRow = toggle.closest('.entry-folder-tree-children');
       if (branch) {
         branch.classList.toggle('is-collapsed');
@@ -421,7 +428,9 @@ export function bindProjects(deps) {
     if (toggle) {
       e.stopPropagation();
       const parentId = toggle.dataset.parentId;
-      const branch = treeRoot.querySelector(`.entry-folder-tree-children[data-folder-id="${parentId}"] > .entry-folder-tree-branch`);
+      const sel = `.entry-folder-tree-children[data-folder-id="${parentId}"]`
+        + ' > .entry-folder-tree-branch';
+      const branch = treeRoot.querySelector(sel);
       const parentRow = toggle.closest('.entry-folder-tree-children');
       if (branch) {
         branch.classList.toggle('is-collapsed');
@@ -499,7 +508,12 @@ export function bindProjects(deps) {
         toast('Nom du projet requis', 'error');
         return;
       }
-      if (state.folders.some((f) => f.id !== folderId && (f.parentId || '') === (folder.parentId || '') && f.name.toLowerCase() === name.toLowerCase())) {
+      const duplicate = state.folders.some((f) => (
+        f.id !== folderId
+        && (f.parentId || '') === (folder.parentId || '')
+        && f.name.toLowerCase() === name.toLowerCase()
+      ));
+      if (duplicate) {
         toast('Ce projet existe déjà à cet emplacement', 'error');
         return;
       }
@@ -536,7 +550,12 @@ export function bindProjects(deps) {
           return;
         }
       }
-      if (state.folders.some((f) => f.id !== folderId && f.parentId === newParentId && f.name.toLowerCase() === folder.name.toLowerCase())) {
+      const nameClash = state.folders.some((f) => (
+        f.id !== folderId
+        && f.parentId === newParentId
+        && f.name.toLowerCase() === folder.name.toLowerCase()
+      ));
+      if (nameClash) {
         toast('Ce nom existe déjà à cet emplacement', 'error');
         return;
       }

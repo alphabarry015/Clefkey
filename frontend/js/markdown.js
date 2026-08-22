@@ -119,9 +119,9 @@ export function renderMarkdown(source, options = {}) {
         i += 1;
       }
       i += 1;
-      parts.push(
-        `<pre class="md-pre"><code class="language-${escapeHtml(lang || 'text')}">${escapeHtml(code.join('\n'))}</code></pre>`,
-      );
+      const langClass = escapeHtml(lang || 'text');
+      const codeHtml = escapeHtml(code.join('\n'));
+      parts.push(`<pre class="md-pre"><code class="language-${langClass}">${codeHtml}</code></pre>`);
       continue;
     }
 

@@ -323,5 +323,9 @@
 
 .sidebar-lock-btn svg,
 .sidebar-lock-btn .lucide { width: 16px; height: 16px; }
-.sidebar-lock-btn:hover { color: var(--error); border-color: rgba(248, 113, 113, 0.45); background: var(--error-subtle); }
+.sidebar-lock-btn:hover {
+  color: var(--error);
+  border-color: rgba(248, 113, 113, 0.45);
+  background: var(--error-subtle);
+}
 

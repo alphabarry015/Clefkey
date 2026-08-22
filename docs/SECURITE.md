@@ -15,6 +15,7 @@
 | Session navigateur | Soft lock : `sessionStorage` = JWT + `authMaterial` (blobs chiffrés). **Jamais** de clés en clair. F5 → écran mot de passe maître |
 | Verrouillage | Soft lock : idle 15 min ; onglet caché ≥ 1 min. Déconnexion = hard logout (efface tout) |
 | Entrées | Chiffrement client (AES-GCM via WebCrypto) ; blob max 256 KiB |
+| Audit fuites | HIBP k-anonymity : empreinte SHA-1 **uniquement** pour matcher l’index public (5 caractères transmis). Pas utilisé pour stocker ou dériver la clé du coffre |
 | Mot de passe maître | Min. 12 car., complexité, **refus listes SecLists** (navigateur). Changement depuis le profil : JWT + `current_auth_verifier`, sans consommer les clés de récupération |
 | Autofill navigateur | Désactivé volontairement (autocomplete off + clear secrets) |
 | Rate limiting | Login/register/… ; Upstash Redis si configuré, sinon mémoire |

@@ -104,7 +104,9 @@ export function topLevelFolders(folders) {
 
 export function folderChildren(folders, parentId) {
   if (!parentId) return [];
-  return (folders || []).filter((f) => f.parentId === parentId).sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+  return (folders || [])
+    .filter((f) => f.parentId === parentId)
+    .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
 }
 
 export function hasFolderChildren(folders, parentId) {

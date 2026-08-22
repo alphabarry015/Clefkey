@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import DateTime, ForeignKey, LargeBinary, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..database import Base
+from ..base import Base
 
 
 class VaultEntry(Base):

@@ -46,7 +46,11 @@ export function bindVault(deps) {
     const target = resolveEventElement(event);
     if (!target) return;
 
-    const root = target.closest('#dashboard-view, #dash-tiles-grid, #entries-list, #project-detail-list, #shares-received-list, #shares-sent-list, #contacts-list, #contacts-detail-shares, #share-pick-entry-list, #share-contacts-chips');
+    const root = target.closest(
+      '#dashboard-view, #dash-tiles-grid, #entries-list, #project-detail-list, '
+      + '#shares-received-list, #shares-sent-list, #contacts-list, '
+      + '#contacts-detail-shares, #share-pick-entry-list, #share-contacts-chips',
+    );
     if (!root) return;
 
     const actionEl = target.closest('[data-action]');

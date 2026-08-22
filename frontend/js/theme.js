@@ -71,14 +71,50 @@ export function themeSwitchMarkup(extraClass = '') {
   return `
     <div class="${cls}" role="group" aria-label="Apparence clair ou sombre" data-active="dark">
       <span class="theme-switch-thumb" aria-hidden="true"></span>
-      <button type="button" class="theme-switch-btn" data-theme-choice="light" aria-pressed="false" title="Clair" aria-label="Mode clair">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+      <button
+        type="button"
+        class="theme-switch-btn"
+        data-theme-choice="light"
+        aria-pressed="false"
+        title="Clair"
+        aria-label="Mode clair"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41"/>
+          <path d="M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
         </svg>
         <span class="theme-switch-label">${LABELS.light}</span>
       </button>
-      <button type="button" class="theme-switch-btn" data-theme-choice="dark" aria-pressed="false" title="Sombre" aria-label="Mode sombre">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <button
+        type="button"
+        class="theme-switch-btn"
+        data-theme-choice="dark"
+        aria-pressed="false"
+        title="Sombre"
+        aria-label="Mode sombre"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"/>
         </svg>
         <span class="theme-switch-label">${LABELS.dark}</span>
