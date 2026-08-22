@@ -65,15 +65,23 @@ function toHex(buffer) {
 }
 
 /**
- * Empreinte exigée par l’API k-anonymity Have I Been Pwned (Pwned Passwords).
- * Ce n’est pas le hash du coffre (Argon2id + AES-GCM). SHA-256 ne matcherait pas
- * l’index public HIBP, qui n’expose que des préfixes SHA-1.
+ * Empreinte de l’API range HIBP (Pwned Passwords, k-anonymity).
+ *
+ * L’index public n’existe qu’en SHA-1 (ou NTLM, plus faible). SHA-256 / AES
+ * ne peuvent pas le remplacer : un préfixe SHA-256 ne correspondrait à aucun
+ * bucket et la vérif serait fausse. Le coffre, lui, reste Argon2id + AES-GCM.
+ *
+ * @see https://haveibeenpwned.com/API/v3#PwnedPasswords
  */
 async function hibpRangeDigest(value) {
   if (!window.crypto || !window.crypto.subtle) {
     throw new Error('Web Crypto non disponible. Utilisez HTTPS ou un navigateur récent.');
   }
-  const digest = await window.crypto.subtle.digest('SHA-1', new TextEncoder().encode(value));
+  // SHA-1 : contrainte du protocole HIBP, pas un choix de stockage.
+  const digest = await window.crypto.subtle.digest(
+    'SHA-1',
+    new TextEncoder().encode(value),
+  );
   return toHex(digest);
 }
 
@@ -84,7 +92,9 @@ export async function checkPassword(password) {
   const hash = await hibpRangeDigest(password);
   const prefix = hash.substring(0, 5);
   const suffix = hash.substring(5);
-  const response = await fetch(`${HIBP_RANGE_URL}${prefix}`);
+  const response = await fetch(`${HIBP_RANGE_URL}${prefix}`, {
+    headers: { 'Add-Padding': 'true' },
+  });
   if (!response.ok) throw new Error('Service de vérification indisponible.');
   const text = await response.text();
   for (const line of text.split(/\r?\n/)) {
