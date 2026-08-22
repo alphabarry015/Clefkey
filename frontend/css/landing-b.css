@@ -35,15 +35,15 @@
 }
 
 .lp-btn-primary {
-  background: linear-gradient(180deg, #4a78e8 0%, var(--lp-blue) 100%);
+  background: linear-gradient(180deg, var(--accent-light) 0%, var(--lp-blue) 100%);
   color: var(--lp-white);
-  box-shadow: 0 8px 28px rgba(54, 98, 215, 0.35);
+  box-shadow: 0 8px 28px var(--accent-glow);
 }
 
 .lp-btn-primary:hover {
-  background: linear-gradient(180deg, #5a86f0 0%, #2f58c8 100%);
+  filter: brightness(1.08);
   transform: translateY(-1px);
-  box-shadow: 0 12px 32px rgba(54, 98, 215, 0.45);
+  box-shadow: 0 12px 32px var(--accent-glow);
 }
 
 .lp-btn-secondary {
@@ -102,7 +102,7 @@
 }
 
 .lp-section-alt {
-  background: linear-gradient(180deg, rgba(54, 98, 215, 0.08) 0%, transparent 42%);
+  background: linear-gradient(180deg, rgba(47, 95, 240), 0.08) 0%, transparent 42%);
 }
 
 .lp-section-inner {
@@ -163,7 +163,7 @@
 .lp-icon-panel svg {
   width: min(46%, 160px) !important;
   height: min(46%, 160px) !important;
-  color: #3662D7;
+  color: var(--lp-blue);
   stroke: currentColor;
   stroke-width: 1.5;
 }
@@ -215,7 +215,7 @@
 .lp-docs-list li {
   margin: 0;
   padding: 0 0 0 1rem;
-  border-left: 2px solid rgba(54, 98, 215, 0.55);
+  border-left: 2px solid rgba(47, 95, 240), 0.55);
 }
 
 .lp-feature-list strong,

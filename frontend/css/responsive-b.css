@@ -1,14 +1,11 @@
 /* Clefkey — responsive-b.css */
+@media (max-width: 900px) {
   .profile-view {
     width: 100%;
-    padding-left: 0;
-    padding-right: 0;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
-
-  .profile-banner,
-  .profile-content {
-    max-width: none;
-  }
+}
 
   .modal-overlay {
     align-items: center;

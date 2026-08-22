@@ -173,3 +173,110 @@ class AuthApiSmokeTests(TestCase):
             self.assertNotIn(key, body)
         self.assertEqual(body["email"], "profile@example.com")
 
+    def _register_user(self, email, master):
+        salt = generate_salt()
+        derived = derive_key(master, salt)
+        auth_verifier = create_auth_verifier(derived)
+        vault_key = generate_vault_key()
+        private_key, public_key = generate_keypair()
+        payload = {
+            "email": email,
+            "first_name": "Ada",
+            "last_name": "Lovelace",
+            "salt": b64_encode(salt),
+            "auth_verifier": b64_encode(auth_verifier),
+            "encrypted_vault_key": b64_encode(encrypt_bytes(vault_key, derived)),
+            "public_key": b64_encode(public_key),
+            "encrypted_private_key": b64_encode(encrypt_bytes(private_key, vault_key)),
+            "recovery_keys": _recovery_packages(vault_key),
+        }
+        reg = self.client.post("/auth/register", data=payload, content_type="application/json")
+        self.assertEqual(reg.status_code, 201, reg.content)
+        return {
+            "token": reg.json()["access_token"],
+            "salt": salt,
+            "auth_verifier": auth_verifier,
+            "vault_key": vault_key,
+        }
+
+    def test_change_password_requires_auth(self):
+        r = self.client.post(
+            "/auth/password",
+            data={
+                "current_auth_verifier": b64_encode(os.urandom(32)),
+                "auth_verifier": b64_encode(os.urandom(32)),
+                "encrypted_vault_key": b64_encode(os.urandom(60)),
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(r.status_code, 401)
+
+    def test_change_password_from_profile(self):
+        old_master = "AncienMdp-Fort99!!"
+        new_master = "NouveauMdp-Fort88!!"
+        created = self._register_user("pwd@example.com", old_master)
+        new_derived = derive_key(new_master, created["salt"])
+        new_verifier = create_auth_verifier(new_derived)
+        new_blob = encrypt_bytes(created["vault_key"], new_derived)
+
+        bad = self.client.post(
+            "/auth/password",
+            data={
+                "current_auth_verifier": b64_encode(os.urandom(32)),
+                "auth_verifier": b64_encode(new_verifier),
+                "encrypted_vault_key": b64_encode(new_blob),
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {created['token']}",
+        )
+        self.assertEqual(bad.status_code, 401)
+
+        same = self.client.post(
+            "/auth/password",
+            data={
+                "current_auth_verifier": b64_encode(created["auth_verifier"]),
+                "auth_verifier": b64_encode(created["auth_verifier"]),
+                "encrypted_vault_key": b64_encode(new_blob),
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {created['token']}",
+        )
+        self.assertEqual(same.status_code, 400)
+
+        ok = self.client.post(
+            "/auth/password",
+            data={
+                "current_auth_verifier": b64_encode(created["auth_verifier"]),
+                "auth_verifier": b64_encode(new_verifier),
+                "encrypted_vault_key": b64_encode(new_blob),
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {created['token']}",
+        )
+        self.assertEqual(ok.status_code, 200, ok.content)
+        self.assertIn("access_token", ok.json())
+        self.assertEqual(
+            VaultRecoveryKey.objects.filter(user__email="pwd@example.com").count(),
+            7,
+        )
+
+        old_login = self.client.post(
+            "/auth/login",
+            data={
+                "email": "pwd@example.com",
+                "auth_verifier": b64_encode(created["auth_verifier"]),
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(old_login.status_code, 401)
+
+        new_login = self.client.post(
+            "/auth/login",
+            data={
+                "email": "pwd@example.com",
+                "auth_verifier": b64_encode(new_verifier),
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(new_login.status_code, 200, new_login.content)
+

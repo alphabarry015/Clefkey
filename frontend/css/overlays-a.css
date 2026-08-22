@@ -197,38 +197,58 @@ body.modal-open .vault-layout {
   padding-right: 2rem;
 }
 
-.entry-type-pills {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.4rem;
-  padding: 0.25rem;
-  border-radius: 12px;
-  background: var(--bg-elevated);
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+.entry-type-menu {
+  margin-top: 0.4rem;
 }
 
-.entry-type-pill {
+.entry-type-option {
+  width: 100%;
   border: none;
-  background: transparent;
+  font: inherit;
+  text-align: left;
+}
+
+.entry-type-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.entry-type-option-hint {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry-oauth-providers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: -0.15rem 0 0.85rem;
+}
+
+.entry-oauth-chip {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
   color: var(--text-secondary);
-  border-radius: 9px;
-  padding: 0.55rem 0.45rem;
-  font-size: 0.8rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
   font-weight: 650;
   font-family: inherit;
   cursor: pointer;
   transition: var(--transition);
 }
 
-.entry-type-pill:hover {
+.entry-oauth-chip:hover {
   color: var(--text-primary);
-  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
-}
-
-.entry-type-pill.active {
-  background: var(--bg-secondary);
-  color: var(--accent);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-elevated));
 }
 
 .field-control {

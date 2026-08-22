@@ -29,7 +29,7 @@
               </button>
             </div>
           </div>
-          <div class="detail-field">
+          <div class="detail-field" id="detail-password-field">
             <label id="detail-password-label">Mot de passe</label>
             <div class="copyable-field">
               <span id="detail-password">••••••••••••</span>
@@ -167,10 +167,44 @@
             <div class="form-group">
               <label id="label-entry-type">Type</label>
               <input type="hidden" id="entry-type" value="login">
-              <div class="entry-type-pills" role="group" aria-labelledby="label-entry-type">
-                <button type="button" class="entry-type-pill active" data-entry-type="login">Connexion</button>
-                <button type="button" class="entry-type-pill" data-entry-type="api_key">Clé API</button>
-                <button type="button" class="entry-type-pill" data-entry-type="ssh_key">SSH</button>
+              <button type="button" id="entry-type-picker" class="detail-project-picker" aria-haspopup="listbox" aria-expanded="false" aria-controls="entry-type-menu" title="Choisir un type">
+                <span class="detail-project-picker-icon" id="entry-type-picker-icon" aria-hidden="true"><i data-lucide="globe"></i></span>
+                <span id="entry-type-picker-name" class="detail-project-picker-name">Connexion</span>
+                <i data-lucide="chevron-right" class="detail-project-picker-chevron"></i>
+              </button>
+              <div id="entry-type-menu" class="entry-folder-tree entry-type-menu is-collapsed" role="listbox" aria-labelledby="label-entry-type">
+                <button type="button" class="entry-folder-tree-row entry-type-option is-selected" data-entry-type="login" role="option" aria-selected="true">
+                  <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="globe"></i></span>
+                  <span class="entry-type-option-text">
+                    <span class="entry-folder-tree-name">Connexion</span>
+                    <span class="entry-type-option-hint">Site, identifiant, mot de passe</span>
+                  </span>
+                  <span class="entry-folder-tree-check" aria-hidden="true"><i data-lucide="check-circle"></i></span>
+                </button>
+                <button type="button" class="entry-folder-tree-row entry-type-option" data-entry-type="oauth" role="option" aria-selected="false">
+                  <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="fingerprint"></i></span>
+                  <span class="entry-type-option-text">
+                    <span class="entry-folder-tree-name">OAuth / SSO</span>
+                    <span class="entry-type-option-hint">Google, GitHub, Apple…</span>
+                  </span>
+                  <span class="entry-folder-tree-check" aria-hidden="true"><i data-lucide="check-circle"></i></span>
+                </button>
+                <button type="button" class="entry-folder-tree-row entry-type-option" data-entry-type="api_key" role="option" aria-selected="false">
+                  <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="key-round"></i></span>
+                  <span class="entry-type-option-text">
+                    <span class="entry-folder-tree-name">Clé API</span>
+                    <span class="entry-type-option-hint">Secret technique, console</span>
+                  </span>
+                  <span class="entry-folder-tree-check" aria-hidden="true"><i data-lucide="check-circle"></i></span>
+                </button>
+                <button type="button" class="entry-folder-tree-row entry-type-option" data-entry-type="ssh_key" role="option" aria-selected="false">
+                  <span class="entry-folder-tree-icon" aria-hidden="true"><i data-lucide="terminal"></i></span>
+                  <span class="entry-type-option-text">
+                    <span class="entry-folder-tree-name">SSH / stockage</span>
+                    <span class="entry-type-option-hint">Clé privée, hôte, NAS</span>
+                  </span>
+                  <span class="entry-folder-tree-check" aria-hidden="true"><i data-lucide="check-circle"></i></span>
+                </button>
               </div>
             </div>
             <div class="form-group entry-folder-group">
@@ -209,11 +243,20 @@
               <label for="entry-title" id="label-entry-title">Titre</label>
               <input type="text" id="entry-title" class="field-input" required placeholder="Netflix, Gmail, Banque…">
             </div>
+            <div id="entry-oauth-providers" class="entry-oauth-providers hidden" role="group" aria-label="Plateformes">
+              <button type="button" class="entry-oauth-chip" data-oauth-provider="Google" data-oauth-url="https://accounts.google.com">Google</button>
+              <button type="button" class="entry-oauth-chip" data-oauth-provider="GitHub" data-oauth-url="https://github.com/login">GitHub</button>
+              <button type="button" class="entry-oauth-chip" data-oauth-provider="Apple" data-oauth-url="https://appleid.apple.com">Apple</button>
+              <button type="button" class="entry-oauth-chip" data-oauth-provider="Microsoft" data-oauth-url="https://login.microsoftonline.com">Microsoft</button>
+              <button type="button" class="entry-oauth-chip" data-oauth-provider="Facebook" data-oauth-url="https://www.facebook.com">Facebook</button>
+              <button type="button" class="entry-oauth-chip" data-oauth-provider="Discord" data-oauth-url="https://discord.com/login">Discord</button>
+              <button type="button" class="entry-oauth-chip" data-oauth-provider="X" data-oauth-url="https://x.com">X</button>
+            </div>
             <div class="form-group">
               <label for="entry-username" id="label-entry-username">Identifiant <span class="optional">(optionnel)</span></label>
               <input type="text" id="entry-username" class="field-input" placeholder="email ou nom d'utilisateur">
             </div>
-            <div class="form-group">
+            <div class="form-group" id="entry-secret-group">
               <label for="entry-password" id="label-entry-password">Mot de passe</label>
               <div class="field-control" id="entry-password-row">
                 <input type="text" id="entry-password" class="field-input" required placeholder="Mot de passe">
@@ -240,7 +283,7 @@
               <p id="entry-ssh-hint" class="entry-ssh-hint hidden">Remplit uniquement le champ ci-dessus avec une clé privée OpenSSH Ed25519.</p>
               <div id="entry-generated" class="generated-preview hidden"></div>
             </div>
-            <div class="form-group">
+            <div class="form-group" id="entry-url-group">
               <label for="entry-url" id="label-entry-url">URL <span class="optional">(optionnel)</span></label>
               <input type="text" id="entry-url" class="field-input" placeholder="exemple.com ou https://…">
             </div>

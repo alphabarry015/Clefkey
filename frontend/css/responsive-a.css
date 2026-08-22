@@ -307,8 +307,7 @@
   .dash-toolbar-actions .btn span { display: none; }
   .dash-toolbar-actions .btn { padding: 0.5rem; }
   .profile-fields { grid-template-columns: 1fr; }
-  .vault-topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 50; padding: calc(0.62rem + env(safe-area-inset-top)) 0.8rem 0.62rem; gap: 0.4rem; }
-  .vault-layout { padding-top: calc(3.4rem + env(safe-area-inset-top)); }
+  .vault-topbar { padding: calc(0.62rem + env(safe-area-inset-top)) 0.8rem 0.62rem; gap: 0.4rem; }
   .theme-switch-host.topbar-theme .theme-switch {
     transform: scale(0.94);
     transform-origin: center;

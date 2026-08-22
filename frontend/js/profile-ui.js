@@ -2,7 +2,11 @@
  * Profil utilisateur : affichage et édition inline.
  */
 import { api } from './api.js';
-import { saveSession } from './session.js';
+import { saveSession, wipeKeyBytes } from './session.js';
+import {
+  fromB64, toB64, deriveKey, createAuthVerifier, prepareMasterPasswordReset,
+} from './crypto.js';
+import { checkStrength, validateMasterPassword } from './master-password.js';
 import { $, $$, EMPTY_VALUE, setAvatar, toast } from './ui.js';
 
 export function createProfile(deps) {
@@ -271,11 +275,132 @@ export function createProfile(deps) {
     });
   }
 
+  function updatePasswordStrengthMeter(password) {
+    const fill = $('#profile-strength-fill');
+    const label = $('#profile-strength-label');
+    if (!fill || !label) return;
+    const levels = [
+      { w: '0%', c: 'transparent', t: '' },
+      { w: '20%', c: 'var(--error)', t: 'Très faible' },
+      { w: '40%', c: 'var(--warning)', t: 'Faible' },
+      { w: '60%', c: 'var(--info)', t: 'Moyen' },
+      { w: '80%', c: 'var(--success)', t: 'Fort' },
+      { w: '100%', c: 'var(--success)', t: 'Très fort' },
+    ];
+    const lvl = levels[checkStrength(password)];
+    fill.style.width = lvl.w;
+    fill.style.background = lvl.c;
+    label.textContent = lvl.t;
+    label.style.color = lvl.c || 'var(--text-muted)';
+  }
+
+  async function submitPasswordChange(event) {
+    event.preventDefault();
+    const current = $('#profile-current-password')?.value || '';
+    const next = $('#profile-new-password')?.value || '';
+    const confirm = $('#profile-new-password-confirm')?.value || '';
+    const btn = $('#btn-change-password');
+
+    if (!current || !next || !confirm) {
+      toast('Tous les champs sont requis', 'error');
+      return;
+    }
+    if (next !== confirm) {
+      toast('Les mots de passe ne correspondent pas', 'error');
+      return;
+    }
+    if (next === current) {
+      toast('Le nouveau mot de passe doit être différent', 'error');
+      return;
+    }
+    if (state.devMode) {
+      toast('Changement de mot de passe indisponible en mode développement', 'info');
+      return;
+    }
+    if (!state.vaultKey || !state.authMaterial?.salt) {
+      toast('Coffre verrouillé — reconnectez-vous', 'error');
+      return;
+    }
+
+    const verify = deps.verifyMasterPasswordForCurrentVault;
+    const showLoading = deps.showLoading;
+    const hideLoading = deps.hideLoading;
+    const authMaterialFromPayload = deps.authMaterialFromPayload;
+
+    btn.disabled = true;
+    showLoading?.('Vérification du mot de passe actuel...');
+    let currentDerived = null;
+    try {
+      const currentOk = await verify?.(current);
+      if (!currentOk) {
+        toast('Mot de passe actuel incorrect', 'error');
+        return;
+      }
+      const masterError = await validateMasterPassword(next);
+      if (masterError) {
+        toast(masterError, 'error');
+        return;
+      }
+      showLoading?.('Réchiffrement du coffre...');
+      const salt = fromB64(state.authMaterial.salt);
+      currentDerived = await deriveKey(current, salt);
+      const currentVerifier = await createAuthVerifier(currentDerived);
+      const prep = await prepareMasterPasswordReset(state.vaultKey, next, salt);
+      const data = await api.changePassword(state.token, {
+        current_auth_verifier: toB64(currentVerifier),
+        auth_verifier: toB64(prep.authVerifier),
+        encrypted_vault_key: toB64(prep.encryptedVaultKey),
+      });
+      if (data.access_token) state.token = data.access_token;
+      if (authMaterialFromPayload) {
+        state.authMaterial = authMaterialFromPayload(data) || {
+          ...state.authMaterial,
+          encrypted_vault_key: data.encrypted_vault_key,
+        };
+      } else {
+        state.authMaterial = {
+          ...state.authMaterial,
+          encrypted_vault_key: data.encrypted_vault_key,
+        };
+      }
+      saveSession(state);
+      resetPasswordChangeForm();
+      deps.switchPage?.('profile');
+      toast('Mot de passe maître mis à jour', 'success');
+    } catch (err) {
+      toast(err.message || 'Impossible de changer le mot de passe', 'error');
+    } finally {
+      wipeKeyBytes(currentDerived);
+      hideLoading?.();
+      btn.disabled = false;
+    }
+  }
+
+  function resetPasswordChangeForm() {
+    $('#form-change-password')?.reset();
+    updatePasswordStrengthMeter('');
+  }
+
+  function initPasswordChangeForm() {
+    $('#profile-new-password')?.addEventListener('input', (e) => {
+      updatePasswordStrengthMeter(e.target.value);
+    });
+    $('#form-change-password')?.addEventListener('submit', (event) => {
+      submitPasswordChange(event).catch(() => {});
+    });
+    $('#btn-open-change-password')?.addEventListener('click', () => {
+      deps.switchPage?.('password');
+    });
+    $('#btn-password-back')?.addEventListener('click', () => {
+      deps.switchPage?.('profile');
+    });
+  }
+
   return {
     buildDisplayName, normalizeUser, userFromProfile, PROFILE_FIELD_CONFIG,
     formatProfileDate, formatMemberSince, shortenUserId,
     updateProfileChip, setProfileStatus, applyUserToUI, renderProfile,
     closeAllProfileFieldEdits, openProfileFieldEdit, saveProfileField,
-    initProfileFieldEdits, syncPersistSessionPrefUI,
+    initProfileFieldEdits, initPasswordChangeForm, resetPasswordChangeForm, syncPersistSessionPrefUI,
   };
 }

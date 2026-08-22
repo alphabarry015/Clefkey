@@ -4,9 +4,6 @@
 
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-brand">
-        <div class="sidebar-logo">
-          <img src="/icons/favicon.svg" alt="Clefkey" class="brand-mark" width="22" height="22">
-        </div>
         <div class="sidebar-brand-text">
           <div class="sidebar-title">Clefkey.</div>
           <div class="sidebar-subtitle">Gestionnaire sécurisé</div>
@@ -18,6 +15,7 @@
       </button>
 
       <nav class="sidebar-nav">
+        <div class="nav-selector" aria-hidden="true"></div>
         <div class="sidebar-section-label">Navigation</div>
         <button class="nav-item active" data-page="dashboard" title="Dashboard">
                     <i data-lucide="layout-dashboard"></i><span class="sidebar-text">Dashboard</span>
@@ -61,7 +59,7 @@
 
     <div class="vault-layout">
       <header class="vault-topbar">
-        <button id="btn-menu" class="btn-menu" aria-label="Réduire ou agrandir la sidebar" title="Réduire / agrandir la sidebar">
+        <button id="btn-menu" class="btn-menu" aria-label="Ouvrir le menu" title="Menu">
           <i data-lucide="menu"></i>
         </button>
         <div class="topbar-title">
@@ -145,6 +143,7 @@
               <div class="type-filters dash-type-filters" role="group" aria-label="Filtrer par type">
                 <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
                 <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
+                <button type="button" class="type-filter" data-type-filter="oauth">OAuth</button>
                 <button type="button" class="type-filter" data-type-filter="api_key">API</button>
                 <button type="button" class="type-filter" data-type-filter="ssh_key">SSH</button>
               </div>
@@ -194,7 +193,24 @@
           <div class="projects-section">
             <div class="projects-section-head">
               <h2 class="projects-section-title">Projets</h2>
-              <span id="projects-count-label" class="projects-section-count">0</span>
+              <div class="projects-section-tools">
+                <span id="projects-count-label" class="projects-section-count">0</span>
+                <div class="vault-view-toggle" role="group" aria-label="Format d'affichage des projets">
+                  <button type="button" class="view-mode-btn" data-projects-view="grid" title="Vue cartes" aria-label="Vue cartes">
+                    <i data-lucide="layout-dashboard"></i>
+                  </button>
+                  <button type="button" class="view-mode-btn" data-projects-view="list" title="Vue liste" aria-label="Vue liste">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <line x1="8" y1="6" x2="21" y2="6"></line>
+                      <line x1="8" y1="12" x2="21" y2="12"></line>
+                      <line x1="8" y1="18" x2="21" y2="18"></line>
+                      <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                      <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                      <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
             <div id="projects-grid" class="projects-list" role="list"></div>
             <div id="projects-empty" class="projects-empty hidden">

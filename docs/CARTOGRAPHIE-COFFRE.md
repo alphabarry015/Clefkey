@@ -24,7 +24,7 @@ Le code de récupération est une chaîne hexadécimale longue, présentée à l
 
 ## Les entrées du coffre
 
-Une entrée est un enregistrement opaque côté serveur : un identifiant, un propriétaire, une date, et surtout un champ binaire `encrypted_data`. Le contenu clair n’existe que dans le JSON chiffré côté client. Ce JSON décrit typiquement un titre, un type (`login`, `api_key` ou `ssh_key`), un identifiant (email, login, nom de clé), un secret (mot de passe, clé API ou clé privée), une URL / hôte optionnel, des notes, et des métadonnées d’affichage (favori, dates).
+Une entrée est un enregistrement opaque côté serveur : un identifiant, un propriétaire, une date, et surtout un champ binaire `encrypted_data`. Le contenu clair n’existe que dans le JSON chiffré côté client. Ce JSON décrit typiquement un titre, un type (`login`, `oauth`, `api_key` ou `ssh_key`), un identifiant (email, login, nom de clé), un secret optionnel (mot de passe, clé API ou clé privée — vide pour OAuth / SSO), une URL / hôte optionnel, des notes, et des métadonnées d’affichage (favori, dates).
 
 Trois types partagent le même modèle de stockage. Une connexion classique sert un site web (exemple fictif : titre « Messagerie perso », URL `https://mail.exemple.org`, email et mot de passe). Une clé API sert un secret technique (exemple fictif : titre « Clé démo OpenAI », secret du genre `demo-api-key-not-real`). Une clé SSH / stockage sert une clé privée ou un secret de volume (exemple fictif : hôte `git@github.com`, bloc PEM). Le filtre Tous / Connexions / Clés API / SSH ne fait que trier des objets déjà déchiffrés en mémoire ; le serveur ignore le type.
 
@@ -42,7 +42,7 @@ Inscription. L’utilisateur remplit le formulaire, le front refuse un maître t
 
 Connexion. Email et maître, dérivation, `POST /auth/login`, JWT, déchiffrement de la clé de coffre, chargement des entrées. En local uniquement, laisser les champs vides peut activer un mode démo sans toucher la vraie base : utile pour développer l’UI, dangereux à ne jamais activer en production avec des données réelles.
 
-Usage du coffre. Recherche, filtres de type, copie presse-papiers, détail, génération de mot de passe (local WebCrypto ou endpoint authentifié). Le **Générateur** (onglets Mot de passe / Username / Passphrase) aide à créer des secrets forts : pour l’onglet Username, le navigateur demande au serveur (proxy Sherlock) de vérifier la disponibilité de variantes — aucun secret du coffre n’est impliqué, seul un pseudo public est envoyé à des sites tiers. Le **Dashboard** affiche un aperçu (compteurs, actions rapides, graphiques) et renvoie la liste des clés vers « Toutes les clés ». Verrouillage : fin de session côté client.
+Usage du coffre. Recherche, filtres de type, copie presse-papiers, détail, génération de mot de passe (local WebCrypto ou endpoint authentifié). Le **Générateur** (onglets Mot de passe / Username / Passphrase) aide à créer des secrets forts : pour l’onglet Username, le navigateur demande au serveur (proxy Sherlock) de vérifier la disponibilité de variantes — aucun secret du coffre n’est impliqué, seul un pseudo public est envoyé à des sites tiers. Le **Dashboard** affiche un aperçu (compteurs, actions rapides, graphiques) et renvoie la liste des clés vers « Toutes les clés ». Depuis le **profil**, on peut changer le mot de passe maître (preuve de l’ancien maître, rechiffrement local de `vaultKey`) sans utiliser les clés de récupération. Verrouillage : fin de session côté client.
 
 ## Ce que le serveur voit vraiment
 

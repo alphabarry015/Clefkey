@@ -30,6 +30,24 @@ export function getFaviconUrl(url) {
   return `${window.location.origin}/vault/favicon?url=${encodeURIComponent(pageUrl)}&v=8`;
 }
 
+/** Premier lien http(s) ou domaine trouvé dans un texte (notes OAuth). */
+export function firstUrlFromText(text) {
+  const value = (text || '').trim();
+  if (!value) return '';
+  const match = value.match(/https?:\/\/[^\s<>"'()]+/i)
+    || value.match(/\b(?:www\.)?(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<>"'()]*)?/i);
+  return match ? normalizeEntryUrl(match[0].replace(/[.,;:!?)]+$/, '')) : '';
+}
+
+/** URL utilisée pour le favicon : notes pour OAuth, sinon champ URL. */
+export function entryFaviconSource(entry) {
+  if (!entry || entry.type === 'ssh_key') return '';
+  if (entry.type === 'oauth') {
+    return firstUrlFromText(entry.notes) || normalizeEntryUrl(entry.url);
+  }
+  return normalizeEntryUrl(entry.url);
+}
+
 export function prepareEntry(entry) {
   if (!entry) return entry;
   const prepared = { ...entry };

@@ -255,6 +255,14 @@
                   <span class="profile-tag profile-tag-success">Zero knowledge</span>
                 </div>
                 <p class="profile-security-text">Vos données sont chiffrées côté client. Le serveur ne peut pas lire vos mots de passe.</p>
+                <button type="button" class="profile-lock-btn" id="btn-open-change-password">
+                  <span class="profile-lock-icon"><i data-lucide="key-round"></i></span>
+                  <span class="profile-lock-text">
+                    <strong>Changer le mot de passe maître</strong>
+                    <span>Sans clés de récupération — le coffre n’est pas recréé</span>
+                  </span>
+                  <i data-lucide="chevron-right" class="profile-shortcut-arrow"></i>
+                </button>
                 <div class="profile-session-pref">
                   <div class="profile-session-pref-text">
                     <strong>Rechargement (F5) et verrouillage</strong>
@@ -303,6 +311,58 @@
                   <i data-lucide="chevron-right" class="profile-shortcut-arrow"></i>
                 </button>
               </section>
+          </div>
+        </div>
+
+        <div id="password-view" class="profile-view password-view hidden">
+          <div class="profile-content">
+            <button type="button" id="btn-password-back" class="btn btn-ghost btn-sm project-detail-back">
+              <i data-lucide="arrow-left"></i>
+              <span>Profil</span>
+            </button>
+            <section class="profile-card">
+              <div class="profile-card-header">
+                <h3><i data-lucide="key-round"></i> Changer le mot de passe maître</h3>
+              </div>
+              <p class="profile-security-text profile-password-hint">
+                Le coffre n’est pas recréé : seules les clés de connexion sont mises à jour.
+                Les clés de récupération restent valides.
+              </p>
+              <form id="form-change-password" class="profile-password-form" autocomplete="off" data-form-type="other">
+                <div class="form-group">
+                  <label for="profile-current-password">Mot de passe actuel</label>
+                  <div class="input-wrap">
+                    <input type="password" id="profile-current-password" class="profile-field-input" required autocomplete="off">
+                    <button type="button" class="btn-eye" data-target="profile-current-password" aria-label="Afficher">
+                      <i data-lucide="eye"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="profile-new-password">Nouveau mot de passe</label>
+                  <div class="input-wrap">
+                    <input type="password" id="profile-new-password" class="profile-field-input" required minlength="12" autocomplete="off">
+                    <button type="button" class="btn-eye" data-target="profile-new-password" aria-label="Afficher">
+                      <i data-lucide="eye"></i>
+                    </button>
+                  </div>
+                  <div class="strength-bar"><div id="profile-strength-fill" class="strength-fill"></div></div>
+                  <div id="profile-strength-label" class="strength-label"></div>
+                </div>
+                <div class="form-group">
+                  <label for="profile-new-password-confirm">Confirmer</label>
+                  <div class="input-wrap">
+                    <input type="password" id="profile-new-password-confirm" class="profile-field-input" required minlength="12" autocomplete="off">
+                    <button type="button" class="btn-eye" data-target="profile-new-password-confirm" aria-label="Afficher">
+                      <i data-lucide="eye"></i>
+                    </button>
+                  </div>
+                </div>
+                <button type="submit" id="btn-change-password" class="btn btn-primary profile-password-submit">
+                  Enregistrer le mot de passe
+                </button>
+              </form>
+            </section>
           </div>
         </div>
 

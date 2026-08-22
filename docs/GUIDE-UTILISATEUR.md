@@ -38,11 +38,11 @@ Page d’accueil : vue d’ensemble et actions rapides, sans liste de clés.
 
 - **Aperçu** — 4 compteurs cliquables : **Clés**, **Projets**, **Contacts**, **Partages**. Cliquer sur un compteur ouvre la page correspondante.
 - **Actions rapides** — boutons : **Nouvelle clé**, **Mot de passe fort**, **Username**, **Passphrase**, **Audit**, **Projet**. Les trois boutons « générer » ouvrent le Générateur sur l’onglet correspondant.
-- **Analyse** — deux graphiques (barres, sans données personnelles exposées) : **Clés par type** (Connexions / API / SSH) et **Clés par projet**.
+- **Analyse** — deux graphiques (barres, sans données personnelles exposées) : **Clés par type** (Connexions / OAuth / API / SSH) et **Clés par projet**.
 
 #### Toutes les clés
 
-Liste complète des clés sous forme de **tuiles** (même rendu que l’ancien dashboard), avec recherche instantanée et filtres **Tous**, **Connexions**, **Clés API**, **SSH / stockage**, et **projets** (Tous les projets / Sans projet / chaque projet). Cliquer sur une tuile ouvre le détail ; le bouton **+** ajoute une clé.
+Liste complète des clés sous forme de **tuiles** (même rendu que l’ancien dashboard), avec recherche instantanée et filtres **Tous**, **Connexions**, **OAuth**, **Clés API**, **SSH / stockage**, et **projets** (Tous les projets / Sans projet / chaque projet). Cliquer sur une tuile ouvre le détail ; le bouton **+** ajoute une clé.
 
 #### Audit
 
@@ -71,17 +71,18 @@ Les raccourcis du Dashboard (**Mot de passe fort**, **Username**, **Passphrase**
 
 #### Profil
 
-Ouvert depuis l’**avatar** en haut à droite (ou « Profil » dans la sidebar) : infos compte (édition inline), tags techniques, **Verrouiller le coffre** (soft lock : le maître suffit pour rouvrir).
+Ouvert depuis l’**avatar** en haut à droite (ou « Profil » dans la sidebar) : infos compte (édition inline), tags techniques, bouton **Changer le mot de passe maître** (ouvre une page dédiée, sans clés de récupération), **Verrouiller le coffre** (soft lock : le maître suffit pour rouvrir).
 
 ## Types d’entrées
 
 | Type | Usage |
 |------|--------|
 | Connexion | Site web : URL, identifiant, mot de passe |
+| OAuth / SSO | Connexion sociale : **pas de mot de passe**. Nom de la plateforme sur laquelle le compte est créé, email optionnel, notes (lien du site pour le favicon). |
 | Clé API | Secret technique : titre, clé, URL optionnelle, notes |
 | Clé SSH / stockage | Clé privée (PEM / OpenSSH) ou secret de stockage ; hôte optionnel (`git@…`, serveur). Bouton **Générer une clé Ed25519** remplit uniquement le champ secret avec la clé privée. |
 
-Les trois types sont chiffrés de la même façon ; seul le contenu JSON côté navigateur change.
+Les quatre types sont chiffrés de la même façon ; seul le contenu JSON côté navigateur change.
 
 ## Projets (dossiers)
 

@@ -73,6 +73,26 @@ export const MOCK_ENTRIES = [
     notes: 'Factice — ssh-ed25519 AAAA… (exemple)',
     folderId: 'dev-folder-pro',
   },
+  {
+    id: 'dev-7',
+    type: 'oauth',
+    title: 'Google',
+    username: 'pierre@email.com',
+    password: '',
+    url: 'https://accounts.google.com',
+    notes: 'https://www.youtube.com — Se connecter avec Google',
+    folderId: 'dev-folder-perso',
+  },
+  {
+    id: 'dev-8',
+    type: 'oauth',
+    title: 'GitHub',
+    username: 'pierre-dev',
+    password: '',
+    url: 'https://github.com/login',
+    notes: 'https://vercel.com — Connexion sociale GitHub',
+    folderId: 'dev-folder-pro',
+  },
 ];
 
 export function enterDevMode(state) {

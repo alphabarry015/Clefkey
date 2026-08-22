@@ -425,7 +425,11 @@ export function createProjects(deps) {
               ? 'Secret API'
               : deps.entryType(e) === 'ssh_key' && deps.displayUsername(e.username) === 'none'
                 ? 'Clé SSH / stockage'
-                : deps.displayUsername(e.username)
+                : deps.entryType(e) === 'oauth' && deps.displayUsername(e.username) === 'none'
+                  ? 'Connexion sociale'
+                  : deps.entryType(e) === 'login' && deps.displayUsername(e.username) === 'none'
+                    ? 'Connexion'
+                    : deps.displayUsername(e.username)
           )}</div>
         </div>
         <div class="entry-actions">
@@ -563,6 +567,11 @@ export function createProjects(deps) {
     }
 
     if (!grid) return;
+    const isList = state.projectsViewMode === 'list';
+    grid.classList.toggle('is-folders', isList);
+    $$('#projects-view [data-projects-view]').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.projectsView === (isList ? 'list' : 'grid'));
+    });
     if (state.folders.length === 0) {
       grid.replaceChildren();
       empty?.classList.remove('hidden');
@@ -573,6 +582,45 @@ export function createProjects(deps) {
     const countLabelFor = (id) => {
       const count = countEntriesInFolder(id);
       return count <= 1 ? `${count} clé` : `${count} clés`;
+    };
+
+    const folderSvg = `<svg class="project-folder-svg" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
+
+    const folderRow = (f, depth) => {
+      const children = folderChildren(state.folders, f.id);
+      const collapsed = state.collapsedProjectIds?.includes(f.id);
+      const childCount = children.length;
+      return `
+      <div class="project-folder${collapsed ? ' is-collapsed' : ''}" data-folder-id="${esc(f.id)}" role="listitem" style="--folder-depth:${depth}">
+        <div class="project-folder-row">
+          ${childCount ? `
+          <button type="button" class="project-folder-toggle" data-action="toggle-subs" data-parent-id="${esc(f.id)}" aria-expanded="${collapsed ? 'false' : 'true'}" title="Déplier / replier" aria-label="Déplier / replier">
+            <i data-lucide="chevron-right" class="project-subs-chevron"></i>
+          </button>` : `<span class="project-folder-toggle-spacer" aria-hidden="true"></span>`}
+          <button type="button" class="project-folder-main" data-action="open-project" title="Ouvrir ${esc(f.name)}">
+            <span class="project-folder-icon" aria-hidden="true">${folderSvg}</span>
+            <span class="project-folder-name">${esc(f.name)}</span>
+            <span class="project-folder-meta">${esc(countLabelFor(f.id))}${
+              childCount ? ` · ${childCount} dossier${childCount > 1 ? 's' : ''}` : ''
+            }</span>
+          </button>
+          <div class="project-folder-actions">
+            <button type="button" class="project-row-btn" data-action="toggle-move-project" title="Déplacer" aria-label="Déplacer">
+              <i data-lucide="arrow-right"></i>
+            </button>
+            <button type="button" class="project-row-btn" data-action="rename-project" title="Renommer" aria-label="Renommer">
+              <i data-lucide="pencil"></i>
+            </button>
+            <button type="button" class="project-row-btn project-row-btn-danger" data-action="delete-project" title="Supprimer le projet" aria-label="Supprimer le projet">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+        </div>
+        ${childCount ? `
+        <div class="project-folder-children${collapsed ? ' is-collapsed' : ''}" data-parent-id="${esc(f.id)}">
+          ${children.map((c) => folderRow(c, depth + 1)).join('')}
+        </div>` : ''}
+      </div>`;
     };
 
     const projectCardNode = (f) => {
@@ -643,7 +691,12 @@ export function createProjects(deps) {
         </div>`;
     };
 
-    setHtml(grid, topLevelFolders(state.folders).map(projectCardNode).join(''));
+    setHtml(
+      grid,
+      isList
+        ? topLevelFolders(state.folders).map((f) => folderRow(f, 0)).join('')
+        : topLevelFolders(state.folders).map(projectCardNode).join(''),
+    );
     refreshIcons($('#projects-view'));
   }
 
@@ -764,6 +817,17 @@ export function createProjects(deps) {
     setTimeout(() => $('#move-project-parent')?.focus(), 50);
   }
 
+  function setProjectsViewMode(mode) {
+    const next = mode === 'list' ? 'list' : 'grid';
+    if (next === state.projectsViewMode) {
+      renderProjectsPage();
+      return;
+    }
+    state.projectsViewMode = next;
+    try { localStorage.setItem('clefkey.projectsView', next); } catch { /* ignore */ }
+    renderProjectsPage();
+  }
+
   return {
     hideEntryFolderCreate, showEntryFolderCreate, createFolderByName,
     syncFolderFilterButtons, populateFolderSelect, defaultFolderIdFromFilter,
@@ -775,6 +839,7 @@ export function createProjects(deps) {
     entryListCardMarkup, clearProjectDetailSelection, syncProjectDetailSelectionUi,
     toggleProjectDetailSelection, renderProjectDetailPage, openProjectFilter,
     renderProjectsPage, performDeleteFolder, deleteFolder,
+    setProjectsViewMode,
     openCreateSubprojectModal, openMoveProjectModal, syncMoveProjectPreview,
     deleteEntriesInFolder,
   };

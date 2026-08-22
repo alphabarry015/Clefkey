@@ -20,6 +20,7 @@ export function bindProjects(deps) {
     refreshCurrentView, getProjectDetailEntries,
     clearProjectDetailSelection, syncProjectDetailSelectionUi,
     toggleProjectDetailSelection, renderProjectDetailPage,
+    setProjectsViewMode,
     openTransferModal, updateTransferSelectionUi, assignEntriesToFolder,
     syncTransferEntryButtons, setEntryFolder, syncDetailMoveButton,
     syncDetailProjectField, fillEntryDetailCommon,
@@ -162,6 +163,10 @@ export function bindProjects(deps) {
     if (state.page === 'project-detail') renderProjectDetailPage();
   });
 
+  $$('#projects-view [data-projects-view]').forEach((btn) => {
+    btn.addEventListener('click', () => setProjectsViewMode(btn.dataset.projectsView));
+  });
+
   $('#projects-grid')?.addEventListener('click', async (e) => {
     const toggleSubs = e.target.closest('[data-action="toggle-subs"]');
     if (toggleSubs) {
@@ -170,15 +175,17 @@ export function bindProjects(deps) {
       if (set.has(parentId)) set.delete(parentId);
       else set.add(parentId);
       state.collapsedProjectIds = [...set];
-      const group = toggleSubs.closest('.project-sub-item') ?? toggleSubs.closest('.project-group');
-      const box = group?.querySelector(':scope > .project-sub-list, :scope > .project-subs');
+      const group = toggleSubs.closest('.project-folder')
+        ?? toggleSubs.closest('.project-sub-item')
+        ?? toggleSubs.closest('.project-group');
+      const box = group?.querySelector(':scope > .project-folder-children, :scope > .project-sub-list, :scope > .project-subs');
       group?.classList.toggle('is-collapsed', set.has(parentId));
       box?.classList.toggle('is-collapsed', set.has(parentId));
       toggleSubs.setAttribute('aria-expanded', set.has(parentId) ? 'false' : 'true');
       return;
     }
 
-    const card = e.target.closest('.project-sub-item[data-folder-id], .project-row[data-folder-id], .project-card[data-folder-id]');
+    const card = e.target.closest('.project-folder[data-folder-id], .project-sub-item[data-folder-id], .project-row[data-folder-id], .project-card[data-folder-id]');
     if (!card) return;
     const folderId = card.dataset.folderId;
     const folder = state.folders.find((f) => f.id === folderId);
@@ -385,6 +392,10 @@ export function bindProjects(deps) {
     const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : tree.classList.contains('is-collapsed');
     tree.classList.toggle('is-collapsed', !shouldOpen);
     picker.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    if (shouldOpen) {
+      $('#entry-type-menu')?.classList.add('is-collapsed');
+      $('#entry-type-picker')?.setAttribute('aria-expanded', 'false');
+    }
   }
 
   $('#entry-folder-picker')?.addEventListener('click', () => toggleEntryFolderTree());

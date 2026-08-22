@@ -13,27 +13,33 @@
 
 /* ── Tokens invariants (identiques clair / sombre) ──────── */
 :root {
-  --accent: #3662D7;
-  --accent-light: #5a86f0;
-  --accent-hover: #2f58c8;
-  --accent-glow: rgba(54, 98, 215, 0.28);
-  --accent-subtle: rgba(54, 98, 215, 0.14);
+  --accent: #2F5FF0;
+  --accent-light: #5b82f5;
+  --accent-hover: #254ed6;
+  --accent-glow: rgba(47, 95, 240, 0.28);
+  --accent-subtle: rgba(47, 95, 240, 0.14);
   --success: #10b981;
   --success-subtle: rgba(16, 185, 129, 0.14);
   --error: #ef4444;
   --error-subtle: rgba(239, 68, 68, 0.14);
   --warning: #f59e0b;
-  --info: #5a86f0;
-  --radius: 14px;
-  --radius-sm: 10px;
-  --radius-xs: 6px;
+  --info: #5b82f5;
+  --radius: 16px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+  --radius-xl: 24px;
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --font-display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  --font-display: 'Segoe UI', 'Segoe UI Variable Text', system-ui, -apple-system, sans-serif;
+  --sidebar-bg: #2F5FF0;
+  --sidebar-text: #ffffff;
+  --sidebar-muted: rgba(255, 255, 255, 0.72);
+  --sidebar-active-bg: #ffffff;
+  --sidebar-active-fg: #2F5FF0;
 
   /* Docs — invariants */
-  --docs-blue: #3662D7;
+  --docs-blue: #2F5FF0;
   --docs-font: 'IBM Plex Sans', 'Segoe UI', sans-serif;
-  --docs-display: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
+  --docs-display: var(--font-display);
   --docs-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --docs-sidebar-w: 280px;
   --docs-toc-w: 220px;
@@ -42,24 +48,29 @@
 /* ── Palette sombre ────────────────────────────────────── */
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg-primary: #000000;
-  --bg-secondary: #0a0a0a;
-  --bg-card: #111111;
-  --bg-elevated: #161616;
-  --bg-hover: #1c1c1c;
-  --border: rgba(255, 255, 255, 0.12);
-  --border-light: rgba(255, 255, 255, 0.2);
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #111111;
+  --bg-card: #161616;
+  --bg-elevated: #1c1c1c;
+  --bg-hover: #242424;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-light: rgba(255, 255, 255, 0.18);
   --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.72);
   --text-muted: rgba(255, 255, 255, 0.48);
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.28);
   --overlay: rgba(0, 0, 0, 0.72);
   --loading-overlay: rgba(0, 0, 0, 0.78);
   --sidebar-overlay: rgba(0, 0, 0, 0.55);
-  --auth-orb-1: rgba(54, 98, 215, 0.22);
-  --auth-orb-2: rgba(54, 98, 215, 0.12);
-  --auth-orb-3: rgba(90, 134, 240, 0.1);
+  --sidebar-bg: #000000;
+  --sidebar-text: #ffffff;
+  --sidebar-muted: rgba(255, 255, 255, 0.62);
+  --sidebar-active-bg: #ffffff;
+  --sidebar-active-fg: #000000;
+  --auth-orb-1: rgba(255, 255, 255, 0.08);
+  --auth-orb-2: rgba(255, 255, 255, 0.05);
+  --auth-orb-3: rgba(255, 255, 255, 0.04);
 
   /* Docs */
   --docs-bg: #070707;
@@ -82,28 +93,33 @@
 /* ── Palette claire ────────────────────────────────────── */
 [data-theme="light"] {
   color-scheme: light;
-  --bg-primary: #f0f2f7;
+  --bg-primary: #F5F6FA;
   --bg-secondary: #ffffff;
-  --bg-card: #f7f8fc;
-  --bg-elevated: #eef0f6;
-  --bg-hover: #e4e7f0;
-  --border: #d8dce8;
-  --border-light: #c8cdd9;
-  --text-primary: #1a1d26;
-  --text-secondary: #5c6378;
-  --text-muted: #8b92a5;
-  --accent-glow: rgba(54, 98, 215, 0.18);
-  --accent-subtle: rgba(54, 98, 215, 0.08);
+  --bg-card: #ffffff;
+  --bg-elevated: #F5F6FA;
+  --bg-hover: #eef0f6;
+  --border: #e6e8ef;
+  --border-light: #d8dce8;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --accent-glow: rgba(47, 95, 240, 0.18);
+  --accent-subtle: rgba(47, 95, 240, 0.1);
   --success-subtle: rgba(16, 185, 129, 0.1);
   --error-subtle: rgba(239, 68, 68, 0.1);
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow: 0 12px 40px rgba(17, 24, 39, 0.08);
+  --shadow-sm: 0 4px 16px rgba(17, 24, 39, 0.05);
   --overlay: rgba(0, 0, 0, 0.35);
   --loading-overlay: rgba(255, 255, 255, 0.88);
   --sidebar-overlay: rgba(0, 0, 0, 0.3);
-  --auth-orb-1: rgba(54, 98, 215, 0.14);
-  --auth-orb-2: rgba(54, 98, 215, 0.08);
-  --auth-orb-3: rgba(90, 134, 240, 0.06);
+  --sidebar-bg: #2F5FF0;
+  --sidebar-text: #ffffff;
+  --sidebar-muted: rgba(255, 255, 255, 0.72);
+  --sidebar-active-bg: #ffffff;
+  --sidebar-active-fg: #2F5FF0;
+  --auth-orb-1: rgba(47, 95, 240, 0.14);
+  --auth-orb-2: rgba(47, 95, 240, 0.08);
+  --auth-orb-3: rgba(91, 130, 245, 0.06);
 
   /* Docs */
   --docs-bg: #f4f6fb;
@@ -127,24 +143,29 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
-    --bg-primary: #000000;
-    --bg-secondary: #0a0a0a;
-    --bg-card: #111111;
-    --bg-elevated: #161616;
-    --bg-hover: #1c1c1c;
-    --border: rgba(255, 255, 255, 0.12);
-    --border-light: rgba(255, 255, 255, 0.2);
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #111111;
+    --bg-card: #161616;
+    --bg-elevated: #1c1c1c;
+    --bg-hover: #242424;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-light: rgba(255, 255, 255, 0.18);
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.72);
     --text-muted: rgba(255, 255, 255, 0.48);
-    --shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.28);
     --overlay: rgba(0, 0, 0, 0.72);
     --loading-overlay: rgba(0, 0, 0, 0.78);
     --sidebar-overlay: rgba(0, 0, 0, 0.55);
-    --auth-orb-1: rgba(54, 98, 215, 0.22);
-    --auth-orb-2: rgba(54, 98, 215, 0.12);
-    --auth-orb-3: rgba(90, 134, 240, 0.1);
+    --sidebar-bg: #000000;
+    --sidebar-text: #ffffff;
+    --sidebar-muted: rgba(255, 255, 255, 0.62);
+    --sidebar-active-bg: #ffffff;
+    --sidebar-active-fg: #000000;
+    --auth-orb-1: rgba(255, 255, 255, 0.08);
+    --auth-orb-2: rgba(255, 255, 255, 0.05);
+    --auth-orb-3: rgba(255, 255, 255, 0.04);
 
     --docs-bg: #070707;
     --docs-panel: #0e0e0e;
@@ -167,26 +188,31 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
     color-scheme: light;
-    --bg-primary: #f0f2f7;
+    --bg-primary: #F5F6FA;
     --bg-secondary: #ffffff;
-    --bg-card: #f7f8fc;
-    --bg-elevated: #eef0f6;
-    --bg-hover: #e4e7f0;
-    --border: #d8dce8;
-    --border-light: #c8cdd9;
-    --text-primary: #1a1d26;
-    --text-secondary: #5c6378;
-    --text-muted: #8b92a5;
-    --accent-glow: rgba(54, 98, 215, 0.18);
-    --accent-subtle: rgba(54, 98, 215, 0.08);
-    --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --bg-card: #ffffff;
+    --bg-elevated: #F5F6FA;
+    --bg-hover: #eef0f6;
+    --border: #e6e8ef;
+    --border-light: #d8dce8;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --accent-glow: rgba(47, 95, 240, 0.18);
+    --accent-subtle: rgba(47, 95, 240, 0.1);
+    --shadow: 0 12px 40px rgba(17, 24, 39, 0.08);
+    --shadow-sm: 0 4px 16px rgba(17, 24, 39, 0.05);
     --overlay: rgba(0, 0, 0, 0.35);
     --loading-overlay: rgba(255, 255, 255, 0.88);
     --sidebar-overlay: rgba(0, 0, 0, 0.3);
-    --auth-orb-1: rgba(54, 98, 215, 0.14);
-    --auth-orb-2: rgba(54, 98, 215, 0.08);
-    --auth-orb-3: rgba(90, 134, 240, 0.06);
+    --sidebar-bg: #2F5FF0;
+    --sidebar-text: #ffffff;
+    --sidebar-muted: rgba(255, 255, 255, 0.72);
+    --sidebar-active-bg: #ffffff;
+    --sidebar-active-fg: #2F5FF0;
+    --auth-orb-1: rgba(47, 95, 240, 0.14);
+    --auth-orb-2: rgba(47, 95, 240, 0.08);
+    --auth-orb-3: rgba(91, 130, 245, 0.06);
 
     --docs-bg: #f4f6fb;
     --docs-panel: #ffffff;

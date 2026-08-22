@@ -1,7 +1,7 @@
 /**
  * Markup avatars / tuiles dashboard pour les clés.
  */
-import { getFaviconUrl, getSiteDomain, normalizeEntryUrl, setupFaviconImages } from './favicon.js';
+import { getFaviconUrl, getSiteDomain, entryFaviconSource, setupFaviconImages } from './favicon.js';
 import { esc, getAvatarColor } from './ui.js';
 
 export function createEntryMarkup(deps) {
@@ -14,7 +14,7 @@ export function createEntryMarkup(deps) {
     if (deps.entryType(entry) === 'ssh_key') {
       return `<span class="dash-tile-letter">${letter}</span>`;
     }
-    const siteUrl = normalizeEntryUrl(entry.url);
+    const siteUrl = entryFaviconSource(entry);
     const faviconUrl = getFaviconUrl(siteUrl);
     if (!faviconUrl) return `<span class="dash-tile-letter">${letter}</span>`;
 
@@ -35,12 +35,12 @@ export function createEntryMarkup(deps) {
 
   function dashTileClassName(entry) {
     if (deps.entryType(entry) === 'ssh_key') return 'dash-tile';
-    return getSiteDomain(entry.url) ? 'dash-tile dash-tile-branded' : 'dash-tile';
+    return getSiteDomain(entryFaviconSource(entry)) ? 'dash-tile dash-tile-branded' : 'dash-tile';
   }
 
   function dashTileStyle(entry, index) {
     const delay = `animation-delay:${index * 0.03}s`;
-    if (deps.entryType(entry) !== 'ssh_key' && getSiteDomain(entry.url)) return delay;
+    if (deps.entryType(entry) !== 'ssh_key' && getSiteDomain(entryFaviconSource(entry))) return delay;
     const [c1, c2] = getAvatarColor(entry.title);
     return `background:linear-gradient(160deg,${c1},${c2});${delay}`;
   }
@@ -51,7 +51,7 @@ export function createEntryMarkup(deps) {
     if (deps.entryType(entry) === 'ssh_key') {
       return `<div class="entry-avatar" style="background:linear-gradient(135deg,${c1},${c2})">${letter}</div>`;
     }
-    const siteUrl = normalizeEntryUrl(entry.url);
+    const siteUrl = entryFaviconSource(entry);
     const faviconUrl = getFaviconUrl(siteUrl);
     if (!faviconUrl) {
       return `<div class="entry-avatar" style="background:linear-gradient(135deg,${c1},${c2})">${letter}</div>`;
@@ -72,7 +72,8 @@ export function createEntryMarkup(deps) {
       el.textContent = (entry.title?.[0] || '?').toUpperCase();
       return;
     }
-    const faviconUrl = getFaviconUrl(normalizeEntryUrl(entry.url));
+    const siteUrl = entryFaviconSource(entry);
+    const faviconUrl = getFaviconUrl(siteUrl);
     el.className = 'entry-avatar lg entry-icon entry-icon-branded';
     el.style.background = '';
     if (!faviconUrl) {
@@ -88,7 +89,7 @@ export function createEntryMarkup(deps) {
     img.width = 28;
     img.height = 28;
     img.decoding = 'async';
-    img.dataset.siteUrl = normalizeEntryUrl(entry.url) || '';
+    img.dataset.siteUrl = siteUrl || '';
     img.onerror = function onFaviconImgError() { window.onFaviconError(this); };
     const letterEl = document.createElement('span');
     letterEl.className = 'entry-letter';

@@ -35,8 +35,12 @@
     justify-content: center;
   }
 
-  .projects-list {
+  .projects-list:not(.is-folders) {
     grid-template-columns: 1fr;
+  }
+
+  .project-folder-actions {
+    opacity: 1;
   }
 }
 

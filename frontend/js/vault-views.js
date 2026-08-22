@@ -155,8 +155,10 @@ export function createVaultViews(deps) {
 
   function dashTileMetaMarkup(entry) {
     const badges = [];
-    if (deps.entryType(entry) === 'api_key') badges.push('<span class="dash-tile-badge">API</span>');
+    if (deps.entryType(entry) === 'login') badges.push('<span class="dash-tile-badge dash-tile-badge-login">Connexion</span>');
+    if (deps.entryType(entry) === 'api_key') badges.push('<span class="dash-tile-badge dash-tile-badge-api">API</span>');
     if (deps.entryType(entry) === 'ssh_key') badges.push('<span class="dash-tile-badge dash-tile-badge-ssh">SSH</span>');
+    if (deps.entryType(entry) === 'oauth') badges.push('<span class="dash-tile-badge dash-tile-badge-oauth">OAuth</span>');
     const folder = folderNameById(state.folders, entryFolderId(entry));
     const project = folder
       ? `<span class="dash-tile-meta"><span class="dash-tile-project">${esc(folder)}</span></span>`
@@ -197,7 +199,7 @@ export function createVaultViews(deps) {
     refreshIcons(stats);
 
     if (graphTypes) {
-      const counts = { login: 0, api_key: 0, ssh_key: 0 };
+      const counts = { login: 0, oauth: 0, api_key: 0, ssh_key: 0 };
       for (const e of state.entries) {
         const t = deps.entryType(e);
         if (counts[t] !== undefined) counts[t] += 1;
@@ -211,13 +213,18 @@ export function createVaultViews(deps) {
           <span class="dash-bar-value">${counts.login}</span>
         </div>
         <div class="dash-bar-row">
+          <span class="dash-bar-label">OAuth</span>
+          <span class="dash-bar-track"><span class="dash-bar-fill is-orange" style="width:${pct(counts.oauth)}%"></span></span>
+          <span class="dash-bar-value">${counts.oauth}</span>
+        </div>
+        <div class="dash-bar-row">
           <span class="dash-bar-label">API</span>
           <span class="dash-bar-track"><span class="dash-bar-fill is-success" style="width:${pct(counts.api_key)}%"></span></span>
           <span class="dash-bar-value">${counts.api_key}</span>
         </div>
         <div class="dash-bar-row">
           <span class="dash-bar-label">SSH</span>
-          <span class="dash-bar-track"><span class="dash-bar-fill is-error" style="width:${pct(counts.ssh_key)}%"></span></span>
+          <span class="dash-bar-track"><span class="dash-bar-fill is-indigo" style="width:${pct(counts.ssh_key)}%"></span></span>
           <span class="dash-bar-value">${counts.ssh_key}</span>
         </div>`);
     }
@@ -352,6 +359,19 @@ export function createVaultViews(deps) {
   async function copyPassword(id) {
     const e = state.entries.find(x => x.id === id);
     if (!e) return;
+    if (deps.entryType(e) === 'oauth') {
+      const email = (e.username || '').trim();
+      if (!email) {
+        toast('Pas de mot de passe — connexion via le fournisseur', 'info');
+        return;
+      }
+      if (!(await copyToClipboard(email))) {
+        toast('Impossible de copier — autorisez le presse-papiers ou copiez manuellement', 'error');
+        return;
+      }
+      toast(`Email « ${e.title} » copié`, 'success');
+      return;
+    }
     if (!(await copyToClipboard(e.password))) {
       toast('Impossible de copier — autorisez le presse-papiers ou copiez manuellement', 'error');
       return;
@@ -395,7 +415,7 @@ export function createVaultViews(deps) {
     } else {
       $('#entry-password').value = e.password || '';
     }
-    $('#entry-url').value = e.url || '';
+    if (type !== 'oauth') $('#entry-url').value = e.url || '';
     $('#entry-notes').value = e.notes || '';
     $('#entry-generated').classList.add('hidden');
     $('#modal-entry-title').textContent = 'Modifier la clé';
@@ -413,8 +433,8 @@ export function createVaultViews(deps) {
     const password = type === 'ssh_key'
       ? ($('#entry-secret-block')?.value || '').trim()
       : $('#entry-password').value;
-    const urlRaw = $('#entry-url').value.trim();
-    const url = type === 'ssh_key' ? urlRaw : normalizeEntryUrl(urlRaw);
+    const urlRaw = type === 'oauth' ? '' : $('#entry-url').value.trim();
+    const url = type === 'ssh_key' ? urlRaw : (type === 'oauth' ? '' : normalizeEntryUrl(urlRaw));
     const notes = $('#entry-notes').value.trim();
     const folderId = ($('#entry-folder')?.value || '').trim();
 
@@ -423,7 +443,7 @@ export function createVaultViews(deps) {
       $('#entry-title').focus();
       return null;
     }
-    if (!password) {
+    if (type !== 'oauth' && !password) {
       toast(deps.entrySecretRequiredLabel(type), 'error');
       if (type === 'ssh_key') $('#entry-secret-block')?.focus();
       else $('#entry-password').focus();

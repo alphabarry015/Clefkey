@@ -48,7 +48,7 @@ Secrets : uniquement via variables d’environnement (fichier `.env` local gitig
 
 1. **Inscription** : le client dérive (Argon2id) un matériel d’auth et une clé de coffre, génère une paire de clés, chiffre la vault key et la clé privée, enregistre un chemin de recovery, envoie les blobs + un `auth_verifier`.
 2. **Connexion** : salt (éventuellement factice) → dérivation du verifier → JWT si OK → déchiffrement local de la vault key.
-3. **Entrées** : JSON clair (titre, type `login`|`api_key`, username, password, notes, URL) chiffré AES-GCM ; la base ne stocke que `encrypted_data` (BYTEA).
+3. **Entrées** : JSON clair (titre, type `login`|`oauth`|`api_key`|`ssh_key`, username, password, notes, URL) chiffré AES-GCM ; la base ne stocke que `encrypted_data` (BYTEA).
 4. **Recovery** : preuve scellée côté serveur (HMAC), jamais le code de récupération en clair en base.
 
 ## Tables principales

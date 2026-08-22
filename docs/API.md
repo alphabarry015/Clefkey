@@ -32,6 +32,7 @@ Les exemples ci-dessous sont schématiques. N’y placez jamais de jetons, mots 
 | GET | `/auth/salt?email=` | Non | Salt pour dérivation client (toujours 200 si email fourni — sel factice si compte inconnu) |
 | GET | `/auth/me` | Oui | Profil (noms, email, compteurs — **sans** matériel crypto) |
 | PATCH | `/auth/me` | Oui | Mise à jour profil (noms, email) |
+| POST | `/auth/password` | Oui | Change le mot de passe maître (session déverrouillée, sans clés de récupération) |
 | POST | `/auth/recovery/begin` | Non | Démarre la récupération (preuve / challenge) |
 | POST | `/auth/recovery/complete` | Non | Termine la récupération et régénère le matériel |
 
@@ -45,6 +46,20 @@ Réponse **201** : `access_token`, `user_id`, `email`, noms, blobs crypto (néce
 ### GET / PATCH `/auth/me`
 
 Profil uniquement (noms, email, `entries_count`). Le matériel crypto n’est **pas** exposé : il reste disponible après login / register / recovery, et en session locale (`authMaterial`).
+
+### POST `/auth/password`
+
+Session JWT + preuve de l’ancien maître (vérificateur dérivé). Corps :
+
+```json
+{
+  "current_auth_verifier": "<base64>",
+  "auth_verifier": "<base64>",
+  "encrypted_vault_key": "<base64>"
+}
+```
+
+Le serveur compare le vérificateur actuel, remplace le vérificateur et le blob de `vaultKey`. Les clés de récupération **ne sont pas** consommées. Réponse : même forme que login (`access_token` + matériaux).
 
 ### POST `/auth/login`
 
@@ -69,7 +84,7 @@ Profil uniquement (noms, email, `entries_count`). Le matériel crypto n’est **
 
 \* Le proxy favicon est public mais restreint (pas d’IP privées) et rate-limité.
 
-Le **type** d’entrée (`login` ou `api_key`) vit uniquement dans le JSON chiffré côté client. L’API ne le distingue pas : elle stocke un blob opaque (plafond ~256 KiB décodés).
+Le **type** d’entrée (`login`, `oauth`, `api_key` ou `ssh_key`) vit uniquement dans le JSON chiffré côté client. L’API ne le distingue pas : elle stocke un blob opaque (plafond ~256 KiB décodés).
 
 ## Rate limiting
 

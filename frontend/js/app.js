@@ -66,6 +66,10 @@ const state = {
     try { return localStorage.getItem('clefkey.viewMode') === 'list' ? 'list' : 'grid'; }
     catch { return 'grid'; }
   })(),
+  projectsViewMode: (() => {
+    try { return localStorage.getItem('clefkey.projectsView') === 'list' ? 'list' : 'grid'; }
+    catch { return 'grid'; }
+  })(),
   dashTab: 'recent',
   dashSearch: '',
   typeFilter: 'all',
@@ -75,6 +79,7 @@ const state = {
   projectDetailSelectedIds: [],
   transferAllowUnassign: false,
   transferExcludeFolderId: '',
+  collapsedProjectIds: [],
   folders: [],
   foldersMetaEntryId: null,
   confirmCallback: null,
@@ -141,7 +146,8 @@ const {
   syncTypeFilterButtons, syncAddEntryButtonLabels, setEntryFormType,
   resetEntryFormModal,
   normalizeUser, userFromProfile, applyUserToUI, renderProfile,
-  closeAllProfileFieldEdits, initProfileFieldEdits,
+  closeAllProfileFieldEdits, initProfileFieldEdits, initPasswordChangeForm,
+  resetPasswordChangeForm,
   authMaterialFromPayload,
   hardLogout, lockVault,
   isRecoveryKeysModalOpen, clearDetailSecrets, closeAllModals,
@@ -268,6 +274,7 @@ const PAGE_TITLES = {
   'shares-sent': { title: 'Partage · Envoyé', subtitle: 'Clés que vous avez partagées' },
   contacts: { title: 'Contacts', subtitle: 'Destinataires de vos partages' },
   profile: { title: 'Mon profil', subtitle: 'Informations de votre compte' },
+  password: { title: 'Mot de passe maître', subtitle: 'Changez-le sans clés de récupération' },
   audit: { title: 'Audit', subtitle: 'Vérifiez si un mot de passe a fuité' },
   generator: { title: 'Générateur', subtitle: 'Mots de passe et passphrases sécurisés' },
 };
@@ -286,7 +293,7 @@ function updatePageTitle() {
   const page = PAGE_TITLES[state.page] || PAGE_TITLES.dashboard;
   $('#page-title').textContent = page.title;
   $('#page-subtitle').textContent = page.subtitle;
-  const onProfile = state.page === 'profile';
+  const onProfile = state.page === 'profile' || state.page === 'password';
   const onAudit = state.page === 'audit';
   const onGenerator = state.page === 'generator';
   const onShares = state.page === 'shares-received' || state.page === 'shares-sent' || state.page === 'contacts';
@@ -294,9 +301,85 @@ function updatePageTitle() {
   $('#fab-add').classList.toggle('hidden', onProfile || onShares || onProjects || onAudit || onGenerator);
 }
 
+let navSelectorWatch = 0;
+let navSelectorReady = false;
+
+function paintNavSelectorOverlap() {
+  const sel = $('.nav-selector');
+  const nav = $('.sidebar-nav');
+  if (!sel || !nav || sel.classList.contains('is-hidden')) {
+    $$('.nav-item').forEach((item) => item.classList.remove('nav-on-selector'));
+    return;
+  }
+  const sr = sel.getBoundingClientRect();
+  nav.querySelectorAll('.nav-item').forEach((item) => {
+    const r = item.getBoundingClientRect();
+    const overlap = r.bottom > sr.top + 8 && r.top < sr.bottom - 8;
+    item.classList.toggle('nav-on-selector', overlap);
+  });
+}
+
+function watchNavSelector(ms) {
+  cancelAnimationFrame(navSelectorWatch);
+  const end = performance.now() + ms + 40;
+  const tick = (now) => {
+    paintNavSelectorOverlap();
+    if (now < end) navSelectorWatch = requestAnimationFrame(tick);
+  };
+  navSelectorWatch = requestAnimationFrame(tick);
+}
+
+function syncNavSelector({ instant = false } = {}) {
+  const nav = $('.sidebar-nav');
+  const sel = $('.nav-selector');
+  const active = nav?.querySelector('.nav-item.active');
+  if (!nav || !sel) return;
+
+  if (!active) {
+    sel.classList.add('is-hidden');
+    paintNavSelectorOverlap();
+    return;
+  }
+
+  sel.classList.remove('is-hidden');
+  const navRect = nav.getBoundingClientRect();
+  const itemRect = active.getBoundingClientRect();
+  const y = itemRect.top - navRect.top + nav.scrollTop;
+  const x = itemRect.left - navRect.left;
+  const h = itemRect.height;
+  const w = navRect.right - itemRect.left;
+  const prevY = Number(sel.dataset.y || y);
+  const dist = Math.abs(y - prevY);
+  const hops = Math.max(1, Math.round(dist / Math.max(h, 1)));
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const skipAnim = instant || !navSelectorReady || reduce;
+  const ms = skipAnim ? 0 : Math.min(860, 260 + hops * 170);
+
+  sel.style.transition = skipAnim
+    ? 'none'
+    : `transform ${ms}ms cubic-bezier(0.22, 1, 0.36, 1), height ${ms}ms cubic-bezier(0.22, 1, 0.36, 1), width ${ms}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+  sel.style.width = `${w}px`;
+  sel.style.height = `${h}px`;
+  sel.style.transform = `translate(${x}px, ${y}px)`;
+  sel.dataset.y = String(y);
+  navSelectorReady = true;
+
+  if (skipAnim) {
+    paintNavSelectorOverlap();
+    return;
+  }
+  watchNavSelector(ms);
+}
+
 function switchPage(page) {
   if (!PAGE_TITLES[page]) page = 'dashboard';
+  applyVaultPage(page);
+  syncNavSelector();
+}
+
+function applyVaultPage(page) {
   if (page !== 'profile') closeAllProfileFieldEdits();
+  if (page !== 'password') resetPasswordChangeForm();
   if (page !== 'project-detail') {
     state.activeProjectId = null;
     state.projectDetailSelectedIds = [];
@@ -316,6 +399,7 @@ function switchPage(page) {
   $('#shares-sent-view')?.classList.toggle('hidden', page !== 'shares-sent');
   $('#contacts-view')?.classList.toggle('hidden', page !== 'contacts');
   $('#profile-view').classList.toggle('hidden', page !== 'profile');
+  $('#password-view')?.classList.toggle('hidden', page !== 'password');
   $('#audit-view')?.classList.toggle('hidden', page !== 'audit');
   $('#generator-view')?.classList.toggle('hidden', page !== 'generator');
   updatePageTitle();
@@ -330,6 +414,7 @@ function switchPage(page) {
     else if (page === 'shares-sent') renderSharesSent();
     else if (page === 'contacts') renderContactsPage();
     else if (page === 'profile') renderProfile();
+    else if (page === 'password') refreshIcons($('#password-view'));
     else if (page === 'audit') renderAudit();
     else if (page === 'generator') renderGenerator();
   } catch (err) {
@@ -343,22 +428,17 @@ deps.updatePageTitle = updatePageTitle;
 
 const MOBILE_BREAKPOINT = 900;
 
-const SIDEBAR_STORAGE_KEY = 'clefkey.sidebarCollapsed';
-
 function isMobileLayout() {
   return window.innerWidth <= MOBILE_BREAKPOINT;
 }
 
-function getSidebarPreference() {
-  return localStorage.getItem(SIDEBAR_STORAGE_KEY) !== '1';
-}
-
 function setSidebarExpanded(expanded) {
   $('#screen-vault').classList.toggle('sidebar-expanded', expanded);
+  requestAnimationFrame(() => syncNavSelector({ instant: true }));
 }
 
 function applySidebarState() {
-  setSidebarExpanded(isMobileLayout() ? false : getSidebarPreference());
+  setSidebarExpanded(!isMobileLayout());
 }
 
 function collapseSidebar() {
@@ -368,9 +448,6 @@ function collapseSidebar() {
 function toggleSidebar() {
   const expanded = !$('#screen-vault').classList.contains('sidebar-expanded');
   setSidebarExpanded(expanded);
-  if (!isMobileLayout()) {
-    localStorage.setItem(SIDEBAR_STORAGE_KEY, expanded ? '0' : '1');
-  }
 }
 
 deps.isMobileLayout = isMobileLayout;
@@ -382,6 +459,7 @@ $('#sidebar-overlay').addEventListener('click', collapseSidebar);
 window.addEventListener('resize', () => {
   if (!$('#screen-vault').classList.contains('active')) return;
   applySidebarState();
+  syncNavSelector({ instant: true });
 });
 
 function showVault() {
@@ -413,6 +491,7 @@ clearLoginForm();
 initTheme();
 initIcons();
 initProfileFieldEdits();
+initPasswordChangeForm();
 refreshIcons($('#screen-landing'));
 bindBreachWidget($('#lp-audit'), {
   form: '#lp-audit-form',

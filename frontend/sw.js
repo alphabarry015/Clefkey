@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v232';
+const CACHE_VERSION = 'v235';
 const CACHE_STATIC = `clefkey-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
@@ -27,6 +27,7 @@ const PRECACHE = [
   '/css/breach-switch.css',
   '/css/responsive-a.css',
   '/css/responsive-b.css',
+  '/css/vault-ds.css',
   '/css/docs.css',
   '/js/app.js',
   '/js/api.js',
@@ -71,6 +72,9 @@ const PRECACHE = [
   '/icons/icon.svg',
   '/icons/favicon.svg',
   '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/icon-512-maskable.png',
+  '/icons/apple-touch-icon.png',
   '/icons/favicon.ico',
 ];
 

@@ -67,6 +67,14 @@ export const api = {
     });
   },
 
+  changePassword(token, payload) {
+    return request('/auth/password', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+  },
+
   getProfile(token) {
     return request('/auth/me', { headers: { Authorization: `Bearer ${token}` } });
   },

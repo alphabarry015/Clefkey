@@ -146,7 +146,7 @@ export function bindVault(deps) {
 
   document.addEventListener('click', handleEntryClick);
 
-  $$('.view-mode-btn').forEach((btn) => {
+  $$('.view-mode-btn[data-view-mode]').forEach((btn) => {
     btn.addEventListener('click', () => setViewMode(btn.dataset.viewMode));
   });
 
@@ -250,10 +250,14 @@ export function bindVault(deps) {
   });
 
   $('#btn-copy-detail').addEventListener('click', async () => {
-    if (!(await copyText($('#detail-password').dataset.real, $('#btn-copy-detail')))) return;
     const entry = state.entries.find((x) => x.id === state.detailEntryId)
       || state.sharesReceived.find((x) => x.id === state.detailEntryId);
     const type = entry ? entryType(entry) : 'login';
+    if (type === 'oauth') {
+      toast('Pas de mot de passe — connexion via le fournisseur', 'info');
+      return;
+    }
+    if (!(await copyText($('#detail-password').dataset.real, $('#btn-copy-detail')))) return;
     const msg = type === 'ssh_key'
       ? 'Clé copiée'
       : type === 'api_key'
@@ -311,10 +315,34 @@ export function bindVault(deps) {
     }
   });
 
-  document.querySelector('.entry-type-pills')?.addEventListener('click', (e) => {
-    const pill = e.target.closest('.entry-type-pill[data-entry-type]');
-    if (!pill) return;
-    setEntryFormType(pill.dataset.entryType);
+  document.querySelector('#entry-type-menu')?.addEventListener('click', (e) => {
+    const option = e.target.closest('.entry-type-option[data-entry-type]');
+    if (!option) return;
+    setEntryFormType(option.dataset.entryType);
+    const menu = $('#entry-type-menu');
+    const picker = $('#entry-type-picker');
+    menu?.classList.add('is-collapsed');
+    picker?.setAttribute('aria-expanded', 'false');
+  });
+
+  $('#entry-type-picker')?.addEventListener('click', () => {
+    const menu = $('#entry-type-menu');
+    const picker = $('#entry-type-picker');
+    if (!menu || !picker) return;
+    const shouldOpen = menu.classList.contains('is-collapsed');
+    menu.classList.toggle('is-collapsed', !shouldOpen);
+    picker.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    if (shouldOpen) {
+      $('#entry-folder-tree')?.classList.add('is-collapsed');
+      $('#entry-folder-picker')?.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  $('#entry-oauth-providers')?.addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-oauth-provider]');
+    if (!chip) return;
+    const title = $('#entry-title');
+    if (title) title.value = chip.dataset.oauthProvider || title.value;
   });
 
   $$('.type-filter').forEach((btn) => {

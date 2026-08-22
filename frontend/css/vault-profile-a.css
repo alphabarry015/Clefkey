@@ -1,11 +1,13 @@
 /* Clefkey — vault-profile-a.css */
 /* ── Profil ──────────────────────────────────────────── */
 .profile-view {
-  padding: 0.5rem 0 5rem;
+  padding: 0.5rem clamp(1.25rem, 5vw, 2.75rem) 5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.25rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .profile-banner {

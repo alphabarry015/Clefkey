@@ -48,14 +48,14 @@
 }
 
 .breach-switch-tab.is-active {
-  background: var(--lp-blue, #3662d7);
+  background: var(--lp-blue, var(--accent));
   color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 4px 14px rgba(54, 98, 215, 0.35);
+  box-shadow: 0 4px 14px var(--accent-glow);
 }
 
 .breach-switch-tab:focus-visible {
-  outline: 2px solid var(--lp-blue, #3662d7);
+  outline: 2px solid var(--lp-blue, var(--accent));
   outline-offset: 2px;
 }
 

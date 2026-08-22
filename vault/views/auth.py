@@ -260,6 +260,50 @@ def recovery_complete(request):
 
 @csrf_exempt
 @require_http_methods(["POST"])
+@rate_limit("auth-password", limit=5, window_seconds=300)
+@require_auth
+def change_password(request):
+    """
+    Change le mot de passe maître depuis une session authentifiée.
+    Le client envoie le vérificateur actuel et les nouveaux matériaux dérivés.
+    Les clés de récupération ne sont ni exigées ni invalidées.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_error("Corps JSON invalide", 400)
+
+    current_b64 = data.get("current_auth_verifier")
+    auth_verifier_b64 = data.get("auth_verifier")
+    encrypted_vault_key_b64 = data.get("encrypted_vault_key")
+    if not current_b64 or not auth_verifier_b64 or not encrypted_vault_key_b64:
+        return api_error("Champs requis manquants", 400)
+
+    current_verifier = _decode_fixed_b64(current_b64, VERIFIER_SIZE, "current_auth_verifier")
+    if isinstance(current_verifier, str):
+        return api_error("Mot de passe actuel incorrect", 401)
+    auth_verifier = _decode_fixed_b64(auth_verifier_b64, VERIFIER_SIZE, "auth_verifier")
+    if isinstance(auth_verifier, str):
+        return api_error(auth_verifier, 400)
+    encrypted_vault_key = _decode_wrapped_key_b64(encrypted_vault_key_b64, "encrypted_vault_key")
+    if isinstance(encrypted_vault_key, str):
+        return api_error(encrypted_vault_key, 400)
+
+    user = request.vault_user
+    stored = bytes(user.auth_verifier)
+    if len(current_verifier) != len(stored) or not hmac.compare_digest(current_verifier, stored):
+        return api_error("Mot de passe actuel incorrect", 401)
+    if hmac.compare_digest(auth_verifier, stored):
+        return api_error("Le nouveau mot de passe doit être différent", 400)
+
+    user.auth_verifier = auth_verifier
+    user.encrypted_vault_key = encrypted_vault_key
+    user.save(update_fields=["auth_verifier", "encrypted_vault_key"])
+    return JsonResponse(_auth_response(user))
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
 @rate_limit("auth-login", limit=10, window_seconds=60)
 def login(request):
     try:

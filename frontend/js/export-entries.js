@@ -8,12 +8,14 @@ import { folderNameById, entryFolderId } from './folders.js';
 
 const TYPE_LABELS = {
   login: 'Connexion',
+  oauth: 'OAuth / SSO',
   api_key: 'Clé API',
   ssh_key: 'SSH / stockage',
 };
 
 const SECRET_LABELS = {
   login: 'Mot de passe',
+  oauth: 'Mot de passe',
   api_key: 'Clé API',
   ssh_key: 'Clé privée',
 };
@@ -82,9 +84,13 @@ function entryProjectName(entry, folders) {
 function entryFields(entry) {
   const type = entryTypeKey(entry);
   const fields = [
-    { label: 'Identifiant', value: (entry?.username || '').trim() || '—' },
-    { label: SECRET_LABELS[type], value: entry?.password || '—' },
+    { label: type === 'oauth' ? 'Email du compte' : 'Identifiant', value: (entry?.username || '').trim() || '—' },
   ];
+  if (type === 'oauth') {
+    fields.push({ label: 'Mot de passe', value: 'Aucun (connexion via le fournisseur)' });
+  } else {
+    fields.push({ label: SECRET_LABELS[type], value: entry?.password || '—' });
+  }
   const url = (entry?.url || '').trim();
   if (url) fields.push({ label: 'URL', value: url });
   const notes = (entry?.notes || '').trim();

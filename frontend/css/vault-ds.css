@@ -1,0 +1,510 @@
+/* Clefkey — design system visuel du coffre (pas de changement fonctionnel). */
+
+/* ── Carte globale ─────────────────────────────────────── */
+#screen-vault.screen.active {
+  padding: 0;
+  background: var(--bg-primary);
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#screen-vault .sidebar {
+  background: var(--sidebar-bg);
+  border-right: none;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  border-radius: 0;
+  color: var(--sidebar-text);
+  overflow-x: visible;
+}
+
+#screen-vault .vault-layout {
+  background: var(--bg-secondary);
+  border-radius: 0;
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Sidebar ───────────────────────────────────────────── */
+#screen-vault .sidebar-brand {
+  border-bottom: none;
+  padding: 1.5rem 1.25rem 1.1rem;
+}
+
+#screen-vault .sidebar-title {
+  color: var(--sidebar-text);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+#screen-vault .sidebar-subtitle {
+  color: var(--sidebar-muted);
+}
+
+#screen-vault .sidebar-section-label {
+  color: var(--sidebar-muted);
+  padding: 1.1rem 1.15rem 0.45rem;
+}
+
+#screen-vault .sidebar-nav {
+  --nav-notch: 1.15rem;
+  position: relative;
+  gap: 0.35rem;
+  padding: 0.15rem 0 0.15rem 0.85rem;
+  overflow: visible;
+}
+
+#screen-vault .nav-selector {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+  overflow: visible;
+  background: var(--sidebar-active-bg);
+  border-radius: 1.35rem 0 0 1.35rem;
+  will-change: transform, height, width;
+}
+
+#screen-vault .nav-selector.is-hidden {
+  opacity: 0;
+}
+
+#screen-vault .nav-selector::before,
+#screen-vault .nav-selector::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  width: var(--nav-notch);
+  height: var(--nav-notch);
+  background: transparent;
+  pointer-events: none;
+}
+
+#screen-vault .nav-selector::before {
+  top: calc(-1 * var(--nav-notch));
+  border-bottom-right-radius: var(--nav-notch);
+  box-shadow: 0.55rem 0.55rem 0 0.55rem var(--sidebar-active-bg);
+}
+
+#screen-vault .nav-selector::after {
+  bottom: calc(-1 * var(--nav-notch));
+  border-top-right-radius: var(--nav-notch);
+  box-shadow: 0.55rem -0.55rem 0 0.55rem var(--sidebar-active-bg);
+}
+
+#screen-vault .nav-item {
+  position: relative;
+  z-index: 1;
+  justify-content: flex-start;
+  gap: 0.85rem;
+  margin-right: 0.85rem;
+  padding: 0.78rem 1rem;
+  border-radius: 999px;
+  color: var(--sidebar-text);
+  font-weight: 500;
+  background: transparent;
+}
+
+#screen-vault .nav-item svg,
+#screen-vault .nav-item .lucide {
+  opacity: 0.95;
+  color: inherit;
+}
+
+#screen-vault .nav-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--sidebar-text);
+}
+
+#screen-vault .nav-item.active {
+  background: transparent;
+  color: var(--sidebar-text);
+  box-shadow: none;
+}
+
+#screen-vault .nav-item.active::before,
+#screen-vault .nav-item.active::after {
+  content: none;
+}
+
+#screen-vault .nav-item.nav-on-selector,
+#screen-vault .nav-item.nav-on-selector:hover {
+  background: transparent;
+  color: var(--sidebar-active-fg);
+}
+
+#screen-vault .nav-item.nav-on-selector svg,
+#screen-vault .nav-item.nav-on-selector .lucide {
+  color: var(--sidebar-active-fg);
+  opacity: 1;
+}
+
+#screen-vault .nav-badge {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--sidebar-text);
+}
+
+#screen-vault .nav-item.nav-on-selector .nav-badge {
+  background: color-mix(in srgb, var(--sidebar-active-fg) 12%, transparent);
+  color: var(--sidebar-active-fg);
+}
+
+#screen-vault .sidebar-add-btn {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--sidebar-text);
+  border-radius: 999px;
+  box-shadow: none;
+  margin: 0.35rem 0.85rem 0.85rem;
+}
+
+#screen-vault .sidebar-add-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
+  transform: none;
+  box-shadow: none;
+}
+
+#screen-vault .sidebar-footer {
+  border-top: none;
+  padding: 1.15rem 1.15rem 1.35rem;
+}
+
+#screen-vault .sidebar-lock-btn {
+  background: transparent;
+  border: none;
+  color: var(--sidebar-muted);
+  font-size: 0.78rem;
+  text-decoration: underline;
+  text-underline-offset: 0.22em;
+  justify-content: flex-start;
+  padding: 0.35rem 0.85rem;
+}
+
+#screen-vault .sidebar-lock-btn:hover,
+#screen-vault .sidebar-lock-btn:hover svg,
+#screen-vault .sidebar-lock-btn:hover .lucide {
+  color: var(--error);
+  stroke: currentColor;
+  background: transparent;
+  border: none;
+}
+
+#screen-vault:not(.sidebar-expanded) .sidebar-nav {
+  padding: 0 0.45rem;
+}
+
+#screen-vault:not(.sidebar-expanded) .nav-item {
+  margin-right: 0;
+}
+
+#screen-vault:not(.sidebar-expanded) .nav-selector {
+  border-radius: 14px;
+}
+
+#screen-vault:not(.sidebar-expanded) .nav-selector::before,
+#screen-vault:not(.sidebar-expanded) .nav-selector::after {
+  display: none;
+}
+
+/* ── Zone principale ───────────────────────────────────── */
+#screen-vault .vault-topbar {
+  background: var(--bg-secondary);
+  border-bottom: none;
+  padding: 1.35rem 1.75rem 0.85rem;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  position: relative;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+#screen-vault .topbar-title h1 {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+#screen-vault .topbar-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+#screen-vault .btn-menu {
+  background: var(--bg-elevated);
+  border: none;
+  border-radius: 999px;
+  width: 2.4rem;
+  height: 2.4rem;
+  align-items: center;
+  justify-content: center;
+}
+
+#screen-vault .topbar-user {
+  padding: 0;
+  border-radius: 999px;
+}
+
+#screen-vault .topbar-user:hover {
+  background: transparent;
+}
+
+#screen-vault .user-avatar {
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+}
+
+#screen-vault .vault-main {
+  background: var(--bg-secondary);
+  padding: 0.35rem 1.75rem 2.5rem;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ── Onglets ───────────────────────────────────────────── */
+#screen-vault .dash-tab,
+#screen-vault .type-filter,
+#screen-vault .folder-filter {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--text-muted);
+  padding: 0.45rem 0.15rem;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+#screen-vault .dash-tab:hover,
+#screen-vault .type-filter:hover,
+#screen-vault .folder-filter:hover {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+#screen-vault .dash-tab.active,
+#screen-vault .type-filter.active,
+#screen-vault .folder-filter.active {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--text-primary);
+  color: var(--text-primary);
+  font-weight: 700;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+#screen-vault .dash-tabs,
+#screen-vault .dash-type-filters,
+#screen-vault .type-filters {
+  gap: 1.15rem;
+}
+
+#screen-vault .dash-filter-sort .dash-tab.active {
+  background: transparent;
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+/* ── Dashboard : cartes conservées ─────────────────────── */
+#screen-vault .dash-hero-panel,
+#screen-vault .dash-stat {
+  background: var(--bg-secondary);
+  border: none;
+  box-shadow: var(--shadow-sm);
+  border-radius: 18px;
+}
+
+#screen-vault .dash-tile {
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+#screen-vault .dash-tiles-grid {
+  gap: 1.15rem;
+}
+
+/* ── Liste / lignes-cartes ─────────────────────────────── */
+#screen-vault .entries-grid {
+  gap: 0.65rem;
+}
+
+#screen-vault .entry-card,
+#screen-vault .entry-list-row {
+  background: var(--bg-elevated);
+  border: none;
+  border-radius: 14px;
+  box-shadow: none;
+  padding: 0.85rem 1rem;
+  min-height: 56px;
+}
+
+#screen-vault .entry-avatar,
+#screen-vault .entry-avatar.lg {
+  border-radius: 50%;
+}
+
+#screen-vault .entry-card:hover,
+#screen-vault .entry-list-row:hover {
+  background: var(--accent);
+  border: none;
+  box-shadow: 0 10px 24px var(--accent-glow);
+  color: #fff;
+}
+
+#screen-vault .entry-card:hover .entry-title,
+#screen-vault .entry-card:hover .entry-username,
+#screen-vault .entry-card:hover .entry-folder-badge,
+#screen-vault .entry-list-row:hover .entry-list-name {
+  color: #fff;
+}
+
+#screen-vault .entry-card:hover .btn-danger {
+  color: #fff;
+}
+
+#screen-vault .entry-card:hover .entry-icon-branded {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+#screen-vault .entry-actions .btn-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+#screen-vault .entry-card:hover .entry-actions .btn-icon {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+#screen-vault .entry-type-badge {
+  border: none;
+}
+
+#screen-vault .entry-type-badge-login {
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.14);
+}
+
+#screen-vault .entry-type-badge-api_key {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.16);
+}
+
+#screen-vault .entry-type-badge-ssh_key {
+  color: #3730a3;
+  background: rgba(79, 70, 229, 0.16);
+}
+
+#screen-vault .entry-type-badge-oauth {
+  color: #c2410c;
+  background: rgba(249, 115, 22, 0.16);
+}
+
+#entries-list.is-list {
+  gap: 0.55rem;
+}
+
+#screen-vault .project-folder-row:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+#screen-vault .project-folder-row:hover .project-folder-name,
+#screen-vault .project-folder-row:hover .project-folder-meta,
+#screen-vault .project-folder-row:hover .project-folder-toggle,
+#screen-vault .project-folder-row:hover .project-row-btn {
+  color: #fff;
+}
+
+#screen-vault .project-folder-row:hover .project-folder-icon {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+#screen-vault .project-folder-row:hover .project-folder-toggle:hover,
+#screen-vault .project-folder-row:hover .project-row-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+#screen-vault .project-folder-row:hover .project-row-btn-danger:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+#screen-vault .entry-list-row {
+  min-height: 52px;
+  padding: 0.7rem 1rem;
+}
+
+#screen-vault .entry-list-marker {
+  width: 8px;
+  height: 8px;
+}
+
+#screen-vault .entry-list-row:hover .entry-list-marker {
+  background: #fff;
+  opacity: 1;
+}
+
+/* ── Champs / boutons arrondis ─────────────────────────── */
+#screen-vault .search-box input,
+#screen-vault .btn,
+#screen-vault .profile-card,
+#screen-vault .profile-banner {
+  border-radius: 14px;
+}
+
+#screen-vault .search-box input {
+  background: var(--bg-elevated);
+  border: none;
+}
+
+#screen-vault .view-mode-btn {
+  border-radius: 999px;
+  border: none;
+}
+
+@media (max-width: 900px) {
+  #screen-vault .sidebar,
+  #screen-vault .vault-layout {
+    min-height: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  #screen-vault .nav-selector {
+    border-radius: 999px;
+  }
+
+  #screen-vault .nav-selector::before,
+  #screen-vault .nav-selector::after {
+    display: none;
+  }
+
+  #screen-vault .vault-topbar {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  #screen-vault .vault-main {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  #screen-vault .topbar-title h1 {
+    font-size: 1.25rem;
+  }
+}
