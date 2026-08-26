@@ -52,7 +52,7 @@ from .shares import (
     shares_sent,
     vault_shares,
 )
-from .static_pages import docs_app, favicon, health, index, manifest, service_worker
+from .static_pages import docs_app, favicon, health, index, manifest, privacy, service_worker
 
 __all__ = [
     "KEY_PROOF_SEAL_PREFIX",
@@ -60,6 +60,7 @@ __all__ = [
     "_seal_key_proof",
     "_key_proof_matches",
     "index",
+    "privacy",
     "docs_app",
     "favicon",
     "manifest",

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <script src="/js/privacy-theme.js" defer></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Politique de confidentialité de l’extension Clefkey.">
+  <meta name="theme-color" content="#000000">
+  <title>Politique de confidentialité — Clefkey.</title>
+  <link rel="icon" href="/icons/favicon.svg?v=168" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/privacy.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="privacy-body">
+  <main class="privacy-shell">
+    <header class="privacy-header">
+      <a href="/" class="privacy-brand">Clefkey<span>.</span></a>
+      <a href="/" class="privacy-back">Retour au site</a>
+    </header>
+
+    <article class="privacy-document">
+      <div class="privacy-switch" role="tablist" aria-label="Version de la politique">
+        <button type="button" class="privacy-switch-button is-active" role="tab" aria-selected="true" aria-controls="privacy-web" data-policy="privacy-web">Gestionnaire web</button>
+        <button type="button" class="privacy-switch-button" role="tab" aria-selected="false" aria-controls="privacy-extension" data-policy="privacy-extension">Extension navigateur</button>
+      </div>
+
+      <section id="privacy-web" class="privacy-policy" role="tabpanel">
+      <p class="privacy-kicker">Gestionnaire de mots de passe</p>
+      <h1>Politique de confidentialité — Gestionnaire Clefkey</h1>
+      <p class="privacy-meta">Dernière mise à jour : août 2026<br>Version : 1.0</p>
+
+      <h2>1. Responsable</h2>
+      <p>Le gestionnaire de mots de passe <strong>Clefkey</strong> est édité par le responsable du projet Clefkey (voir le dépôt <a href="https://github.com/alphabarry015/Gardefort" target="_blank" rel="noopener noreferrer">Clefkey</a> pour les coordonnées de contact).</p>
+
+      <h2>2. Principe général : pas de collecte</h2>
+      <p>Clefkey <strong>ne collecte aucune donnée</strong>, <strong>n’utilise aucun service d’analyse</strong>, de mesure d’audience ou de publicité, et <strong>n’envoie aucune donnée en clair</strong> vers des services tiers. Toutes les opérations sensibles (déverrouillage, déchiffrement) sont réalisées <strong>localement</strong> dans votre navigateur.</p>
+
+      <h2>3. Données traitées localement (jamais stockées)</h2>
+      <ul>
+        <li><strong>Mot de passe maître</strong> : utilisé uniquement en mémoire pendant la dérivation de la clé de chiffrement (Argon2id). Il n’est jamais écrit sur disque ni transmis au serveur.</li>
+        <li><strong>Clés de déchiffrement</strong> : conservées uniquement en mémoire pendant la session et effacées au verrouillage, après la durée d’inactivité configurée ou à la déconnexion.</li>
+        <li><strong>Identifiants déchiffrés</strong> : chargés en mémoire uniquement lorsque vous déverrouillez le coffre, et effacés au verrouillage.</li>
+      </ul>
+
+      <h2>4. Données stockées par le site</h2>
+      <ul>
+        <li><strong>Préférences</strong> (thème et paramètres d’affichage) : conservées localement dans votre navigateur. Aucune donnée sensible n’y est stockée.</li>
+        <li><strong>Session</strong> (jeton d’authentification et blobs <strong>chiffrés</strong>) : conservée dans le stockage de session du navigateur. Aucun secret n’est stocké en clair.</li>
+        <li><strong>Serveur Clefkey</strong> : conserve les informations nécessaires au compte et les données du coffre exclusivement sous forme chiffrée. Le contenu des identifiants n’est pas lisible par le serveur.</li>
+      </ul>
+
+      <h2>5. Transmissions réseau</h2>
+      <ul>
+        <li><strong>Serveur Clefkey</strong> (en HTTPS) : le site transmet le jeton d’authentification et des <strong>blobs chiffrés</strong> pour vous connecter et synchroniser votre coffre.</li>
+        <li><strong>Service de vérification anti-fuite</strong> (<code>api.pwnedpasswords.com</code>) : lors d’une vérification, seuls les 5 premiers caractères de l’empreinte SHA-1 sont transmis (principe de k-anonymité). Le mot de passe complet n’est jamais transmis.</li>
+        <li>Aucune donnée d’utilisation, télémétrie ou journal d’activité n’est envoyée.</li>
+      </ul>
+
+      <h2>6. Remplissage automatique et actions</h2>
+      <p>Le site ne remplit jamais un formulaire de manière autonome. Les données sont utilisées dans la page active uniquement lorsque vous déclenchez explicitement une action, comme l’affichage, la copie ou l’utilisation d’une entrée du coffre.</p>
+
+      <h2>7. Conservation et suppression</h2>
+      <ul>
+        <li>Les secrets en mémoire sont effacés au verrouillage, à la déconnexion ou après la durée d’inactivité configurée.</li>
+        <li>Le jeton et les blobs de session peuvent être supprimés immédiatement via « Se déconnecter ».</li>
+        <li>Aucune donnée n’est utilisée à des fins publicitaires ou conservée dans un serveur de collecte.</li>
+      </ul>
+
+      <h2>8. Sécurité</h2>
+      <ul>
+        <li>Dérivation de clé : Argon2id (64 MiB, t=3, p=4) — conforme au coffre Clefkey.</li>
+        <li>Chiffrement : AES-256-GCM avec nonce aléatoire et sel aléatoire.</li>
+        <li>Le mot de passe maître et les clés ne quittent jamais votre appareil.</li>
+      </ul>
+
+      <h2>9. Contact</h2>
+      <p>Pour toute question relative à cette politique ou à vos données, contactez le responsable du projet Clefkey via le dépôt public <a href="https://github.com/alphabarry015/Clefkey" target="_blank" rel="noopener noreferrer">Clefkey</a>.</p>
+
+      <hr>
+      <p class="privacy-note">Cette politique peut évoluer ; la date en tête de document reflète la dernière mise à jour.</p>
+      </section>
+
+      <section id="privacy-extension" class="privacy-policy" role="tabpanel" hidden>
+      <p class="privacy-kicker">Extension navigateur</p>
+      <h1>Politique de confidentialité — Extension Clefkey</h1>
+      <p class="privacy-meta">Dernière mise à jour : août 2026<br>Version : 0.1</p>
+
+      <h2>1. Responsable</h2>
+      <p>L’extension navigateur <strong>Clefkey</strong> est un client du coffre de mots de passe Clefkey. Elle est éditée par le responsable du projet Clefkey (voir le dépôt <a href="https://github.com/alphabarry015/Gardefort" target="_blank" rel="noopener noreferrer">Clefkey</a> pour les coordonnées de contact).</p>
+
+      <h2>2. Principe général : pas de collecte</h2>
+      <p>L’extension <strong>ne collecte aucune donnée</strong>, <strong>n’utilise aucun service d’analyse</strong>, de mesure d’audience ou de publicité, et <strong>n’envoie aucune donnée en clair</strong> vers des services tiers. Toutes les opérations sensibles (déverrouillage, déchiffrement) sont réalisées <strong>localement</strong> sur votre appareil.</p>
+
+      <h2>3. Données traitées localement (jamais stockées)</h2>
+      <ul>
+        <li><strong>Mot de passe maître</strong> : utilisé uniquement en mémoire pendant la dérivation de la clé de chiffrement (Argon2id). Il n’est jamais écrit sur disque ni transmis au serveur.</li>
+        <li><strong>Clés de déchiffrement</strong> (<code>vaultKey</code>, clé privée) : conservées uniquement en mémoire du service worker de l’extension, et effacées à la fermeture du navigateur, au verrouillage manuel, après la durée d’inactivité configurée ou à la déconnexion.</li>
+        <li><strong>Identifiants déchiffrés</strong> : chargés en mémoire uniquement lorsque vous déverrouillez la session, et effacés au verrouillage.</li>
+      </ul>
+
+      <h2>4. Données stockées par l’extension</h2>
+      <ul>
+        <li><strong>Préférences</strong> (URL du serveur, durée d’auto-verrouillage, thème) : stockées dans <code>chrome.storage.local</code>. Aucune donnée sensible.</li>
+        <li><strong>Session</strong> (jeton d’authentification et blobs <strong>chiffrés</strong>) : stockés dans <code>chrome.storage.session</code>, une zone de stockage effacée à la fermeture du navigateur et inaccessible aux scripts de contenu. Aucun secret n’est stocké en clair.</li>
+      </ul>
+
+      <h2>5. Transmissions réseau</h2>
+      <ul>
+        <li><strong>Serveur Clefkey</strong> (URL configurée dans les Options, en HTTPS) : l’extension transmet uniquement le jeton d’authentification (session) et des <strong>blobs chiffrés</strong> (jamais d’identifiants en clair), pour se connecter et récupérer votre coffre.</li>
+        <li><strong>Service de vérification anti-fuite</strong> (<code>api.pwnedpasswords.com</code>) : lors de la génération d’un mot de passe, l’extension envoie uniquement les 5 premiers caractères de l’empreinte SHA-1 (principe de k-anonymité). Le mot de passe complet n’est jamais transmis.</li>
+        <li>Aucune donnée d’utilisation, télémétrie ou journal d’activité n’est envoyée.</li>
+      </ul>
+
+      <h2>6. Permissions demandées et justification</h2>
+      <table>
+        <thead><tr><th>Permission</th><th>Usage</th></tr></thead>
+        <tbody>
+          <tr><td><code>storage</code></td><td>Enregistrer vos préférences et la session chiffrée.</td></tr>
+          <tr><td><code>activeTab</code> + <code>scripting</code></td><td>Injecter le remplissage automatique dans le formulaire actif, <strong>uniquement sur votre demande explicite</strong>.</td></tr>
+          <tr><td>Accès hôte au serveur Clefkey (<code>https://*.vercel.app/*</code>)</td><td>Communiquer avec votre coffre (HTTPS uniquement).</td></tr>
+          <tr><td>Accès hôte à <code>api.pwnedpasswords.com</code></td><td>Vérification anti-fuite des mots de passe générés.</td></tr>
+          <tr><td>Accès hôte optionnel <code>localhost</code></td><td>Développement local uniquement ; demandé à la volée, jamais installé par défaut.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>7. Remplissage automatique</h2>
+      <p>L’extension ne remplit jamais un formulaire de manière autonome : les identifiants ne sont injectés que lorsque vous cliquez explicitement sur un compte (dans la popup ou sur l’icône flottante). Elle ne lit que les champs de connexion de la page active, au moment où vous utilisez le remplissage.</p>
+
+      <h2>8. Conservation et suppression</h2>
+      <ul>
+        <li>Les secrets en mémoire sont effacés au verrouillage, à la déconnexion ou à la fermeture du navigateur.</li>
+        <li>Le jeton et les blobs de session sont supprimés automatiquement à la fermeture du navigateur ; vous pouvez les supprimer immédiatement via « Se déconnecter ».</li>
+        <li>Aucune donnée n’est conservée par l’éditeur de l’extension (aucun serveur de collecte).</li>
+      </ul>
+
+      <h2>9. Sécurité</h2>
+      <ul>
+        <li>Dérivation de clé : Argon2id (64 MiB, t=3, p=4) — conforme au coffre Clefkey.</li>
+        <li>Chiffrement : AES-256-GCM avec nonce aléatoire, sel aléatoire.</li>
+        <li>Le mot de passe maître et les clés ne quittent jamais votre appareil.</li>
+      </ul>
+
+      <h2>10. Contact</h2>
+      <p>Pour toute question relative à cette politique ou à vos données, contactez le responsable du projet Clefkey via le dépôt public <a href="https://github.com/alphabarry015/Clefkey" target="_blank" rel="noopener noreferrer">Clefkey</a>.</p>
+
+      <hr>
+      <p class="privacy-note">Cette politique peut évoluer ; la date en tête de document reflète la dernière mise à jour.</p>
+      </section>
+    </article>
+  </main>
+  <script src="/js/privacy.js" defer></script>
+</body>
+</html>

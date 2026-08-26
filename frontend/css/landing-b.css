@@ -261,6 +261,16 @@
   color: rgba(255, 255, 255, 0.55);
 }
 
+.lp-footer-link {
+  display: inline-block;
+  margin-left: 1rem;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.lp-footer-link:hover { color: var(--lp-blue); }
+
 .btn-back-landing {
   display: inline-flex;
   align-items: center;

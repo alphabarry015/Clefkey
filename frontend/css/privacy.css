@@ -1,0 +1,65 @@
+:root {
+  --privacy-bg: #0b0d12;
+  --privacy-panel: #12161e;
+  --privacy-text: #e8ebf0;
+  --privacy-muted: #9ca6b5;
+  --privacy-line: rgba(255, 255, 255, 0.12);
+  --privacy-accent: #79a7ff;
+}
+
+[data-theme="light"] {
+  --privacy-bg: #f5f7fb;
+  --privacy-panel: #ffffff;
+  --privacy-text: #172033;
+  --privacy-muted: #5e6878;
+  --privacy-line: rgba(23, 32, 51, 0.14);
+  --privacy-accent: #245edb;
+}
+
+* { box-sizing: border-box; }
+
+body.privacy-body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top right, rgba(65, 105, 180, 0.18), transparent 34%), var(--privacy-bg);
+  color: var(--privacy-text);
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  line-height: 1.7;
+}
+
+.privacy-shell { width: min(100% - 2rem, 920px); margin: 0 auto; padding: 1.25rem 0 4rem; }
+.privacy-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 3.5rem; }
+.privacy-brand { color: var(--privacy-text); font: 700 1.35rem/1 "Space Grotesk", sans-serif; text-decoration: none; }
+.privacy-brand span { color: var(--privacy-accent); }
+.privacy-back { color: var(--privacy-muted); font-size: 0.9rem; text-decoration: none; }
+.privacy-back:hover, .privacy-document a:hover { color: var(--privacy-accent); }
+.privacy-document { padding: clamp(1.5rem, 4vw, 3.5rem); background: var(--privacy-panel); border: 1px solid var(--privacy-line); border-radius: 8px; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.16); }
+.privacy-switch { display: flex; width: fit-content; margin: 0 auto 2.5rem; gap: 0.25rem; padding: 0.25rem; border: 1px solid var(--privacy-line); border-radius: 7px; background: rgba(127, 157, 210, 0.08); }
+.privacy-switch-button { padding: 0.55rem 0.85rem; border: 0; border-radius: 5px; background: transparent; color: var(--privacy-muted); cursor: pointer; font: 600 0.85rem "IBM Plex Sans", sans-serif; }
+.privacy-switch-button.is-active { background: var(--privacy-accent); color: #fff; }
+.privacy-switch-button:focus-visible { outline: 2px solid var(--privacy-accent); outline-offset: 2px; }
+.privacy-policy[hidden] { display: none !important; }
+.privacy-kicker { margin: 0 0 0.5rem; color: var(--privacy-accent); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+h1, h2 { font-family: "Space Grotesk", "Segoe UI", sans-serif; line-height: 1.2; }
+h1 { margin: 0; max-width: 760px; font-size: clamp(2rem, 5vw, 3.25rem); }
+h2 { margin: 2.6rem 0 0.75rem; font-size: 1.35rem; }
+p { margin: 0 0 1rem; }
+.privacy-meta, .privacy-note { color: var(--privacy-muted); }
+.privacy-meta { margin-top: 1rem; }
+li { margin: 0.65rem 0; padding-left: 0.25rem; }
+a { color: var(--privacy-accent); }
+code { padding: 0.12em 0.35em; border-radius: 4px; background: rgba(127, 157, 210, 0.14); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 0.88em; }
+table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 0.95rem; }
+th, td { padding: 0.8rem 0.75rem; border: 1px solid var(--privacy-line); text-align: left; vertical-align: top; }
+th { color: var(--privacy-text); font-weight: 700; }
+hr { margin: 2.5rem 0 1.25rem; border: 0; border-top: 1px solid var(--privacy-line); }
+
+@media (max-width: 640px) {
+  .privacy-shell { width: min(100% - 1rem, 920px); padding-top: 0.75rem; }
+  .privacy-header { margin-bottom: 2rem; }
+  .privacy-document { padding: 1.25rem; }
+  .privacy-switch { display: flex; width: 100%; }
+  .privacy-switch-button { flex: 1; }
+  table { display: block; overflow-x: auto; white-space: normal; }
+  th, td { min-width: 150px; }
+}
