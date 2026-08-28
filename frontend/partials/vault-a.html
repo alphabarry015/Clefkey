@@ -86,57 +86,20 @@
             <div id="dash-stats-grid" class="dash-stats-grid"></div>
           </section>
 
-          <section class="dash-actions" aria-label="Actions rapides">
-            <button
-              type="button"
-              class="dash-action-btn"
-              data-action="dash-action"
-              data-target="new-key"
-              title="Ajouter une nouvelle clé"
-            >
-              <span class="dash-action-icon"><i data-lucide="plus"></i></span>
-              <span class="dash-action-label">Nouvelle clé</span>
-            </button>
-            <button
-              type="button"
-              class="dash-action-btn"
-              data-action="dash-action"
-              data-target="password"
-              title="Générer un mot de passe fort"
-            >
-              <span class="dash-action-icon"><i data-lucide="key-round"></i></span>
-              <span class="dash-action-label">Mot de passe fort</span>
-            </button>
-            <button
-              type="button"
-              class="dash-action-btn"
-              data-action="dash-action"
-              data-target="passphrase"
-              title="Générer une passphrase"
-            >
-              <span class="dash-action-icon"><i data-lucide="dices"></i></span>
-              <span class="dash-action-label">Passphrase</span>
-            </button>
-            <button
-              type="button"
-              class="dash-action-btn"
-              data-action="dash-action"
-              data-target="audit"
-              title="Vérifier fuites et compromissions"
-            >
-              <span class="dash-action-icon"><i data-lucide="shield-check"></i></span>
-              <span class="dash-action-label">Audit</span>
-            </button>
-            <button
-              type="button"
-              class="dash-action-btn"
-              data-action="dash-action"
-              data-target="project"
-              title="Créer un projet"
-            >
-              <span class="dash-action-icon"><i data-lucide="layers"></i></span>
-              <span class="dash-action-label">Projet</span>
-            </button>
+          <section class="dash-recent" aria-labelledby="dash-recent-title">
+            <div class="projects-section-head">
+              <h2 id="dash-recent-title" class="projects-section-title">Clés récentes</h2>
+              <button
+                type="button"
+                class="dash-section-link"
+                data-action="dash-stat"
+                data-target="vault"
+              >Tout voir</button>
+            </div>
+            <div id="dash-recent-grid" class="dash-tiles-grid"></div>
+            <p id="dash-recent-empty" class="dash-graph-empty hidden">
+              Aucune clé pour l’instant.
+            </p>
           </section>
 
           <section class="dash-insights" aria-label="Analyse">
@@ -153,6 +116,7 @@
 
         <div id="vault-view" class="vault-view hidden">
         <div class="vault-toolbar">
+          <div class="vault-toolbar-row">
           <div class="search-box">
             <span class="search-icon"><i data-lucide="search"></i></span>
             <input type="text" id="search-input" placeholder="Rechercher un site, identifiant...">
@@ -189,6 +153,7 @@
                 <line x1="3" y1="18" x2="3.01" y2="18"></line>
               </svg>
             </button>
+          </div>
           </div>
           <div class="vault-filter-combo dash-filter-combo" aria-label="Filtres">
             <div class="dash-filter-group">

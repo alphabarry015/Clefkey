@@ -1,0 +1,316 @@
+/* Page /extension/ — un seul écran plein viewport */
+
+html:has(body.ext-page) {
+  height: 100%;
+  height: 100dvh;
+}
+
+body.ext-page {
+  display: block;
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  background: #000000;
+  color: #ffffff;
+}
+
+[data-theme="light"] body.ext-page {
+  background: #f4f6fb;
+  color: #0f172a;
+}
+
+.ext-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: calc(1rem + env(safe-area-inset-top)) clamp(1.25rem, 4vw, 2.75rem) 1rem;
+  background: transparent;
+}
+
+.ext-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding:
+    calc(3.75rem + env(safe-area-inset-top))
+    clamp(1.25rem, 4vw, 2.75rem)
+    calc(1.25rem + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.ext-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  align-items: stretch;
+  gap: clamp(1.25rem, 4vw, 3.5rem);
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ext-hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+}
+
+.ext-hero-kicker {
+  margin: 0 0 0.85rem;
+  color: var(--accent);
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ext-hero-title {
+  margin: 0;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: clamp(2.5rem, 6.5vw, 4.6rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.ext-hero-accent,
+.ext-hero-main {
+  display: block;
+}
+
+.ext-hero-accent {
+  color: var(--accent);
+}
+
+.ext-hero-lead {
+  max-width: 36rem;
+  margin: 1.25rem 0 0;
+  font-size: clamp(0.95rem, 1.5vw, 1.12rem);
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+[data-theme="light"] .ext-hero-lead {
+  color: rgba(15, 23, 42, 0.68);
+}
+
+.ext-hero-visual {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+}
+
+.ext-browser {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, #161a22 0%, #0c0f14 100%);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.38);
+  overflow: hidden;
+}
+
+[data-theme="light"] .ext-browser {
+  border-color: rgba(15, 23, 42, 0.1);
+  background: linear-gradient(180deg, #ffffff 0%, #eef1f7 100%);
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.12);
+}
+
+.ext-browser-bar {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.35rem;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .ext-browser-bar {
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+.ext-browser-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+[data-theme="light"] .ext-browser-dot {
+  background: rgba(15, 23, 42, 0.18);
+}
+
+.ext-browser-dot:nth-child(1) { background: #ff5f57; }
+.ext-browser-dot:nth-child(2) { background: #febc2e; }
+.ext-browser-dot:nth-child(3) { background: #28c840; }
+
+.ext-browser-url {
+  flex: 1;
+  margin-left: 0.45rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="light"] .ext-browser-url {
+  background: rgba(15, 23, 42, 0.06);
+  color: rgba(15, 23, 42, 0.5);
+}
+
+.ext-browser-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #000000;
+}
+
+.ext-shot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top right;
+}
+
+.ext-downloads {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 1.15rem 0 0;
+  padding: 0;
+}
+
+.ext-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.ext-card {
+  padding: 1.05rem 1.15rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="light"] .ext-card {
+  border-color: rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+}
+
+.ext-card.is-recommended {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.ext-card-kicker {
+  margin: 0 0 0.3rem;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ext-card h2 {
+  margin: 0 0 0.45rem;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 1.12rem;
+}
+
+.ext-card p {
+  margin: 0 0 0.9rem;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.88rem;
+}
+
+[data-theme="light"] .ext-card p {
+  color: rgba(15, 23, 42, 0.62);
+}
+
+.ext-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ext-btn-primary {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.ext-btn-primary:hover:not(.is-disabled) {
+  filter: brightness(1.06);
+  color: #ffffff;
+}
+
+.ext-btn-primary.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+  pointer-events: none;
+}
+
+.ext-note {
+  margin: 0.85rem 0 0;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="light"] .ext-note {
+  color: rgba(15, 23, 42, 0.5);
+}
+
+@media (max-width: 860px) {
+  body.ext-page {
+    height: auto;
+    max-height: none;
+    min-height: 100dvh;
+    overflow: auto;
+  }
+
+  .ext-screen {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .ext-hero {
+    grid-template-columns: 1fr;
+    flex: none;
+    min-height: min(52dvh, 28rem);
+  }
+
+  .ext-hero-visual {
+    order: -1;
+    height: min(38dvh, 18rem);
+  }
+
+  .ext-cards {
+    grid-template-columns: 1fr;
+  }
+}

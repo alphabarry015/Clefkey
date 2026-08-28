@@ -354,7 +354,8 @@ def _update_profile(request):
         return api_error("Corps JSON invalide", 400)
 
     user = request.vault_user
-    email = data.get("email")
+    if "email" in data:
+        return api_error("L'email ne peut pas être modifié", 400)
     updated = False
 
     name_fields = (
@@ -370,15 +371,6 @@ def _update_profile(request):
         if err:
             return api_error(err, 400)
         setattr(user, field_name, value)
-        updated = True
-
-    if email is not None:
-        email = email.strip().lower()
-        if not email:
-            return api_error("L'email est requis", 400)
-        if VaultUser.objects.filter(email=email).exclude(id=user.id).exists():
-            return api_error("Email déjà utilisé", 409)
-        user.email = email
         updated = True
 
     if not updated:

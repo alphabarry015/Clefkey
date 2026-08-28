@@ -27,6 +27,7 @@ export function bindVault(deps) {
     clearDetailSecrets, closeAllModals, settleMasterConfirm,
     isRecoveryKeysModalOpen, closeModal: _cm, openModal: _om,
     switchPage, collapseSidebar, isMobileLayout, lockVault,
+    openProjectPage,
   } = deps;
   void _cm; void _om;
 
@@ -119,6 +120,27 @@ export function bindVault(deps) {
       openAddModal();
       return;
     }
+    if (action === 'dash-filter-type') {
+      state.typeFilter = actionEl.dataset.type || 'all';
+      state.folderFilter = 'all';
+      syncTypeFilterButtons();
+      syncFolderFilterButtons();
+      switchPage('vault');
+      return;
+    }
+    if (action === 'dash-open-project') {
+      const folderId = actionEl.dataset.id;
+      if (folderId === 'none') {
+        state.typeFilter = 'all';
+        state.folderFilter = 'none';
+        syncTypeFilterButtons();
+        syncFolderFilterButtons();
+        switchPage('vault');
+        return;
+      }
+      openProjectPage(folderId);
+      return;
+    }
     if (action === 'dash-stat' || action === 'dash-action') {
       const target = actionEl.dataset.target;
       if (!target) return;
@@ -131,6 +153,12 @@ export function bindVault(deps) {
         const tab = document.querySelector(`#generator-view [data-gen-mode="${target}"]`);
         if (tab) tab.click();
         return;
+      }
+      if (action === 'dash-stat' && target === 'vault') {
+        state.typeFilter = 'all';
+        state.folderFilter = 'all';
+        syncTypeFilterButtons();
+        syncFolderFilterButtons();
       }
       const pageMap = {
         vault: 'vault',

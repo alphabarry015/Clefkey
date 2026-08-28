@@ -16,6 +16,11 @@ def privacy(request):
 
 
 @require_GET
+def extension_page(request):
+    return render(request, "extension.html")
+
+
+@require_GET
 def docs_app(request, slug=None):
     docs_path = settings.BASE_DIR / "frontend" / "docs.html"
     return FileResponse(docs_path.open("rb"), content_type="text/html; charset=utf-8")

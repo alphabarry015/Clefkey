@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    (function () {
+      try {
+        var key = 'clefkey_theme';
+        var pref = localStorage.getItem(key) || 'system';
+        if (pref !== 'light' && pref !== 'dark' && pref !== 'system') pref = 'system';
+        var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var resolved = pref === 'system' ? (dark ? 'dark' : 'light') : pref;
+        document.documentElement.setAttribute('data-theme-pref', pref);
+        document.documentElement.setAttribute('data-theme', resolved);
+      } catch (e) {}
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta
+    name="description"
+    content="L’extension Clefkey pour Chrome, Edge et Firefox. Autofill et enregistrement, coffre chiffré sur votre appareil."
+  >
+  <meta name="theme-color" content="#000000">
+  <title>Extension Clefkey.</title>
+  <link rel="icon" href="/icons/favicon.svg?v=168" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico?v=168" sizes="any">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/privacy.css">
+  <link rel="stylesheet" href="/css/extension.css?v=250">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  >
+</head>
+<body class="privacy-body ext-page">
+  <header class="ext-top">
+    <a href="/" class="privacy-brand">Clefkey<span>.</span></a>
+    <a href="/" class="privacy-back">Retour au site</a>
+  </header>
+
+  <main class="ext-screen">
+  <section class="ext-hero" aria-labelledby="ext-hero-title">
+    <div class="ext-hero-copy">
+      <p class="ext-hero-kicker">Extension navigateur</p>
+      <h1 id="ext-hero-title" class="ext-hero-title">
+        <span class="ext-hero-accent">Le coffre.</span>
+        <span class="ext-hero-main">Là où vous naviguez.</span>
+      </h1>
+      <p class="ext-hero-lead">
+        Remplissez vos identifiants, créez un mot de passe et enregistrez un compte
+        sans quitter la page. Le déchiffrement se fait sur votre appareil.
+        Le serveur ne lit jamais vos secrets.
+      </p>
+    </div>
+    <div class="ext-hero-visual">
+      <div class="ext-browser">
+        <div class="ext-browser-bar" aria-hidden="true">
+          <span class="ext-browser-dot"></span>
+          <span class="ext-browser-dot"></span>
+          <span class="ext-browser-dot"></span>
+          <span class="ext-browser-url">clefkey.app</span>
+        </div>
+        <div class="ext-browser-body">
+          <img
+            class="ext-shot"
+            src="/assets/extension-hero.jpg"
+            alt="Clefkey avec le popup de l’extension ouvert, formulaire de déverrouillage."
+            width="1600"
+            height="900"
+          >
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ext-downloads" aria-label="Installation">
+    <div class="ext-cards">
+      <article class="ext-card" id="card-chromium">
+        <p class="ext-card-kicker">Chromium</p>
+        <h2>Chrome, Edge et Brave</h2>
+        <p>
+          Le bouton d’installation s’affichera ici dès que l’extension
+          sera disponible sur le Chrome Web Store.
+        </p>
+        <span class="ext-btn ext-btn-primary is-disabled" aria-disabled="true">
+          Bientôt disponible
+        </span>
+      </article>
+
+      <article class="ext-card" id="card-firefox">
+        <p class="ext-card-kicker">Firefox</p>
+        <h2>Firefox</h2>
+        <p>
+          Le bouton d’installation s’affichera ici dès que l’extension
+          sera disponible dans le catalogue Firefox.
+        </p>
+        <span class="ext-btn ext-btn-primary is-disabled" aria-disabled="true">
+          Bientôt disponible
+        </span>
+      </article>
+    </div>
+    <p class="ext-note">
+      Pas encore de lien d’installation.
+      Consultez la <a href="/privacy/">politique de confidentialité</a>
+      et la <a href="/docs/">documentation</a>.
+    </p>
+  </section>
+  </main>
+
+  <script type="module" src="/js/extension-page.js"></script>
+</body>
+</html>

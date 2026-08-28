@@ -175,6 +175,52 @@ export function createVaultViews(deps) {
     return `${badges.join('')}${project}`;
   }
 
+  function entryRecency(entry) {
+    const updated = Date.parse(entry?.updated_at);
+    if (Number.isFinite(updated)) return updated;
+    const created = Date.parse(entry?.created_at);
+    return Number.isFinite(created) ? created : 0;
+  }
+
+  function dashBarRowMarkup(label, count, pct, fillClass, action, extra) {
+    const fill = fillClass ? ` ${fillClass}` : '';
+    return `
+      <button type="button" class="dash-bar-row" data-action="${esc(action)}" ${extra}
+        title="${esc(label)}">
+        <span class="dash-bar-label">${esc(label)}</span>
+        <span class="dash-bar-track">
+          <span class="dash-bar-fill${fill}" style="width:${pct}%"></span>
+        </span>
+        <span class="dash-bar-value">${count}</span>
+      </button>`;
+  }
+
+  function renderDashboardRecent() {
+    const grid = $('#dash-recent-grid');
+    const empty = $('#dash-recent-empty');
+    if (!grid || !empty) return;
+    const recent = [...state.entries]
+      .sort((a, b) => entryRecency(b) - entryRecency(a))
+      .slice(0, 8);
+    if (recent.length === 0) {
+      grid.replaceChildren();
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+    const markup = recent.map((e, i) => `
+      <button type="button" class="${deps.dashTileClassName(e)}"
+        style="${deps.dashTileStyle(e, i)}" data-action="show-entry"
+        data-id="${esc(e.id)}" title="${esc(e.title)}">
+        ${deps.dashTileIconMarkup(e)}
+        <span class="dash-tile-name">${esc(e.title)}</span>
+        ${dashTileMetaMarkup(e)}
+      </button>`).join('');
+    setHtml(grid, markup);
+    refreshIcons(grid);
+    setupFaviconImages(grid);
+  }
+
   function renderDashboardStats() {
     const stats = $('#dash-stats-grid');
     const graphTypes = $('#dash-graph-types');
@@ -184,33 +230,26 @@ export function createVaultViews(deps) {
     const contacts = deps.getShareContacts().length;
     const shares = state.sharesReceived.length + state.sharesSent.length;
     setHtml(stats, `
-      <button type="button" class="dash-stat" data-action="dash-stat" data-target="vault" title="Voir toutes les clés">
-        <span class="dash-stat-icon"><i data-lucide="key-square"></i></span>
+      <button type="button" class="dash-stat" data-action="dash-stat" data-target="vault"
+        title="Voir toutes les clés">
         <span class="dash-stat-value">${state.entries.length}</span>
         <span class="dash-stat-label">Clés</span>
       </button>
-      <button type="button" class="dash-stat" data-action="dash-stat" data-target="projects" title="Voir les projets">
-        <span class="dash-stat-icon"><i data-lucide="layers"></i></span>
+      <button type="button" class="dash-stat" data-action="dash-stat" data-target="projects"
+        title="Voir les projets">
         <span class="dash-stat-value">${state.folders.length}</span>
         <span class="dash-stat-label">Projets</span>
       </button>
-      <button type="button" class="dash-stat" data-action="dash-stat" data-target="contacts" title="Voir les contacts">
-        <span class="dash-stat-icon"><i data-lucide="users"></i></span>
+      <button type="button" class="dash-stat" data-action="dash-stat" data-target="contacts"
+        title="Voir les contacts">
         <span class="dash-stat-value">${contacts}</span>
         <span class="dash-stat-label">Contacts</span>
       </button>
-      <button
-        type="button"
-        class="dash-stat"
-        data-action="dash-stat"
-        data-target="shares-received"
-        title="Voir les partages"
-      >
-        <span class="dash-stat-icon"><i data-lucide="mail"></i></span>
+      <button type="button" class="dash-stat" data-action="dash-stat"
+        data-target="shares-received" title="Voir les partages">
         <span class="dash-stat-value">${shares}</span>
         <span class="dash-stat-label">Partages</span>
       </button>`);
-    refreshIcons(stats);
 
     if (graphTypes) {
       const counts = { login: 0, oauth: 0, api_key: 0, ssh_key: 0 };
@@ -220,66 +259,53 @@ export function createVaultViews(deps) {
       }
       const total = Math.max(1, state.entries.length);
       const pct = (n) => Math.round((n / total) * 100);
-      setHtml(graphTypes, `
-        <div class="dash-bar-row">
-          <span class="dash-bar-label">Connexions</span>
-          <span class="dash-bar-track"><span class="dash-bar-fill" style="width:${pct(counts.login)}%"></span></span>
-          <span class="dash-bar-value">${counts.login}</span>
-        </div>
-        <div class="dash-bar-row">
-          <span class="dash-bar-label">OAuth</span>
-          <span class="dash-bar-track">
-            <span class="dash-bar-fill is-orange" style="width:${pct(counts.oauth)}%"></span>
-          </span>
-          <span class="dash-bar-value">${counts.oauth}</span>
-        </div>
-        <div class="dash-bar-row">
-          <span class="dash-bar-label">API</span>
-          <span class="dash-bar-track">
-            <span class="dash-bar-fill is-success" style="width:${pct(counts.api_key)}%"></span>
-          </span>
-          <span class="dash-bar-value">${counts.api_key}</span>
-        </div>
-        <div class="dash-bar-row">
-          <span class="dash-bar-label">SSH</span>
-          <span class="dash-bar-track">
-            <span class="dash-bar-fill is-indigo" style="width:${pct(counts.ssh_key)}%"></span>
-          </span>
-          <span class="dash-bar-value">${counts.ssh_key}</span>
-        </div>`);
+      setHtml(graphTypes, [
+        dashBarRowMarkup('Connexions', counts.login, pct(counts.login), '',
+          'dash-filter-type', 'data-type="login"'),
+        dashBarRowMarkup('OAuth', counts.oauth, pct(counts.oauth), 'is-orange',
+          'dash-filter-type', 'data-type="oauth"'),
+        dashBarRowMarkup('API', counts.api_key, pct(counts.api_key), 'is-success',
+          'dash-filter-type', 'data-type="api_key"'),
+        dashBarRowMarkup('SSH', counts.ssh_key, pct(counts.ssh_key), 'is-indigo',
+          'dash-filter-type', 'data-type="ssh_key"'),
+      ].join(''));
     }
 
     if (graphProjects) {
       const perProject = state.folders
         .map((f) => ({
+          id: f.id,
           name: f.name,
           count: state.entries.filter((e) => entryFolderId(e) === f.id).length,
         }))
         .filter((p) => p.count > 0)
         .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
+        .slice(0, 3);
       const unassigned = state.entries.filter((e) => !entryFolderId(e)).length;
       const rows = [...perProject];
-      if (unassigned > 0) rows.push({ name: 'Sans projet', count: unassigned });
+      if (unassigned > 0) {
+        rows.push({ id: 'none', name: 'Sans projet', count: unassigned });
+      }
       if (rows.length === 0) {
         setHtml(graphProjects, '<p class="dash-graph-empty">Aucune clé pour l\'instant.</p>');
         return;
       }
       const max = Math.max(1, ...rows.map((r) => r.count));
-      setHtml(graphProjects, rows.map((r) => `
-        <div class="dash-bar-row" title="${esc(r.name)}">
-          <span class="dash-bar-label">${esc(r.name)}</span>
-          <span class="dash-bar-track">
-            <span class="dash-bar-fill" style="width:${Math.round((r.count / max) * 100)}%"></span>
-          </span>
-          <span class="dash-bar-value">${r.count}</span>
-        </div>`).join(''));
+      setHtml(graphProjects, rows.map((r) => dashBarRowMarkup(
+        r.name,
+        r.count,
+        Math.round((r.count / max) * 100),
+        '',
+        'dash-open-project',
+        `data-id="${esc(r.id)}"`,
+      )).join(''));
     }
   }
 
   function renderDashboard() {
     updateEntryCounts();
     renderDashboardStats();
+    renderDashboardRecent();
   }
 
   function entryListRowMarkup(entry, index) {

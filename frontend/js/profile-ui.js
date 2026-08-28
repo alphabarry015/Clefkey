@@ -74,13 +74,6 @@ export function createProfile(deps) {
       requiredMessage: 'Le nom est requis',
       getValue: (user) => user.last_name,
     },
-    email: {
-      input: '#inline-edit-email',
-      required: true,
-      requiredMessage: "L'email est requis",
-      getValue: (user) => user.email,
-      normalize: (value) => value.trim().toLowerCase(),
-    },
   };
 
   function formatProfileDate(iso) {
@@ -99,8 +92,9 @@ export function createProfile(deps) {
   }
 
   function shortenUserId(id) {
-    if (!id || id.length < 12) return id || EMPTY_VALUE;
-    return `${id.slice(0, 8)}…${id.slice(-4)}`;
+    if (!id) return EMPTY_VALUE;
+    if (id.length <= 8) return id;
+    return `${id.slice(0, 4)}…${id.slice(-4)}`;
   }
 
   function updateProfileChip() {
@@ -216,10 +210,6 @@ export function createProfile(deps) {
 
     if (config.required && !value) {
       toast(config.requiredMessage, 'error');
-      return;
-    }
-    if (field === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      toast('Email invalide', 'error');
       return;
     }
 

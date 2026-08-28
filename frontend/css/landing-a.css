@@ -78,9 +78,9 @@
 }
 
 [data-theme="light"] .lp-nav {
-  background: rgba(244, 246, 251, 0.98);
-  border-left-color: rgba(15, 23, 42, 0.12);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.12);
+  background: transparent;
+  border-left-color: transparent;
+  box-shadow: none;
 }
 
 .lp-header {
