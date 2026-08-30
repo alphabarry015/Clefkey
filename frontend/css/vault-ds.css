@@ -271,7 +271,7 @@
 }
 
 #screen-vault .vault-layout:has(#vault-view:not(.hidden)) .vault-topbar {
-  padding-bottom: 0.15rem;
+  padding-bottom: 0;
 }
 
 #screen-vault .vault-main:has(#vault-view:not(.hidden)) {
@@ -510,6 +510,30 @@
   #screen-vault .vault-main {
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+
+  #screen-vault .vault-layout:has(#vault-view:not(.hidden)) .vault-topbar {
+    padding-bottom: 0;
+  }
+
+  #screen-vault .vault-main:has(#vault-view:not(.hidden)) {
+    padding-top: 0;
+  }
+
+  #vault-view .vault-toolbar {
+    padding-top: 0;
+    margin-top: 0;
+    gap: 0.45rem;
+  }
+
+  #vault-view .vault-toolbar-row {
+    order: 2;
+  }
+
+  #vault-view .vault-filter-combo {
+    order: 0;
+    margin: 0;
+    padding: 0;
   }
 
   #screen-vault .topbar-title h1 {

@@ -7,6 +7,7 @@ import {
 import { api } from './api.js';
 import { createDevEntry, updateDevEntry } from './dev.js';
 import { preloadFavicon } from './favicon.js';
+import { getDetailPlainSecret } from './detail-secret.js';
 import { downloadEntriesTxt, downloadEntriesPdf } from './export-entries.js';
 import { copyToClipboard } from './compat.js';
 import { setLucideIcon } from './icons.js';
@@ -21,7 +22,8 @@ export function bindVault(deps) {
     renderDashboard, renderEntries, setViewMode, renderContactsPage,
     openAddModal, openEditModal, readEntryFormData, resetEntryFormModal,
     setEntryFormType, syncTypeFilterButtons, syncAddEntryButtonLabels,
-    syncFolderFilterButtons, refreshCurrentView, loadEntries,
+    syncFolderFilterButtons, refreshCurrentView,
+    applyLocalVaultEntry,
     openShareModal, entryType,
     requestMasterPasswordConfirmation, showEntry,
     clearDetailSecrets, closeAllModals, settleMasterConfirm,
@@ -276,7 +278,7 @@ export function bindVault(deps) {
     const el = $('#detail-password');
     const icon = $('#btn-toggle-pwd').querySelector('[data-lucide], .lucide');
     const visible = el.dataset.visible === 'true';
-    el.textContent = visible ? '••••••••••••' : el.dataset.real;
+    el.textContent = visible ? '••••••••••••' : getDetailPlainSecret();
     el.dataset.visible = visible ? 'false' : 'true';
     if (icon) setLucideIcon(icon, visible ? 'eye' : 'eye-off');
   });
@@ -289,7 +291,7 @@ export function bindVault(deps) {
       toast('Pas de mot de passe — connexion via le fournisseur', 'info');
       return;
     }
-    if (!(await copyText($('#detail-password').dataset.real, $('#btn-copy-detail')))) return;
+    if (!(await copyText(getDetailPlainSecret(), $('#btn-copy-detail')))) return;
     const msg = type === 'ssh_key'
       ? 'Clé copiée'
       : type === 'api_key'
@@ -375,6 +377,8 @@ export function bindVault(deps) {
     if (!chip) return;
     const title = $('#entry-title');
     if (title) title.value = chip.dataset.oauthProvider || title.value;
+    const urlInput = $('#entry-url');
+    if (urlInput && chip.dataset.oauthUrl) urlInput.value = chip.dataset.oauthUrl;
   });
 
   $$('.type-filter').forEach((btn) => {
@@ -428,8 +432,12 @@ export function bindVault(deps) {
           return;
         }
         const encrypted = await encryptData(data, state.vaultKey);
-        await api.updateEntry(state.token, editingId, toB64(encrypted));
-        await loadEntries();
+        const saved = await api.updateEntry(state.token, editingId, toB64(encrypted));
+        applyLocalVaultEntry(data, {
+          id: editingId,
+          created_at: saved.created_at,
+          updated_at: saved.updated_at,
+        });
         if (data.url) void preloadFavicon(data.url);
         refreshCurrentView();
         closeModal($('#modal-add'));
@@ -442,8 +450,12 @@ export function bindVault(deps) {
       }
 
       const encrypted = await encryptData(data, state.vaultKey);
-      await api.createEntry(state.token, toB64(encrypted));
-      await loadEntries();
+      const created = await api.createEntry(state.token, toB64(encrypted));
+      applyLocalVaultEntry(data, {
+        id: created.id,
+        created_at: created.created_at,
+        updated_at: created.updated_at,
+      });
       if (data.url) void preloadFavicon(data.url);
       refreshCurrentView();
       closeModal($('#modal-add'));

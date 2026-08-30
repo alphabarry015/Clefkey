@@ -1,4 +1,4 @@
-/* Clefkey — style.css (barrel) */
+/* Clefkey — barrel de repli (les pages chargent les feuilles en parallèle). */
 @import url('./base-p1.css');
 @import url('./base-p2.css');
 @import url('./vault-layout-a-p1.css');

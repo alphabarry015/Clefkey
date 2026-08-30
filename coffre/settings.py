@@ -46,15 +46,15 @@ def _default_allowed_hosts() -> list[str]:
     return list(dict.fromkeys(hosts))
 
 
-DEBUG = os.getenv("DEBUG", "false" if IS_VERCEL else "true").lower() in ("1", "true", "yes")
+DEBUG = os.getenv("DEBUG", "false").lower() in ("1", "true", "yes")
 
 
 def _resolve_secret_key() -> str:
-    """SECRET_KEY depuis l'env ; en DEBUG, fichier local gitignoré ; sinon erreur."""
+    """SECRET_KEY depuis l'env ; hors Vercel, fichier local gitignoré ; sinon erreur."""
     env_key = os.getenv("SECRET_KEY", "").strip()
     if env_key:
         return env_key
-    if not DEBUG:
+    if IS_VERCEL:
         raise RuntimeError(
             "SECRET_KEY doit être défini en production (variable d'environnement)."
         )

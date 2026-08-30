@@ -18,6 +18,22 @@ import {
   $, $$, esc, setHtml, toast, openModal, closeModal,
 } from './ui.js';
 
+async function mapPool(items, concurrency, mapper) {
+  if (!items.length) return [];
+  const out = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const index = next++;
+      out[index] = await mapper(items[index], index);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () => worker()),
+  );
+  return out;
+}
+
 export function createVaultViews(deps) {
   const { state, refreshIcons } = deps;
   
@@ -32,28 +48,16 @@ export function createVaultViews(deps) {
       deps.populateFolderSelect();
       return;
     }
-    const concurrency = 6;
-    const decrypted = new Array(raw.length);
-    let next = 0;
-
-    async function worker() {
-      while (next < raw.length) {
-        const index = next++;
-        const e = raw[index];
-        try {
-          const encrypted = fromB64(e.encrypted_data);
-          const data = await decryptData(encrypted, state.vaultKey);
-          decrypted[index] = prepareEntry({ ...data, ...e });
-        } catch (err) {
-          console.warn('Clé ignorée (déchiffrement impossible):', e.id, err);
-          decrypted[index] = null;
-        }
+    const decrypted = await mapPool(raw, 6, async (e) => {
+      try {
+        const encrypted = fromB64(e.encrypted_data);
+        const data = await decryptData(encrypted, state.vaultKey);
+        return prepareEntry({ ...data, id: e.id, created_at: e.created_at, updated_at: e.updated_at });
+      } catch (err) {
+        console.warn('Clé ignorée (déchiffrement impossible):', e.id, err);
+        return null;
       }
-    }
-
-    await Promise.all(
-      Array.from({ length: Math.min(concurrency, raw.length) }, () => worker()),
-    );
+    });
     const all = decrypted.filter(Boolean);
     const meta = all.find((e) => isFoldersMetaEntry(e));
     state.foldersMetaEntryId = meta?.id || null;
@@ -65,6 +69,30 @@ export function createVaultViews(deps) {
     }
     deps.syncFolderFilterButtons();
     deps.populateFolderSelect();
+  }
+
+  function applyLocalVaultEntry(plaintext, meta) {
+    const prepared = prepareEntry({
+      ...plaintext,
+      id: meta.id,
+      created_at: meta.created_at,
+      updated_at: meta.updated_at,
+    });
+    if (isFoldersMetaEntry(prepared)) {
+      state.foldersMetaEntryId = prepared.id;
+      state.folders = foldersFromMetaEntry(prepared);
+      deps.syncFolderFilterButtons();
+      deps.populateFolderSelect();
+      return;
+    }
+    if (isVaultMetaEntry(prepared)) return;
+    const idx = state.entries.findIndex((e) => e.id === prepared.id);
+    if (idx >= 0) state.entries[idx] = prepared;
+    else state.entries.push(prepared);
+  }
+
+  function removeLocalVaultEntry(id) {
+    state.entries = state.entries.filter((e) => e.id !== id);
   }
 
   function getFilteredEntries() {
@@ -106,11 +134,10 @@ export function createVaultViews(deps) {
       api.getSharesSent(state.token),
     ]);
 
-    state.sharesReceived = [];
-    for (const s of rawReceived) {
+    const receivedMapped = await mapPool(rawReceived, 6, async (s) => {
       try {
         const data = await decryptFromSender(fromB64(s.encrypted_data), state.privateKey);
-        state.sharesReceived.push({
+        return {
           ...prepareEntry(data),
           id: s.id,
           shareId: s.id,
@@ -119,11 +146,13 @@ export function createVaultViews(deps) {
           sender_email: s.sender_email,
           sender_display_name: s.sender_display_name,
           created_at: s.created_at,
-        });
+        };
       } catch (err) {
         console.warn('Partage reçu ignoré:', s.id, err);
+        return null;
       }
-    }
+    });
+    state.sharesReceived = receivedMapped.filter(Boolean);
 
     state.sharesSent = rawSent.map((s) => {
       const entry = state.entries.find((e) => e.id === s.entry_id);
@@ -472,8 +501,12 @@ export function createVaultViews(deps) {
     } else {
       $('#entry-password').value = e.password || '';
     }
-    if (type !== 'oauth') $('#entry-url').value = e.url || '';
-    $('#entry-notes').value = e.notes || '';
+    if (type === 'oauth') {
+      $('#entry-url').value = e.notes || e.url || '';
+    } else {
+      $('#entry-url').value = e.url || '';
+    }
+    $('#entry-notes').value = type === 'oauth' ? '' : (e.notes || '');
     $('#entry-generated').classList.add('hidden');
     $('#modal-entry-title').textContent = 'Modifier la clé';
     setHtml($('#btn-save-entry'), '<i data-lucide="check-circle"></i> Mettre à jour');
@@ -490,14 +523,21 @@ export function createVaultViews(deps) {
     const password = type === 'ssh_key'
       ? ($('#entry-secret-block')?.value || '').trim()
       : $('#entry-password').value;
-    const urlRaw = type === 'oauth' ? '' : $('#entry-url').value.trim();
-    const url = type === 'ssh_key' ? urlRaw : (type === 'oauth' ? '' : normalizeEntryUrl(urlRaw));
-    const notes = $('#entry-notes').value.trim();
+    const urlRaw = $('#entry-url').value.trim();
+    const url = type === 'ssh_key'
+      ? urlRaw
+      : (type === 'oauth' ? (normalizeEntryUrl(urlRaw) || urlRaw) : normalizeEntryUrl(urlRaw));
+    const notes = type === 'oauth' ? urlRaw : $('#entry-notes').value.trim();
     const folderId = ($('#entry-folder')?.value || '').trim();
 
     if (!title) {
       toast(deps.entryTitleRequiredLabel(type), 'error');
       $('#entry-title').focus();
+      return null;
+    }
+    if (type === 'oauth' && !username) {
+      toast('L\'email du compte est requis', 'error');
+      $('#entry-username').focus();
       return null;
     }
     if (type !== 'oauth' && !password) {
@@ -527,7 +567,7 @@ export function createVaultViews(deps) {
             return;
           }
           await api.deleteEntry(state.token, id);
-          await loadEntries();
+          removeLocalVaultEntry(id);
           if ($('#modal-detail').classList.contains('open')) {
             closeModal($('#modal-detail'));
             deps.clearDetailSecrets();
@@ -548,7 +588,7 @@ export function createVaultViews(deps) {
   }
 
   return {
-    loadEntries, loadShares, getFilteredEntries, refreshCurrentView, updateEntryCounts,
+    loadEntries, applyLocalVaultEntry, removeLocalVaultEntry, loadShares, getFilteredEntries, refreshCurrentView, updateEntryCounts,
     dashTileMetaMarkup, renderDashboard, renderEntries,
     setViewMode, syncViewModeToggle,
     showEntry, copyPassword, openAddModal, openEditModal, readEntryFormData, deleteEntry,

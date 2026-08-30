@@ -1,6 +1,6 @@
 """Anti-SSRF favicon : hôtes privés / localhost refusés."""
 
-from django.test import SimpleTestCase
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 
 from vault.favicon import (
     _pinned_request_target,
@@ -44,3 +44,14 @@ class FaviconSsrfTests(SimpleTestCase):
 
     def test_resolve_global_ips_rejects_localhost(self):
         self.assertIsNone(_resolve_global_ips("localhost"))
+
+
+@override_settings(
+    SECRET_KEY="test-secret-key-for-favicon-auth",
+    RATE_LIMIT_REQUIRE_UPSTASH=False,
+)
+class FaviconProxyAuthTests(TestCase):
+    def test_unauthenticated_favicon_is_rejected(self):
+        client = Client()
+        response = client.get("/vault/favicon", {"url": "https://example.com/"})
+        self.assertEqual(response.status_code, 401)

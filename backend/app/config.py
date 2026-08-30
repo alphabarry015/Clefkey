@@ -6,18 +6,13 @@ from pathlib import Path
 from jose import jwt
 
 _BASE_DIR = Path(__file__).resolve().parent.parent.parent
-_DEBUG = os.getenv("DEBUG", "true").lower() in ("1", "true", "yes")
 
 
 def _resolve_secret_key() -> str:
-    """SECRET_KEY depuis l'env ; en DEBUG, fichier local gitignoré ; sinon erreur."""
+    """SECRET_KEY depuis l'env ; sinon fichier local gitignoré (stack FastAPI locale)."""
     env_key = os.getenv("SECRET_KEY", "").strip()
     if env_key:
         return env_key
-    if not _DEBUG:
-        raise RuntimeError(
-            "SECRET_KEY doit être défini en production (variable d'environnement)."
-        )
     secret_path = _BASE_DIR / ".django_secret"
     if secret_path.is_file():
         stored = secret_path.read_text(encoding="utf-8").strip()

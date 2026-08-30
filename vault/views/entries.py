@@ -26,6 +26,7 @@ def _get_owned_entry(request, entry_id) -> VaultEntry | None:
 
 @csrf_exempt
 @require_auth
+@rate_limit("vault-entries", limit=120, window_seconds=60)
 def vault_entries(request):
     """Liste (GET) ou crée (POST) des entrées chiffrées du coffre."""
     if request.method == "GET":

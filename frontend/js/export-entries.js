@@ -94,7 +94,7 @@ function entryFields(entry) {
   const url = (entry?.url || '').trim();
   if (url) fields.push({ label: 'URL', value: url });
   const notes = (entry?.notes || '').trim();
-  if (notes) fields.push({ label: 'Notes', value: notes });
+  if (notes) fields.push({ label: type === 'oauth' ? 'Site' : 'Notes', value: notes });
   return fields;
 }
 

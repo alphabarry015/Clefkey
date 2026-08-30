@@ -137,6 +137,13 @@
   gap: clamp(1.25rem, 3vw, 2.25rem);
 }
 
+.lp-nav-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: inherit;
+}
+
 .lp-nav a {
   position: relative;
   color: rgba(255, 255, 255, 0.88);
@@ -316,11 +323,27 @@
   font-size: 0.82rem;
   font-weight: 600;
   text-decoration: none;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease;
   min-width: 0;
   box-shadow: none;
   backdrop-filter: none;
   flex-shrink: 0;
+}
+
+.lp-header-github {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.lp-header-github .lp-github-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.lp-nav .lp-nav-github {
+  display: none;
 }
 
 .lp-header-login {

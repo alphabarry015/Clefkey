@@ -297,7 +297,11 @@ export function createShares(deps) {
     const count = contact.share_count || 0;
 
     $('#contacts-detail-name').textContent = name;
-    $('#contacts-detail-email').textContent = contact.email;
+    const emailEl = $('#contacts-detail-email');
+    if (emailEl) {
+      emailEl.textContent = contact.email;
+      emailEl.href = `mailto:${contact.email}`;
+    }
     if ($('#contacts-detail-share-count')) {
       $('#contacts-detail-share-count').textContent = String(count);
     }

@@ -45,7 +45,13 @@
   text-decoration: none;
 }
 
-.copyable-field a:hover { color: var(--accent-light); text-decoration: underline; }
+.copyable-field a {
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.copyable-field a:hover { color: var(--accent-light); }
 
 .mono {
   font-family: ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;

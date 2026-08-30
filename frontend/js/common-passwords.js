@@ -1,9 +1,6 @@
 /**
  * Vérification contre les listes SecLists (sélection Passwords).
- * Chargement en 2 phases via manifeste :
- *  1. listes prioritaires (rapide) → validation possible
- *  2. reste en arrière-plan → enrichit le Set
- * Timeout pour ne pas bloquer l'inscription si /data/ est lent.
+ * Charge uniquement les listes prioritaires du manifeste (pas les ~9 Mo restants).
  */
 
 const MANIFEST_URL = '/data/common-passwords-manifest.json';
@@ -12,7 +9,6 @@ const PRIORITY_BUDGET_MS = 15000;
 
 let commonSet = null;
 let loadPromise = null;
-let backgroundStarted = false;
 
 function addLinesToSet(text, set) {
   for (const line of text.split(/\r?\n/)) {
@@ -45,26 +41,8 @@ async function fetchTexts(paths) {
   return Promise.all(ok.map((r) => r.text()));
 }
 
-function startBackgroundLoad(restPaths, set) {
-  if (backgroundStarted || !restPaths.length) return;
-  backgroundStarted = true;
-  // Par lots pour ne pas saturer le réseau / Vercel
-  const chunkSize = 4;
-  (async () => {
-    for (let i = 0; i < restPaths.length; i += chunkSize) {
-      const chunk = restPaths.slice(i, i + chunkSize);
-      try {
-        const texts = await fetchTexts(chunk);
-        for (const text of texts) addLinesToSet(text, set);
-      } catch {
-        // ignore lot en échec
-      }
-    }
-  })();
-}
-
 /**
- * Charge les listes prioritaires (lazy). Enrichit ensuite le reste en arrière-plan.
+ * Charge les listes prioritaires du manifeste (lazy, à l’inscription).
  * @returns {Promise<Set<string>>}
  */
 export async function loadCommonPasswords() {
@@ -85,7 +63,6 @@ export async function loadCommonPasswords() {
     const priority = Array.isArray(manifest.priority) && manifest.priority.length
       ? manifest.priority.filter((p) => allPaths.includes(p))
       : allPaths.slice(0, Math.min(5, allPaths.length));
-    const rest = allPaths.filter((p) => !priority.includes(p));
 
     const budget = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Délai dépassé pour les listes de mots de passe')), PRIORITY_BUDGET_MS);
@@ -95,7 +72,6 @@ export async function loadCommonPasswords() {
     const set = new Set();
     for (const text of texts) addLinesToSet(text, set);
     commonSet = set;
-    startBackgroundLoad(rest, set);
     return commonSet;
   })();
 

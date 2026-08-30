@@ -152,6 +152,10 @@
   text-overflow: ellipsis;
 }
 
+.topbar-subtitle:empty {
+  display: none;
+}
+
 .btn-menu {
   display: none;
   background: var(--bg-card);

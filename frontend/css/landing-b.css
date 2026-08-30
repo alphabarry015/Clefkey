@@ -3,7 +3,7 @@
   color: var(--lp-blue);
   background: transparent;
   border: none;
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .lp-github:focus-visible {

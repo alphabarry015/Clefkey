@@ -1,7 +1,7 @@
 /**
  * Markup avatars / tuiles dashboard pour les clés.
  */
-import { getFaviconUrl, getSiteDomain, entryFaviconSource, setupFaviconImages } from './favicon.js';
+import { getSiteDomain, entryFaviconSource, setupFaviconImages } from './favicon.js';
 import { esc, getAvatarColor } from './ui.js';
 
 export function createEntryMarkup(deps) {
@@ -15,19 +15,16 @@ export function createEntryMarkup(deps) {
       return `<span class="dash-tile-letter">${letter}</span>`;
     }
     const siteUrl = entryFaviconSource(entry);
-    const faviconUrl = getFaviconUrl(siteUrl);
-    if (!faviconUrl) return `<span class="dash-tile-letter">${letter}</span>`;
+    if (!getSiteDomain(siteUrl)) return `<span class="dash-tile-letter">${letter}</span>`;
 
     return `
       <span class="dash-tile-logo">
         <img
           class="dash-tile-favicon"
-          src="${esc(faviconUrl)}"
           alt=""
           loading="lazy"
           decoding="async"
           data-site-url="${esc(siteUrl)}"
-          onerror="window.onFaviconError(this)"
         >
         <span class="dash-tile-letter dash-tile-letter-fallback">${letter}</span>
       </span>`;
@@ -52,22 +49,19 @@ export function createEntryMarkup(deps) {
       return `<div class="entry-avatar" style="background:linear-gradient(135deg,${c1},${c2})">${letter}</div>`;
     }
     const siteUrl = entryFaviconSource(entry);
-    const faviconUrl = getFaviconUrl(siteUrl);
-    if (!faviconUrl) {
+    if (!getSiteDomain(siteUrl)) {
       return `<div class="entry-avatar" style="background:linear-gradient(135deg,${c1},${c2})">${letter}</div>`;
     }
     return `
       <div class="entry-avatar entry-icon entry-icon-branded">
         <img
           class="entry-favicon"
-          src="${esc(faviconUrl)}"
           alt=""
           width="24"
           height="24"
           loading="lazy"
           decoding="async"
           data-site-url="${esc(siteUrl)}"
-          onerror="window.onFaviconError(this)"
         >
         <span class="entry-letter">${letter}</span>
       </div>`;
@@ -83,10 +77,9 @@ export function createEntryMarkup(deps) {
       return;
     }
     const siteUrl = entryFaviconSource(entry);
-    const faviconUrl = getFaviconUrl(siteUrl);
     el.className = 'entry-avatar lg entry-icon entry-icon-branded';
     el.style.background = '';
-    if (!faviconUrl) {
+    if (!getSiteDomain(siteUrl)) {
       el.style.background = `linear-gradient(135deg,${c1},${c2})`;
       el.textContent = (entry.title?.[0] || '?').toUpperCase();
       return;
@@ -94,13 +87,11 @@ export function createEntryMarkup(deps) {
     el.classList.add('entry-icon');
     const img = document.createElement('img');
     img.className = 'entry-favicon';
-    img.src = faviconUrl;
     img.alt = '';
     img.width = 28;
     img.height = 28;
     img.decoding = 'async';
     img.dataset.siteUrl = siteUrl || '';
-    img.onerror = function onFaviconImgError() { window.onFaviconError(this); };
     const letterEl = document.createElement('span');
     letterEl.className = 'entry-letter';
     letterEl.textContent = letter;

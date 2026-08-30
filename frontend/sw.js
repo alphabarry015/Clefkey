@@ -1,14 +1,12 @@
-const CACHE_VERSION = 'v250';
+const CACHE_VERSION = 'v266';
 const CACHE_STATIC = `clefkey-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
 const PRECACHE = [
   '/',
   '/docs/',
-  '/extension/',
   '/favicon.ico',
   '/css/theme.css',
-  '/css/style.css',
   '/css/base-p1.css',
   '/css/base-p2.css',
   '/css/vault-layout-a-p1.css',
@@ -31,7 +29,6 @@ const PRECACHE = [
   '/css/vault-ds.css',
   '/css/docs.css',
   '/css/privacy.css',
-  '/css/extension.css',
   '/js/app.js',
   '/js/app-compose.js',
   '/js/app-nav.js',
@@ -43,6 +40,7 @@ const PRECACHE = [
   '/js/session.js',
   '/js/dev.js',
   '/js/favicon.js',
+  '/js/detail-secret.js',
   '/js/folders.js',
   '/js/icons.js',
   '/js/pwa.js',
@@ -69,7 +67,6 @@ const PRECACHE = [
   '/js/bind-projects.js',
   '/js/bind-shares.js',
   '/js/docs-app.js',
-  '/js/extension-page.js',
   '/js/markdown.js',
   '/vendor/hash-wasm.esm.min.js',
   '/vendor/noble-ed25519.bundle.js',
@@ -141,9 +138,6 @@ self.addEventListener('fetch', (event) => {
       fetch(request).catch(async () => {
         if (url.pathname.startsWith('/docs')) {
           return (await caches.match('/docs/')) || caches.match('/');
-        }
-        if (url.pathname.startsWith('/extension')) {
-          return (await caches.match('/extension/')) || caches.match('/');
         }
         return caches.match('/') || caches.match('/index.html');
       }),

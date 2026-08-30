@@ -33,6 +33,9 @@ class SecurityHeadersMiddleware:
         response.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), clipboard-write=(self)")
         response.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        path = request.path
+        if path.startswith(("/css/", "/js/", "/vendor/", "/icons/", "/assets/", "/data/")):
+            response.setdefault("Cache-Control", "public, max-age=86400")
         if request.is_secure() or request.META.get("HTTP_X_FORWARDED_PROTO") == "https":
             response.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         return response

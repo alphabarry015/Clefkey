@@ -116,6 +116,27 @@
 
         <div id="vault-view" class="vault-view hidden">
         <div class="vault-toolbar">
+          <div class="vault-filter-combo dash-filter-combo" aria-label="Filtres">
+            <div class="dash-filter-group">
+              <span class="dash-filter-caption">Type</span>
+              <div class="type-filters dash-type-filters" role="group" aria-label="Filtrer par type">
+                <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
+                <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
+                <button type="button" class="type-filter" data-type-filter="oauth">OAuth</button>
+                <button type="button" class="type-filter" data-type-filter="api_key">API</button>
+                <button type="button" class="type-filter" data-type-filter="ssh_key">SSH</button>
+              </div>
+            </div>
+            <div class="dash-filter-sep" aria-hidden="true"></div>
+            <div class="dash-filter-group">
+              <span class="dash-filter-caption">Projet</span>
+              <div class="folder-filters dash-folder-filters" role="group" aria-label="Filtrer par projet">
+                <button type="button" class="folder-filter active" data-folder-filter="all">Tous</button>
+                <button type="button" class="folder-filter" data-folder-filter="none">Sans</button>
+                <span id="vault-folder-filter-list" class="folder-filter-list"></span>
+              </div>
+            </div>
+          </div>
           <div class="vault-toolbar-row">
           <div class="search-box">
             <span class="search-icon"><i data-lucide="search"></i></span>
@@ -154,27 +175,6 @@
               </svg>
             </button>
           </div>
-          </div>
-          <div class="vault-filter-combo dash-filter-combo" aria-label="Filtres">
-            <div class="dash-filter-group">
-              <span class="dash-filter-caption">Type</span>
-              <div class="type-filters dash-type-filters" role="group" aria-label="Filtrer par type">
-                <button type="button" class="type-filter active" data-type-filter="all">Tous</button>
-                <button type="button" class="type-filter" data-type-filter="login">Connexions</button>
-                <button type="button" class="type-filter" data-type-filter="oauth">OAuth</button>
-                <button type="button" class="type-filter" data-type-filter="api_key">API</button>
-                <button type="button" class="type-filter" data-type-filter="ssh_key">SSH</button>
-              </div>
-            </div>
-            <div class="dash-filter-sep" aria-hidden="true"></div>
-            <div class="dash-filter-group">
-              <span class="dash-filter-caption">Projet</span>
-              <div class="folder-filters dash-folder-filters" role="group" aria-label="Filtrer par projet">
-                <button type="button" class="folder-filter active" data-folder-filter="all">Tous</button>
-                <button type="button" class="folder-filter" data-folder-filter="none">Sans</button>
-                <span id="vault-folder-filter-list" class="folder-filter-list"></span>
-              </div>
-            </div>
           </div>
         </div>
 

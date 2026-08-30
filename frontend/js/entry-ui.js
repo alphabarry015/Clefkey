@@ -1,6 +1,8 @@
 /**
  * UI des clés : types, labels, détail, filtres type.
  */
+import { firstUrlFromText, normalizeEntryUrl } from './favicon.js';
+import { setDetailPlainSecret } from './detail-secret.js';
 import { entryFolderId, folderNameById, entryInKnownFolder, isVaultMetaEntry } from './folders.js';
 import { setLucideIcon } from './icons.js';
 import { $, $$, EMPTY_VALUE, esc, setHtml } from './ui.js';
@@ -94,7 +96,7 @@ export function createEntryUi(deps) {
       ? 'Compte fournisseur'
       : usernameText;
     $('#detail-password').textContent = '••••••••••••';
-    $('#detail-password').dataset.real = e.password || '';
+    setDetailPlainSecret(e.password || '');
     $('#detail-password').dataset.visible = 'false';
     $('#detail-password-field')?.classList.toggle('hidden', entryType(e) === 'oauth');
     const icon = $('#btn-toggle-pwd')?.querySelector('[data-lucide], .lucide');
@@ -103,31 +105,42 @@ export function createEntryUi(deps) {
     const urlField = $('#detail-url-field');
     const link = $('#detail-url');
     const linkIcon = urlField?.querySelector('.field-link-icon');
-    if (e.url && entryType(e) !== 'oauth') {
+    const isOauth = entryType(e) === 'oauth';
+    const siteText = isOauth ? ((e.notes || e.url || '').trim()) : (e.url || '').trim();
+    if (urlField && link && siteText) {
       urlField.classList.remove('hidden');
-      link.textContent = e.url;
+      link.textContent = siteText;
+      const href = isOauth
+        ? (firstUrlFromText(siteText) || normalizeEntryUrl(siteText))
+        : normalizeEntryUrl(e.url);
       if (entryType(e) === 'ssh_key' && !/^https?:\/\//i.test(e.url)) {
         link.removeAttribute('href');
         link.removeAttribute('target');
         link.classList.add('detail-url-plain');
         linkIcon?.classList.add('hidden');
-      } else {
-        link.href = e.url.startsWith('http') ? e.url : `https://${e.url}`;
+      } else if (href) {
+        link.href = href;
         link.target = '_blank';
-        link.rel = 'noopener';
+        link.rel = 'noopener noreferrer';
         link.classList.remove('detail-url-plain');
         linkIcon?.classList.remove('hidden');
+      } else {
+        link.removeAttribute('href');
+        link.classList.add('detail-url-plain');
+        linkIcon?.classList.add('hidden');
       }
     } else {
-      urlField.classList.add('hidden');
+      urlField?.classList.add('hidden');
     }
 
     const notesField = $('#detail-notes-field');
-    if (e.notes) {
+    const notesLabel = $('#detail-notes-label');
+    if (notesLabel) notesLabel.textContent = 'Notes';
+    if (isOauth || !e.notes) {
+      notesField.classList.add('hidden');
+    } else {
       notesField.classList.remove('hidden');
       $('#detail-notes').textContent = e.notes;
-    } else {
-      notesField.classList.add('hidden');
     }
   }
 
@@ -291,7 +304,7 @@ export function createEntryUi(deps) {
       } else if (isApi) {
         setHtml(userLabel, 'Client ID / Identifiant <span class="optional">(optionnel)</span>');
       } else if (isOauth) {
-        setHtml(userLabel, 'Email du compte <span class="optional">(optionnel)</span>');
+        userLabel.textContent = 'Email du compte';
       } else {
         setHtml(userLabel, 'Identifiant <span class="optional">(optionnel)</span>');
       }
@@ -307,6 +320,8 @@ export function createEntryUi(deps) {
         setHtml(urlLabel, 'Hôte / alias <span class="optional">(optionnel)</span>');
       } else if (isApi) {
         setHtml(urlLabel, 'Console / endpoint <span class="optional">(optionnel)</span>');
+      } else if (isOauth) {
+        setHtml(urlLabel, 'Site <span class="optional">(optionnel)</span>');
       } else {
         setHtml(urlLabel, 'URL <span class="optional">(optionnel)</span>');
       }
@@ -317,7 +332,7 @@ export function createEntryUi(deps) {
       } else if (isApi) {
         notesLabel.textContent = 'Scopes / notes (optionnel)';
       } else if (isOauth) {
-        notesLabel.textContent = 'Sites liés (optionnel)';
+        notesLabel.textContent = 'Site (optionnel)';
       } else {
         notesLabel.textContent = 'Notes (optionnel)';
       }
@@ -329,7 +344,7 @@ export function createEntryUi(deps) {
       } else if (isApi) {
         setHtml(notesHeading, 'Scopes / notes <span class="optional">optionnel</span>');
       } else if (isOauth) {
-        setHtml(notesHeading, 'Sites liés <span class="optional">optionnel</span>');
+        setHtml(notesHeading, 'Site <span class="optional">optionnel</span>');
       } else {
         setHtml(notesHeading, 'Notes <span class="optional">optionnel</span>');
       }
@@ -358,6 +373,7 @@ export function createEntryUi(deps) {
           : isOauth
             ? 'email du compte Google, GitHub…'
             : 'email ou nom d\'utilisateur';
+      userInput.required = isOauth;
     }
     if (passInput) passInput.placeholder = isApi ? 'sk-… / secret' : 'Mot de passe';
     if (secretBlock) {
@@ -370,7 +386,9 @@ export function createEntryUi(deps) {
         ? 'git@github.com ou serveur.exemple.com'
         : isApi
           ? 'https://console.exemple.com'
-          : 'exemple.com ou https://...';
+          : isOauth
+            ? 'https://exemple.com'
+            : 'exemple.com ou https://...';
     }
     if (notesInput) {
       notesInput.placeholder = isSsh
@@ -378,14 +396,14 @@ export function createEntryUi(deps) {
         : isApi
           ? 'Scopes, environnement, JSON…'
           : isOauth
-            ? 'https://exemple.com — sites liés'
+            ? 'https://exemple.com'
             : 'Informations supplémentaires';
     }
 
     $('#entry-oauth-providers')?.classList.toggle('hidden', !isOauth);
     $('#entry-secret-group')?.classList.toggle('hidden', isOauth);
-    $('#entry-url-group')?.classList.toggle('hidden', isOauth);
-    if (isOauth && urlInput) urlInput.value = '';
+    $('#entry-url-group')?.classList.remove('hidden');
+    $('#entry-notes-block')?.classList.toggle('hidden', isOauth);
 
     if (passRow && secretBlock && passInput) {
       if (isOauth) {
@@ -450,9 +468,10 @@ export function createEntryUi(deps) {
         ? 'Hôte / alias'
         : isApi
           ? 'Console / endpoint'
-          : 'URL';
+          : isOauth
+            ? 'Site'
+            : 'URL';
     }
-    if (isOauth) $('#detail-url-field')?.classList.add('hidden');
     passEl?.classList.toggle('detail-secret-block', isSsh);
   }
 

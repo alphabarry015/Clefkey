@@ -11,6 +11,7 @@ import {
 } from './session.js';
 import { setRecoveryCodeValue } from './recovery-input.js';
 import { setLucideIcon } from './icons.js';
+import { clearDetailPlainSecret } from './detail-secret.js';
 import {
   $, $$, toast, openModal, closeModal, syncBodyModalLock, setHtml,
 } from './ui.js';
@@ -185,7 +186,7 @@ export function createAuthSession(deps) {
     const el = $('#detail-password');
     if (!el) return;
     el.textContent = '';
-    delete el.dataset.real;
+    clearDetailPlainSecret();
     el.dataset.visible = 'false';
     const icon = $('#btn-toggle-pwd')?.querySelector('[data-lucide], .lucide');
     if (icon) setLucideIcon(icon, 'eye');

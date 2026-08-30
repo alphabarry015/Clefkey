@@ -4,7 +4,7 @@
 
 import { refreshIcons } from './icons.js';
 import { updateDevEntry } from './dev.js';
-import { setupFaviconImages } from './favicon.js';
+import { setFaviconAuth, setupFaviconImages } from './favicon.js';
 import {
   $, $$, EMPTY_VALUE, esc, setHtml, toast,
   showLoading, hideLoading, openModal, closeModal, copyText,
@@ -78,6 +78,7 @@ function createInitialState() {
 
 export function createAppContext() {
   const state = createInitialState();
+  setFaviconAuth(() => state.token);
   const deps = {
     state,
     refreshIcons,

@@ -1,11 +1,19 @@
 /* Favicons via le serveur local (fichiers publics des sites, comme un navigateur). */
 
+let getAuthToken = () => null;
+
+/** Fournit le JWT pour GET /vault/favicon (les <img src> ne peuvent pas envoyer Bearer). */
+export function setFaviconAuth(fn) {
+  getAuthToken = typeof fn === 'function' ? fn : () => null;
+}
+
 export function normalizeEntryUrl(url) {
   const value = (url || '').trim();
   if (!value) return '';
   const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`;
   try {
     const parsed = new URL(withProtocol);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
     if (!parsed.hostname) return '';
     parsed.hash = '';
     return parsed.href;
@@ -27,7 +35,7 @@ export function getSiteDomain(url) {
 export function getFaviconUrl(url) {
   const pageUrl = normalizeEntryUrl(url);
   if (!pageUrl) return null;
-  return `${window.location.origin}/vault/favicon?url=${encodeURIComponent(pageUrl)}&v=8`;
+  return `${window.location.origin}/vault/favicon?url=${encodeURIComponent(pageUrl)}&v=9`;
 }
 
 /** Premier lien http(s) ou domaine trouvé dans un texte (notes OAuth). */
@@ -58,15 +66,46 @@ export function prepareEntry(entry) {
   return prepared;
 }
 
+const blobCache = new Map();
+
+function cacheKey(url) {
+  return normalizeEntryUrl(url) || '';
+}
+
+export async function fetchFaviconBlobUrl(url) {
+  const apiUrl = getFaviconUrl(url);
+  const token = getAuthToken();
+  const key = cacheKey(url);
+  if (!apiUrl || !token || !key) return null;
+
+  const hit = blobCache.get(key);
+  if (hit?.blobUrl) return hit.blobUrl;
+  if (hit?.inflight) return hit.inflight;
+
+  const inflight = (async () => {
+    const res = await fetch(apiUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    if (!blob || blob.size === 0) return null;
+    return URL.createObjectURL(blob);
+  })();
+
+  blobCache.set(key, { inflight });
+  try {
+    const blobUrl = await inflight;
+    if (blobUrl) blobCache.set(key, { blobUrl });
+    else blobCache.delete(key);
+    return blobUrl;
+  } catch {
+    blobCache.delete(key);
+    return null;
+  }
+}
+
 export function preloadFavicon(url) {
-  const src = getFaviconUrl(url);
-  if (!src) return Promise.resolve(false);
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
-    img.src = src;
-  });
+  return fetchFaviconBlobUrl(url).then(Boolean);
 }
 
 export function onFaviconError(img) {
@@ -77,15 +116,15 @@ export function onFaviconError(img) {
   if (siteUrl && !wrapper.dataset.faviconRetried) {
     try {
       const origin = new URL(normalizeEntryUrl(siteUrl)).origin;
-      const retryUrl = getFaviconUrl(origin);
-      if (retryUrl && retryUrl !== img.src) {
-        wrapper.dataset.faviconRetried = '1';
-        img.addEventListener('error', () => {
-          wrapper.classList.add('is-fallback');
-        }, { once: true });
-        img.src = retryUrl;
-        return;
-      }
+      wrapper.dataset.faviconRetried = '1';
+      fetchFaviconBlobUrl(origin).then((blobUrl) => {
+        if (blobUrl) {
+          img.src = blobUrl;
+          return;
+        }
+        wrapper.classList.add('is-fallback');
+      });
+      return;
     } catch {
       /* noop */
     }
@@ -98,8 +137,19 @@ export function setupFaviconImages(root = document) {
   root.querySelectorAll('img.entry-favicon, img.dash-tile-favicon').forEach((img) => {
     if (img.dataset.faviconBound) return;
     img.dataset.faviconBound = '1';
-    if (img.complete && img.naturalHeight === 0) onFaviconError(img);
-    else img.addEventListener('error', () => onFaviconError(img), { once: true });
+    const siteUrl = img.dataset.siteUrl;
+    if (!siteUrl) {
+      onFaviconError(img);
+      return;
+    }
+    fetchFaviconBlobUrl(siteUrl).then((blobUrl) => {
+      if (!blobUrl) {
+        onFaviconError(img);
+        return;
+      }
+      img.addEventListener('error', () => onFaviconError(img), { once: true });
+      img.src = blobUrl;
+    });
   });
 }
 
