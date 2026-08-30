@@ -12,15 +12,16 @@
         var resolved = pref === 'system' ? (dark ? 'dark' : 'light') : pref;
         document.documentElement.setAttribute('data-theme-pref', pref);
         document.documentElement.setAttribute('data-theme', resolved);
+        document.documentElement.style.backgroundColor = resolved === 'dark' ? '#111111' : '#ffffff';
       } catch (e) {}
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Gestionnaire de mots de passe chiffré de bout en bout">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#111111">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Clefkey.">
   <title>Clefkey.</title>
   <link rel="manifest" href="/manifest.webmanifest">

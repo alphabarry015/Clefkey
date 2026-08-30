@@ -62,7 +62,7 @@ export function installVaultNav(deps) {
   function paintNavSelectorOverlap() {
     const sel = $('.nav-selector');
     const nav = $('.sidebar-nav');
-    if (!sel || !nav || sel.classList.contains('is-hidden')) {
+    if (!sel || !nav || sel.classList.contains('is-hidden') || isMobileLayout()) {
       $$('.nav-item').forEach((item) => item.classList.remove('nav-on-selector'));
       return;
     }
@@ -89,6 +89,12 @@ export function installVaultNav(deps) {
     const sel = $('.nav-selector');
     const active = nav?.querySelector('.nav-item.active');
     if (!nav || !sel) return;
+
+    if (isMobileLayout()) {
+      sel.classList.add('is-hidden');
+      $$('.nav-item').forEach((item) => item.classList.remove('nav-on-selector'));
+      return;
+    }
 
     if (!active) {
       sel.classList.add('is-hidden');

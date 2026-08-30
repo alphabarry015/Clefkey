@@ -106,8 +106,8 @@
 .lp-header-brand {
   justify-self: start;
   display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: baseline;
+  gap: 0;
   padding: 0;
   text-decoration: none;
   color: var(--lp-white);
@@ -122,14 +122,6 @@
   backdrop-filter: none;
   width: fit-content;
   transition: opacity 0.25s ease;
-}
-
-.lp-header-logo {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  object-fit: cover;
-  flex-shrink: 0;
 }
 
 .lp-header-brand:hover {

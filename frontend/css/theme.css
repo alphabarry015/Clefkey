@@ -54,15 +54,6 @@
   --safe-right: env(safe-area-inset-right, 0px);
 }
 
-/* iOS PWA : env() peut rester à 0 alors que la barre de statut recouvre le haut. */
-@supports (-webkit-touch-callout: none) {
-  @media (display-mode: standalone), (display-mode: fullscreen) {
-    :root {
-      --safe-top: max(env(safe-area-inset-top, 0px), 47px);
-    }
-  }
-}
-
 /* ── Palette sombre ────────────────────────────────────── */
 [data-theme="dark"] {
   color-scheme: dark;

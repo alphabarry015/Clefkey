@@ -101,7 +101,7 @@
 .nav-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.65rem;
   padding: 0.65rem 0.85rem;
   border: none;

@@ -33,7 +33,10 @@ export function resolveTheme(pref = getThemePreference()) {
 
 function updateThemeColorMeta(resolved) {
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', resolved === 'dark' ? '#000000' : '#f0f2f7');
+  if (meta) meta.setAttribute('content', resolved === 'dark' ? '#111111' : '#ffffff');
+  const appleBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (appleBar) appleBar.setAttribute('content', resolved === 'dark' ? 'black' : 'default');
+  document.documentElement.style.backgroundColor = resolved === 'dark' ? '#111111' : '#ffffff';
 }
 
 export function applyTheme(pref = getThemePreference()) {
