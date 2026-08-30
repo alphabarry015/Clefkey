@@ -4,10 +4,10 @@
   .lp-header {
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 20;
     grid-template-columns: 1fr auto auto;
     gap: 0.55rem 0.65rem;
-    padding: calc(0.8rem + env(safe-area-inset-top)) 1rem 0.8rem;
+    padding: 0.8rem 1rem;
   }
 
   .lp-header-brand {
@@ -280,6 +280,10 @@
     width: 100%;
   }
 
+  .vault-topbar .topbar-brand {
+    display: inline-flex;
+    order: 0;
+  }
   .vault-topbar .topbar-title { order: 1; flex: 1; min-width: 0; }
   .vault-topbar .topbar-actions { order: 2; gap: 0.4rem; }
   .btn-menu { display: flex; order: 3; }
@@ -393,7 +397,7 @@
   .dash-toolbar-actions .btn span { display: none; }
   .dash-toolbar-actions .btn { padding: 0.5rem; }
   .profile-fields { grid-template-columns: 1fr; }
-  .vault-topbar { padding: calc(0.62rem + env(safe-area-inset-top)) 0.8rem 0.62rem; gap: 0.4rem; }
+  .vault-topbar { padding: 0.62rem 0.8rem; gap: 0.4rem; }
   .theme-switch-host.topbar-theme .theme-switch {
     transform: scale(0.94);
     transform-origin: center;

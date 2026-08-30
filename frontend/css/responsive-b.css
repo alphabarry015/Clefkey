@@ -113,12 +113,13 @@
   }
   .auth-logo .auth-brand { font-size: 1.45rem; }
 
-  .vault-topbar { padding: calc(0.55rem + env(safe-area-inset-top)) 0.65rem 0.55rem; }
+  .vault-topbar { padding: 0.55rem 0.65rem; }
+  .topbar-brand { font-size: 0.92rem; }
   .topbar-title h1 { font-size: 1rem; }
   .topbar-subtitle { display: none; }
 
   .lp-header {
-    padding: calc(0.72rem + env(safe-area-inset-top)) 0.78rem 0.72rem;
+    padding: 0.72rem 0.78rem;
   }
 
   .lp-hero {

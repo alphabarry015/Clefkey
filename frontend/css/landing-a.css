@@ -8,6 +8,8 @@
   min-height: 0;
   background: var(--bg-primary);
   overflow: hidden;
+  padding-top: var(--safe-top);
+  box-sizing: border-box;
 }
 
 .lp {
@@ -93,7 +95,7 @@
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: calc(1.15rem + env(safe-area-inset-top)) clamp(1.25rem, 4vw, 2.5rem) 1.15rem;
+  padding: 1.15rem clamp(1.25rem, 4vw, 2.5rem);
   background: color-mix(in srgb, var(--lp-black) 88%, transparent);
   border: none;
   box-shadow: none;

@@ -62,6 +62,9 @@ body {
   justify-content: center;
   position: relative;
   overflow: hidden;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  box-sizing: border-box;
 }
 
 .auth-bg {

@@ -80,11 +80,24 @@
   min-width: 0;
 }
 
+.topbar-brand {
+  display: none;
+  flex-shrink: 0;
+  align-items: baseline;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  line-height: 1.2;
+  text-decoration: none;
+}
+
 .vault-topbar {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: calc(0.85rem + env(safe-area-inset-top)) 1.5rem 0.85rem;
+  padding: 0.85rem 1.5rem;
   background: color-mix(in srgb, var(--bg-secondary) 94%, transparent);
   background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
   -webkit-backdrop-filter: blur(12px);
