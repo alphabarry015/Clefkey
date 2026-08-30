@@ -38,6 +38,15 @@
   border-bottom: 1px solid var(--border);
 }
 
+.sidebar-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #000;
+}
+
 .sidebar-title {
   font-family: var(--font-display);
   font-weight: 700;

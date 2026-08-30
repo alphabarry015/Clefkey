@@ -2,8 +2,8 @@
 
 /* ── Carte globale ─────────────────────────────────────── */
 #screen-vault.screen.active {
-  padding: var(--safe-top) 0 0;
-  background: var(--bg-primary);
+  padding: 0;
+  background: var(--bg-secondary);
   height: 100vh;
   height: 100dvh;
   min-height: 0;
@@ -218,13 +218,18 @@
 #screen-vault .vault-topbar {
   background: var(--bg-secondary);
   border-bottom: none;
-  padding: 1.35rem 1.75rem 0.85rem;
+  box-shadow: none;
+  padding: calc(1.35rem + var(--safe-top)) 1.75rem 0.85rem;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   position: sticky;
   top: 0;
   flex-shrink: 0;
   z-index: 50;
+}
+
+#screen-vault .topbar-logo {
+  display: none;
 }
 
 #screen-vault .topbar-title h1 {
@@ -508,8 +513,12 @@
   }
 
   #screen-vault .vault-topbar {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding: calc(0.62rem + var(--safe-top)) 1rem 0.62rem;
+  }
+
+  #screen-vault .topbar-logo {
+    display: block;
+    order: 0;
   }
 
   #screen-vault .vault-main {
