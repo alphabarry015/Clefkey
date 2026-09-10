@@ -359,7 +359,7 @@
   margin: 0;
 }
 
-/* ── Dashboard : aperçu, clés récentes, analyse ────── */
+/* ── Dashboard : aperçu, analyse ────── */
 .dash-stats-grid {
   display: flex;
   flex-wrap: wrap;
@@ -402,25 +402,6 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-muted);
-}
-
-.dash-recent .projects-section-head {
-  margin-bottom: 0.85rem;
-}
-
-.dash-section-link {
-  border: none;
-  background: none;
-  padding: 0;
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--accent);
-  cursor: pointer;
-}
-
-.dash-section-link:hover {
-  text-decoration: underline;
 }
 
 .dash-insights {

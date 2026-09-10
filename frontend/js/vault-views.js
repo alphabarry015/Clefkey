@@ -204,13 +204,6 @@ export function createVaultViews(deps) {
     return `${badges.join('')}${project}`;
   }
 
-  function entryRecency(entry) {
-    const updated = Date.parse(entry?.updated_at);
-    if (Number.isFinite(updated)) return updated;
-    const created = Date.parse(entry?.created_at);
-    return Number.isFinite(created) ? created : 0;
-  }
-
   function dashBarRowMarkup(label, count, pct, fillClass, action, extra) {
     const fill = fillClass ? ` ${fillClass}` : '';
     return `
@@ -222,32 +215,6 @@ export function createVaultViews(deps) {
         </span>
         <span class="dash-bar-value">${count}</span>
       </button>`;
-  }
-
-  function renderDashboardRecent() {
-    const grid = $('#dash-recent-grid');
-    const empty = $('#dash-recent-empty');
-    if (!grid || !empty) return;
-    const recent = [...state.entries]
-      .sort((a, b) => entryRecency(b) - entryRecency(a))
-      .slice(0, 8);
-    if (recent.length === 0) {
-      grid.replaceChildren();
-      empty.classList.remove('hidden');
-      return;
-    }
-    empty.classList.add('hidden');
-    const markup = recent.map((e, i) => `
-      <button type="button" class="${deps.dashTileClassName(e)}"
-        style="${deps.dashTileStyle(e, i)}" data-action="show-entry"
-        data-id="${esc(e.id)}" title="${esc(e.title)}">
-        ${deps.dashTileIconMarkup(e)}
-        <span class="dash-tile-name">${esc(e.title)}</span>
-        ${dashTileMetaMarkup(e)}
-      </button>`).join('');
-    setHtml(grid, markup);
-    refreshIcons(grid);
-    setupFaviconImages(grid);
   }
 
   function renderDashboardStats() {
@@ -334,7 +301,6 @@ export function createVaultViews(deps) {
   function renderDashboard() {
     updateEntryCounts();
     renderDashboardStats();
-    renderDashboardRecent();
   }
 
   function entryListRowMarkup(entry, index) {
