@@ -106,30 +106,23 @@
 .lp-header-brand {
   justify-self: start;
   display: inline-flex;
-  align-items: baseline;
-  gap: 0;
+  align-items: center;
   padding: 0;
   text-decoration: none;
-  color: var(--lp-white);
-  font-family: var(--lp-font);
-  font-size: clamp(1.15rem, 2.2vw, 1.35rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
   background: none;
   border: none;
   border-radius: 0;
   box-shadow: none;
-  backdrop-filter: none;
   width: fit-content;
-  transition: opacity 0.25s ease;
 }
 
-.lp-header-brand:hover {
-  opacity: 0.85;
-}
-
-.lp-brand-dot {
-  color: var(--lp-blue);
+.lp-header-logo {
+  display: block;
+  width: 2.15rem;
+  height: 2.15rem;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 0.4rem;
 }
 
 .lp-nav {
@@ -325,7 +318,6 @@
   font-size: 0.82rem;
   font-weight: 600;
   text-decoration: none;
-  transition: color 0.2s ease;
   min-width: 0;
   box-shadow: none;
   backdrop-filter: none;

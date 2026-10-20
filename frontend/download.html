@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    (function () {
+      try {
+        var key = 'clefkey_theme';
+        var pref = localStorage.getItem(key) || 'system';
+        if (pref !== 'light' && pref !== 'dark' && pref !== 'system') pref = 'system';
+        var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var resolved = pref === 'system' ? (dark ? 'dark' : 'light') : pref;
+        document.documentElement.setAttribute('data-theme-pref', pref);
+        document.documentElement.setAttribute('data-theme', resolved);
+        document.documentElement.style.backgroundColor = resolved === 'dark' ? '#111111' : '#ffffff';
+      } catch (e) {}
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Télécharger Clefkey pour Windows et macOS — coffre zero-knowledge.">
+  <meta name="theme-color" content="#111111">
+  <title>Télécharger — Clefkey.</title>
+  <link rel="icon" href="/icons/icon-mark.png?v=270" type="image/png">
+  <link rel="icon" href="/favicon.ico?v=270" sizes="any">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/download.css">
+</head>
+<body class="dl-body">
+  <main class="dl-shell">
+    <header class="dl-header">
+      <a href="/" class="dl-brand" aria-label="Clefkey.">
+        <img class="dl-brand-logo" src="/icons/icon-mark.png" alt="" width="36" height="36" decoding="async">
+      </a>
+      <a href="/" class="dl-back">Retour au site</a>
+    </header>
+
+    <section class="dl-hero">
+      <p class="dl-kicker">Application desktop</p>
+      <h1>Télécharger Clefkey.</h1>
+      <p class="dl-lead">
+        Client natif du gestionnaire de mots de passe zero-knowledge.
+        Le chiffrement reste sur votre machine ; l’API distante ne voit jamais vos secrets en clair.
+      </p>
+    </section>
+
+    <section class="dl-platforms" aria-label="Choisir une plateforme">
+      <article class="dl-card" data-platform="windows" id="dl-windows">
+        <div class="dl-card-top">
+          <span class="dl-os-badge" aria-hidden="true">Win</span>
+          <h2>Windows</h2>
+        </div>
+        <ul class="dl-list">
+          <li>Installeur NSIS (`.exe`) pour Windows 10 / 11</li>
+          <li>WebView2 requis (souvent déjà installé)</li>
+          <li>Connexion à l’API <code>clefkey.vercel.app</code></li>
+        </ul>
+        <a
+          class="dl-btn dl-btn-primary"
+          id="btn-dl-windows"
+          href="https://github.com/alphabarry015/clefkey-app-desktop/releases/latest/download/Clefkey-Setup.exe"
+          download="Clefkey-Setup.exe"
+          rel="noopener noreferrer"
+        >Télécharger pour Windows</a>
+      </article>
+
+      <article class="dl-card" data-platform="macos" id="dl-macos">
+        <div class="dl-card-top">
+          <span class="dl-os-badge" aria-hidden="true">Mac</span>
+          <h2>macOS</h2>
+        </div>
+        <ul class="dl-list">
+          <li>Image disque (`.dmg`) pour macOS récent</li>
+          <li>Glisser Clefkey dans Applications</li>
+          <li>Si Gatekeeper bloque : clic droit → Ouvrir (build non notarisé)</li>
+        </ul>
+        <a
+          class="dl-btn dl-btn-primary"
+          id="btn-dl-macos"
+          href="https://github.com/alphabarry015/clefkey-app-desktop/releases/latest/download/Clefkey-macOS.dmg"
+          download="Clefkey-macOS.dmg"
+          rel="noopener noreferrer"
+        >Télécharger pour macOS</a>
+      </article>
+    </section>
+
+    <section class="dl-notes">
+      <h2>Bon à savoir</h2>
+      <ul>
+        <li>Même compte et même coffre que sur le site web.</li>
+        <li>Passphrase + mot de passe maître (minimum 8 caractères).</li>
+        <li>Code source : <a href="https://github.com/alphabarry015/clefkey-app-desktop" rel="noopener noreferrer">clefkey-app-desktop</a>.</li>
+        <li>Notes de version : <a href="https://github.com/alphabarry015/clefkey-app-desktop/releases/latest" rel="noopener noreferrer">GitHub Releases</a>.</li>
+      </ul>
+    </section>
+  </main>
+  <script src="/js/download-page.js" defer></script>
+</body>
+</html>

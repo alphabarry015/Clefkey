@@ -1,9 +1,11 @@
 /* Clefkey — landing-b.css */
-.lp-github:hover {
-  color: var(--lp-blue);
+.lp-github:hover,
+.lp-header-brand:hover {
+  color: inherit;
   background: transparent;
   border: none;
   transform: none;
+  opacity: 1;
 }
 
 .lp-github:focus-visible {
