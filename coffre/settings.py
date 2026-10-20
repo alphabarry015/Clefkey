@@ -92,10 +92,14 @@ ALLOWED_HOSTS = _default_allowed_hosts()
 def _cors_allowed_origins() -> list[str]:
     """Origines autorisées pour le client desktop (Tauri / serve :1420).
 
-    - Toujours : CORS_ORIGINS (liste séparée par des virgules)
-    - Si DEBUG : localhost/127.0.0.1:1420 + origines Tauri courantes
+    - Toujours : shell Tauri (scheme sécurisé) + CORS_ORIGINS (env, allowlist)
+    - Si DEBUG : localhost/127.0.0.1:1420 uniquement (pas de wildcard)
+    - Pas de http://tauri.localhost (clair) — https / tauri:// seulement
     """
-    origins: list[str] = []
+    origins: list[str] = [
+        "tauri://localhost",
+        "https://tauri.localhost",
+    ]
     extra = os.getenv("CORS_ORIGINS", "").strip()
     if extra:
         origins.extend(o.strip() for o in extra.split(",") if o.strip())
@@ -104,9 +108,6 @@ def _cors_allowed_origins() -> list[str]:
             [
                 "http://localhost:1420",
                 "http://127.0.0.1:1420",
-                "tauri://localhost",
-                "https://tauri.localhost",
-                "http://tauri.localhost",
             ]
         )
     return list(dict.fromkeys(origins))

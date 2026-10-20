@@ -147,7 +147,8 @@
     display: none;
   }
 
-  .lp-header-github {
+  .lp-header-github,
+  .lp-header-download {
     display: none;
   }
 
