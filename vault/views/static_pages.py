@@ -2,7 +2,7 @@
 
 from django.conf import settings
 from django.http import FileResponse, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET
 
 
@@ -22,8 +22,8 @@ def download(request):
 
 @require_GET
 def docs_app(request, slug=None):
-    docs_path = settings.BASE_DIR / "frontend" / "docs.html"
-    return FileResponse(docs_path.open("rb"), content_type="text/html; charset=utf-8")
+    """Ancienne page Docs — redirigée vers l’accueil."""
+    return redirect("/", permanent=True)
 
 
 @require_GET

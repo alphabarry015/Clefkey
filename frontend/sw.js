@@ -1,10 +1,9 @@
-const CACHE_VERSION = 'v273';
+const CACHE_VERSION = 'v274';
 const CACHE_STATIC = `clefkey-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
 const PRECACHE = [
   '/',
-  '/docs/',
   '/favicon.ico',
   '/css/theme.css',
   '/css/base-p1.css',
@@ -27,7 +26,6 @@ const PRECACHE = [
   '/css/responsive-a.css',
   '/css/responsive-b.css',
   '/css/vault-ds.css',
-  '/css/docs.css',
   '/css/privacy.css',
   '/js/app.js',
   '/js/app-compose.js',
@@ -67,8 +65,6 @@ const PRECACHE = [
   '/js/bind-vault.js',
   '/js/bind-projects.js',
   '/js/bind-shares.js',
-  '/js/docs-app.js',
-  '/js/markdown.js',
   '/vendor/hash-wasm.esm.min.js',
   '/vendor/noble-ed25519.bundle.js',
   '/vendor/lucide.bundle.js',
@@ -137,9 +133,6 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).catch(async () => {
-        if (url.pathname.startsWith('/docs')) {
-          return (await caches.match('/docs/')) || caches.match('/');
-        }
         return caches.match('/') || caches.match('/index.html');
       }),
     );
