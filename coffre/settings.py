@@ -92,13 +92,15 @@ ALLOWED_HOSTS = _default_allowed_hosts()
 def _cors_allowed_origins() -> list[str]:
     """Origines autorisées pour le client desktop (Tauri / serve :1420).
 
-    - Toujours : shell Tauri (scheme sécurisé) + CORS_ORIGINS (env, allowlist)
-    - Si DEBUG : localhost/127.0.0.1:1420 uniquement (pas de wildcard)
-    - Pas de http://tauri.localhost (clair) — https / tauri:// seulement
+    - Toujours : shells Tauri (macOS/Linux tauri://, Windows WebView2 http(s)://tauri.localhost)
+    - CORS_ORIGINS (env) pour origines supplémentaires exactes (pas de wildcard)
+    - Si DEBUG : localhost/127.0.0.1:1420 uniquement
     """
     origins: list[str] = [
         "tauri://localhost",
         "https://tauri.localhost",
+        # Windows WebView2 (Tauri 2) : origine HTTP par défaut du protocole custom.
+        "http://tauri.localhost",
     ]
     extra = os.getenv("CORS_ORIGINS", "").strip()
     if extra:
