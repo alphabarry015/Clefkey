@@ -28,6 +28,16 @@ def _recovery_packages(vault_key: bytes) -> list[dict]:
     return packages
 
 
+def _passphrase_package(vault_key: bytes) -> dict:
+    """Paquet soft-lock (salt 16 + verifier 32 + vaultKey wrappée) requis à l'inscription."""
+    salt = generate_salt()
+    derived = derive_key("phrase de test soft lock", salt)
+    return {
+        "passphrase_salt": b64_encode(salt),
+        "passphrase_verifier": b64_encode(create_auth_verifier(derived)),
+        "encrypted_vault_key_passphrase": b64_encode(encrypt_bytes(vault_key, derived)),
+    }
+
 @override_settings(
     SECRET_KEY="test-secret-key-for-auth-api",
     RATE_LIMIT_REQUIRE_UPSTASH=False,
@@ -63,6 +73,7 @@ class AuthApiSmokeTests(TestCase):
             "public_key": b64_encode(public_key),
             "encrypted_private_key": b64_encode(encrypted_private),
             "recovery_keys": _recovery_packages(vault_key),
+            **_passphrase_package(vault_key),
         }
         reg = self.client.post(
             "/auth/register",
@@ -70,7 +81,9 @@ class AuthApiSmokeTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(reg.status_code, 201, reg.content)
-        self.assertIn("access_token", reg.json())
+        body = reg.json()
+        self.assertIn("access_token", body)
+        self.assertTrue(body.get("has_passphrase"))
         self.assertEqual(VaultRecoveryKey.objects.filter(user__email="user@example.com").count(), 7)
 
         login = self.client.post(
@@ -122,6 +135,7 @@ class AuthApiSmokeTests(TestCase):
             "public_key": b64_encode(public_key),
             "encrypted_private_key": b64_encode(encrypt_bytes(private_key, vault_key)),
             "recovery_keys": _recovery_packages(vault_key),
+            **_passphrase_package(vault_key),
         }
         r = self.client.post("/auth/register", data=payload, content_type="application/json")
         self.assertEqual(r.status_code, 409)
@@ -141,6 +155,7 @@ class AuthApiSmokeTests(TestCase):
             "public_key": b64_encode(public_key),
             "encrypted_private_key": b64_encode(encrypt_bytes(private_key, vault_key)),
             "recovery_keys": _recovery_packages(vault_key),
+            **_passphrase_package(vault_key),
         }
         r = self.client.post("/auth/register", data=payload, content_type="application/json")
         self.assertEqual(r.status_code, 400)
@@ -162,6 +177,7 @@ class AuthApiSmokeTests(TestCase):
             "public_key": b64_encode(public_key),
             "encrypted_private_key": b64_encode(encrypt_bytes(private_key, vault_key)),
             "recovery_keys": _recovery_packages(vault_key),
+            **_passphrase_package(vault_key),
         }
         reg = self.client.post("/auth/register", data=payload, content_type="application/json")
         self.assertEqual(reg.status_code, 201, reg.content)
@@ -169,7 +185,16 @@ class AuthApiSmokeTests(TestCase):
         me = self.client.get("/auth/me", HTTP_AUTHORIZATION=f"Bearer {token}")
         self.assertEqual(me.status_code, 200)
         body = me.json()
-        for key in ("salt", "encrypted_vault_key", "public_key", "encrypted_private_key", "auth_verifier"):
+        for key in (
+            "salt",
+            "encrypted_vault_key",
+            "public_key",
+            "encrypted_private_key",
+            "auth_verifier",
+            "passphrase_salt",
+            "passphrase_verifier",
+            "encrypted_vault_key_passphrase",
+        ):
             self.assertNotIn(key, body)
         self.assertEqual(body["email"], "profile@example.com")
 
@@ -189,6 +214,7 @@ class AuthApiSmokeTests(TestCase):
             "public_key": b64_encode(public_key),
             "encrypted_private_key": b64_encode(encrypt_bytes(private_key, vault_key)),
             "recovery_keys": _recovery_packages(vault_key),
+            **_passphrase_package(vault_key),
         }
         reg = self.client.post("/auth/register", data=payload, content_type="application/json")
         self.assertEqual(reg.status_code, 201, reg.content)
