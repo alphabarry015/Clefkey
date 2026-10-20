@@ -10,5 +10,11 @@ urlpatterns = [
     path("lookup", views.lookup_user, name="auth-lookup"),
     path("recovery/begin", views.recovery_begin, name="auth-recovery-begin"),
     path("recovery/complete", views.recovery_complete, name="auth-recovery-complete"),
+    path(
+        "recovery/passphrase",
+        views.recovery_passphrase_complete,
+        name="auth-recovery-passphrase",
+    ),
     path("password", views.change_password, name="auth-password"),
+    path("passphrase", views.change_passphrase, name="auth-passphrase"),
 ]

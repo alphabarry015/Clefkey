@@ -2,18 +2,25 @@
  * Listeners auth / recovery / confirmations maître.
  */
 import {
-  toB64, fromB64, prepareRegistration, unlockSession, prepareLogin,
+  toB64, fromB64, prepareRegistration, unlockSession, unlockSessionWithPassphrase,
+  prepareLogin,
   RECOVERY_KEY_COUNT,
   recoveryVerifierFromCode,
   recoveryKeyProofFromVaultKey,
   unwrapVaultKeyWithRecoveryCode,
   prepareMasterPasswordReset,
+  preparePassphraseReset,
   decryptPrivateKey,
 } from './crypto.js';
 import { api } from './api.js';
 import { enterDevMode, shouldUseDevBypass } from './dev.js';
 import { clearAuthSecrets } from './auth-secrets.js';
 import { checkStrength, validateMasterPassword } from './master-password.js';
+import {
+  applyPassphraseFormatting,
+  formatPassphraseInput,
+  validatePassphrase,
+} from './passphrase.js';
 import { setRecoveryCodeValue } from './recovery-input.js';
 import { $, toast, showLoading, hideLoading } from './ui.js';
 
@@ -25,7 +32,7 @@ export function bindAuth(deps) {
     authMaterialFromPayload, userFromProfile, showVault,
     syncFolderFilterButtons, populateFolderSelect,
     loadEntries, refreshCurrentView, showRecoveryKeysModal,
-    openAuthTab, openUnlockScreen, showScreen,
+    openAuthTab, openUnlockScreen, setUnlockMode, showScreen,
     closeModal, openModal, showLoading: _sl, hideLoading: _hl,
   } = deps;
   void _sl; void _hl; void showScreen; void openUnlockScreen; void openModal;
@@ -95,6 +102,14 @@ export function bindAuth(deps) {
   });
 
   // ── Password strength (UI) ───────────────────────────────
+
+  ['#register-passphrase', '#register-passphrase-confirm', '#unlock-passphrase',
+    '#recovery-new-passphrase', '#recovery-new-passphrase-confirm'].forEach((sel) => {
+    $(sel)?.addEventListener('input', (e) => applyPassphraseFormatting(e.target));
+  });
+
+  $('#unlock-mode-passphrase')?.addEventListener('click', () => setUnlockMode?.('passphrase'));
+  $('#unlock-mode-master')?.addEventListener('click', () => setUnlockMode?.('master'));
 
   $('#register-password').addEventListener('input', (e) => {
     const pwd = e.target.value;
@@ -176,7 +191,13 @@ export function bindAuth(deps) {
     const btn = $('#btn-register');
     const master = $('#register-password').value;
     const confirm = $('#register-password-confirm').value;
+    const passphrase = formatPassphraseInput($('#register-passphrase')?.value || '');
+    const passphraseConfirm = formatPassphraseInput($('#register-passphrase-confirm')?.value || '');
     if (master !== confirm) { toast('Les mots de passe ne correspondent pas', 'error'); return; }
+    if (passphrase !== passphraseConfirm) {
+      toast('Les passphrases ne correspondent pas', 'error');
+      return;
+    }
     if (!$('#register-first-name').value.trim()) { toast('Le prénom est requis', 'error'); return; }
     if (!$('#register-last-name').value.trim()) { toast('Le nom est requis', 'error'); return; }
 
@@ -188,8 +209,13 @@ export function bindAuth(deps) {
         toast(masterError, 'error');
         return;
       }
+      const phraseError = validatePassphrase(passphrase);
+      if (phraseError) {
+        toast(phraseError, 'error');
+        return;
+      }
       showLoading('Création du coffre et des clés de récupération...');
-      const prep = await prepareRegistration(master);
+      const prep = await prepareRegistration(master, passphrase);
       const email = $('#register-email').value.trim();
       const data = await api.register({
         email,
@@ -202,6 +228,9 @@ export function bindAuth(deps) {
         public_key: toB64(prep.publicKey),
         encrypted_private_key: toB64(prep.encryptedPrivateKey),
         recovery_keys: prep.recoveryPackages,
+        passphrase_salt: toB64(prep.passphraseSalt),
+        passphrase_verifier: toB64(prep.passphraseVerifier),
+        encrypted_vault_key_passphrase: toB64(prep.encryptedVaultKeyPassphrase),
       });
       state.token = data.access_token;
       state.user = userFromProfile(data);
@@ -210,6 +239,8 @@ export function bindAuth(deps) {
         encrypted_vault_key: toB64(prep.encryptedVaultKey),
         encrypted_private_key: toB64(prep.encryptedPrivateKey),
         public_key: toB64(prep.publicKey),
+        passphrase_salt: toB64(prep.passphraseSalt),
+        encrypted_vault_key_passphrase: toB64(prep.encryptedVaultKeyPassphrase),
       };
       state.vaultKey = prep.vaultKey;
       state.privateKey = prep.privateKey;
@@ -237,8 +268,19 @@ export function bindAuth(deps) {
 
   $('#btn-forgot-master')?.addEventListener('click', () => {
     const email = ($('#login-email')?.value || '').trim();
+    state.recoveryTarget = 'master';
     openAuthTab('recovery');
     if ($('#recovery-email')) $('#recovery-email').value = email;
+    setRecoveryCodeValue($('#recovery-code'), '', $('#recovery-code-count'));
+    setTimeout(() => $('#recovery-code')?.focus(), 50);
+  });
+
+  $('#btn-forgot-passphrase')?.addEventListener('click', () => {
+    state.recoveryTarget = 'passphrase';
+    openAuthTab('recovery');
+    if ($('#recovery-email') && state.user?.email) {
+      $('#recovery-email').value = state.user.email;
+    }
     setRecoveryCodeValue($('#recovery-code'), '', $('#recovery-code-count'));
     setTimeout(() => $('#recovery-code')?.focus(), 50);
   });
@@ -273,7 +315,8 @@ export function bindAuth(deps) {
         publicKey: fromB64(data.public_key),
         salt: fromB64(data.salt),
       };
-      openAuthTab('recovery-reset');
+      const target = state.recoveryTarget === 'passphrase' ? 'passphrase' : 'master';
+      openAuthTab(target === 'passphrase' ? 'recovery-passphrase' : 'recovery-reset');
       toast('Clé acceptée. Elle sera invalidée après la réinitialisation.', 'info');
     } catch (err) {
       toast(err.message || 'Récupération impossible', 'error');
@@ -360,14 +403,67 @@ export function bindAuth(deps) {
     }
   });
 
-  $('#form-unlock')?.addEventListener('submit', async (e) => {
+  $('#form-recovery-passphrase')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const master = $('#unlock-password')?.value || '';
-    if (!master) {
-      toast('Veuillez saisir votre mot de passe maître', 'error');
-      $('#unlock-password')?.focus();
+    const session = state.recoverySession;
+    if (!session) {
+      openAuthTab('recovery');
       return;
     }
+    const passphrase = formatPassphraseInput($('#recovery-new-passphrase')?.value || '');
+    const confirm = formatPassphraseInput($('#recovery-new-passphrase-confirm')?.value || '');
+    if (passphrase !== confirm) {
+      toast('Les passphrases ne correspondent pas', 'error');
+      return;
+    }
+    const phraseError = validatePassphrase(passphrase);
+    if (phraseError) {
+      toast(phraseError, 'error');
+      return;
+    }
+    const btn = $('#btn-recovery-passphrase-complete');
+    btn.disabled = true;
+    showLoading('Réchiffrement de la passphrase...');
+    try {
+      const prep = await preparePassphraseReset(session.vaultKey, passphrase);
+      const keyProof = await recoveryKeyProofFromVaultKey(session.vaultKey);
+      const data = await api.recoveryPassphraseComplete({
+        email: session.email,
+        verifier: session.verifierB64,
+        key_proof: toB64(keyProof),
+        passphrase_salt: toB64(prep.salt),
+        passphrase_verifier: toB64(prep.verifier),
+        encrypted_vault_key_passphrase: toB64(prep.encryptedVaultKey),
+      });
+      state.token = data.access_token;
+      state.user = userFromProfile(data);
+      state.authMaterial = authMaterialFromPayload(data);
+      state.vaultKey = session.vaultKey;
+      state.privateKey = session.privateKey;
+      state.publicKey = session.publicKey;
+      state.entries = [];
+      state.recoverySession = null;
+      state.recoveryTarget = null;
+      clearAuthSecrets();
+      $('#form-recovery-passphrase')?.reset();
+      try {
+        await loadEntries();
+      } catch (err) {
+        console.warn(err);
+      }
+      showVault();
+      toast('Passphrase réinitialisée. La clé utilisée est maintenant invalide.', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      hideLoading();
+      btn.disabled = false;
+    }
+  });
+
+  $('#form-unlock')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const usePassphrase = !$('#unlock-passphrase-group')?.classList.contains('hidden');
     if (!state.authMaterial?.salt || !state.authMaterial?.encrypted_vault_key) {
       hardLogout('silent');
       toast('Session invalide — reconnectez-vous', 'error');
@@ -378,7 +474,24 @@ export function bindAuth(deps) {
     if (btn) btn.disabled = true;
     showLoading('Déverrouillage du coffre...');
     try {
-      const keys = await unlockSession(state.authMaterial, master);
+      let keys;
+      if (usePassphrase) {
+        const passphrase = formatPassphraseInput($('#unlock-passphrase')?.value || '');
+        if (!passphrase) {
+          toast('Veuillez saisir votre passphrase', 'error');
+          $('#unlock-passphrase')?.focus();
+          return;
+        }
+        keys = await unlockSessionWithPassphrase(state.authMaterial, passphrase);
+      } else {
+        const master = $('#unlock-password')?.value || '';
+        if (!master) {
+          toast('Veuillez saisir votre mot de passe maître', 'error');
+          $('#unlock-password')?.focus();
+          return;
+        }
+        keys = await unlockSession(state.authMaterial, master);
+      }
       clearAuthSecrets();
       Object.assign(state, keys);
       state.entries = [];
@@ -399,9 +512,15 @@ export function bindAuth(deps) {
       }
       toast('Coffre déverrouillé', 'success');
     } catch {
-      toast('Mot de passe maître incorrect', 'error');
-      $('#unlock-password').value = '';
-      $('#unlock-password')?.focus();
+      if (usePassphrase) {
+        toast('Passphrase incorrecte', 'error');
+        if ($('#unlock-passphrase')) $('#unlock-passphrase').value = '';
+        $('#unlock-passphrase')?.focus();
+      } else {
+        toast('Mot de passe maître incorrect', 'error');
+        if ($('#unlock-password')) $('#unlock-password').value = '';
+        $('#unlock-password')?.focus();
+      }
     } finally {
       hideLoading();
       if (btn) btn.disabled = false;

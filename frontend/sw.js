@@ -47,6 +47,7 @@ const PRECACHE = [
   '/js/theme.js',
   '/js/common-passwords.js',
   '/js/master-password.js',
+  '/js/passphrase.js',
   '/js/auth-secrets.js',
   '/js/recovery-export.js',
   '/js/recovery-input.js',

@@ -71,6 +71,7 @@ function createInitialState() {
     masterConfirmResolve: null,
     shareEntryId: null,
     recoverySession: null,
+    recoveryTarget: null, // 'master' | 'passphrase'
     pendingRecoveryCodes: null,
     afterRecoveryKeys: null,
   };

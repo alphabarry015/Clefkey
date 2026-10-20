@@ -17,6 +17,10 @@ class VaultUser(models.Model):
     encrypted_vault_key = models.BinaryField()
     public_key = models.BinaryField()
     encrypted_private_key = models.BinaryField()
+    # Soft-lock : wrap vaultKey par passphrase (nullable = comptes antérieurs)
+    passphrase_salt = models.BinaryField(null=True, blank=True)
+    passphrase_verifier = models.BinaryField(null=True, blank=True)
+    encrypted_vault_key_passphrase = models.BinaryField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

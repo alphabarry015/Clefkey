@@ -12,11 +12,12 @@
 |---------|--------|
 | Transport | HTTPS en production (Vercel) + HSTS |
 | Auth session | JWT Bearer à durée limitée |
-| Session navigateur | Soft lock : `sessionStorage` = JWT + `authMaterial` (blobs chiffrés). **Jamais** de clés en clair. F5 → écran mot de passe maître |
-| Verrouillage | Soft lock : idle 15 min ; onglet caché ≥ 1 min. Déconnexion = hard logout (efface tout) |
+| Session navigateur | Soft-lock : `sessionStorage` = JWT + `authMaterial` (blobs chiffrés, y compris wrap passphrase). **Jamais** de clés en clair |
+| Verrouillage | Soft-lock : F5, manuel, onglet caché **≥ 5 min** → écran **passphrase ou maître**. Inactivité **15 min** → hard logout. Déconnexion manuelle = hard logout |
 | Entrées | Chiffrement client (AES-GCM via WebCrypto) ; blob max 256 KiB |
 | Audit fuites | HIBP k-anonymity : empreinte SHA-1 **uniquement** pour matcher l’index public (5 caractères transmis). Pas utilisé pour stocker ou dériver la clé du coffre |
-| Mot de passe maître | Min. 12 car., complexité, **refus listes SecLists** (navigateur). Changement depuis le profil : JWT + `current_auth_verifier`, sans consommer les clés de récupération |
+| Mot de passe maître | Min. **8** car., complexité, **refus listes SecLists**. Changement profil : JWT + `current_auth_verifier`, sans consommer les clés de récupération |
+| Passphrase | Min. **3 mots**, formatage auto (majuscule initiale / après `.`). Wrap dédié de `vaultKey` (`passphrase_salt` / `passphrase_verifier` / `encrypted_vault_key_passphrase`). Soft-lock : **passphrase ou maître**. Création à l’inscription ; changement profil (`POST /auth/passphrase`) ; oubli via recovery (`POST /auth/recovery/passphrase`) |
 | Autofill navigateur | Désactivé volontairement (autocomplete off + clear secrets) |
 | Rate limiting | Login/register/… ; Upstash Redis si configuré, sinon mémoire |
 | Login | `hmac.compare_digest` même si le compte n’existe pas |
@@ -30,8 +31,8 @@
 
 ## Limites / responsabilités
 
-- La force du coffre dépend du **mot de passe maître** (longueur, unicité).
-- XSS dans le frontend pourrait cibler des données déjà déchiffrées **en mémoire** pendant la session : CSP + échappement HTML. Le soft lock ne stocke que des blobs déjà chiffrés + JWT (pas de `vaultKey` claire en `sessionStorage`).
+- La force du coffre dépend du **mot de passe maître** (longueur, unicité) et, pour le soft-lock, de la **passphrase** (plusieurs mots).
+- XSS dans le frontend pourrait cibler des données déjà déchiffrées **en mémoire** pendant la session : CSP + échappement HTML. Le soft-lock ne stocke que des blobs déjà chiffrés + JWT (pas de `vaultKey` claire en `sessionStorage`).
 - JWT et `SECRET_KEY` : une fuite de `SECRET_KEY` permet de forger des tokens (pas de déchiffrer le coffre sans le maître).
 - Sans Upstash, le rate limit est par instance Vercel.
 - L’inscription peut encore révéler un email déjà pris (409) — limité par rate limit.

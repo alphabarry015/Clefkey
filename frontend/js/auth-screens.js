@@ -37,6 +37,7 @@ export function createAuthScreens({
     $('#form-register')?.classList.add('hidden');
     $('#form-recovery')?.classList.add('hidden');
     $('#form-recovery-reset')?.classList.add('hidden');
+    $('#form-recovery-passphrase')?.classList.add('hidden');
     $('#form-unlock')?.classList.add('hidden');
   }
 
@@ -45,7 +46,8 @@ export function createAuthScreens({
     const onRegister = tab === 'register';
     const onRecovery = tab === 'recovery';
     const onRecoveryReset = tab === 'recovery-reset';
-    const onRecoveryFlow = onRecovery || onRecoveryReset;
+    const onRecoveryPassphrase = tab === 'recovery-passphrase';
+    const onRecoveryFlow = onRecovery || onRecoveryReset || onRecoveryPassphrase;
     $('#tab-login')?.classList.toggle('active', onLogin);
     $('#tab-register')?.classList.toggle('active', onRegister);
     $('.auth-tabs')?.classList.toggle('hidden', onRecoveryFlow);
@@ -54,22 +56,41 @@ export function createAuthScreens({
     if (onRegister) $('#form-register')?.classList.remove('hidden');
     if (onRecovery) $('#form-recovery')?.classList.remove('hidden');
     if (onRecoveryReset) $('#form-recovery-reset')?.classList.remove('hidden');
+    if (onRecoveryPassphrase) $('#form-recovery-passphrase')?.classList.remove('hidden');
     if (onRegister) prefetchCommonPasswords();
-    if (!onRecoveryFlow) state.recoverySession = null;
+    if (!onRecoveryFlow) {
+      state.recoverySession = null;
+      state.recoveryTarget = null;
+    }
     showScreen('auth');
     refreshIcons($('#screen-auth'));
   }
 
-  /** Écran soft-lock : mot de passe maître uniquement (email jamais affiché). */
+  function setUnlockMode(mode = 'passphrase') {
+    const usePassphrase = mode === 'passphrase';
+    $('#unlock-mode-passphrase')?.classList.toggle('active', usePassphrase);
+    $('#unlock-mode-master')?.classList.toggle('active', !usePassphrase);
+    $('#unlock-passphrase-group')?.classList.toggle('hidden', !usePassphrase);
+    $('#unlock-password-group')?.classList.toggle('hidden', usePassphrase);
+    const focusEl = usePassphrase ? $('#unlock-passphrase') : $('#unlock-password');
+    setTimeout(() => focusEl?.focus(), 50);
+  }
+
+  /** Écran soft-lock : passphrase ou mot de passe maître (email jamais affiché). */
   function openUnlockScreen() {
     $('.auth-tabs')?.classList.add('hidden');
     hideAllAuthForms();
     $('#form-unlock')?.classList.remove('hidden');
-    const input = $('#unlock-password');
-    if (input) input.value = '';
+    const hasPassphrase = Boolean(
+      state.authMaterial?.passphrase_salt && state.authMaterial?.encrypted_vault_key_passphrase,
+    );
+    $('#unlock-passphrase') && ($('#unlock-passphrase').value = '');
+    $('#unlock-password') && ($('#unlock-password').value = '');
+    const modePassphraseBtn = $('#unlock-mode-passphrase');
+    if (modePassphraseBtn) modePassphraseBtn.disabled = !hasPassphrase;
+    setUnlockMode(hasPassphrase ? 'passphrase' : 'master');
     showScreen('auth');
     refreshIcons($('#screen-auth'));
-    setTimeout(() => input?.focus(), 50);
   }
 
   function recoveryExportMeta() {
@@ -201,6 +222,7 @@ export function createAuthScreens({
     showScreen,
     openAuthTab,
     openUnlockScreen,
+    setUnlockMode,
     showRecoveryKeysModal,
     recoveryExportMeta,
     bindLandingNavigation,

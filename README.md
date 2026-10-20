@@ -10,11 +10,12 @@ Toute la doc détaillée est dans [`docs/`](./docs/) :
 |---------|---------|
 | [docs/README.md](./docs/README.md) | Index |
 | [docs/CARTOGRAPHIE-COFFRE.md](./docs/CARTOGRAPHIE-COFFRE.md) | Concepts et flux (récit) |
-| [docs/GUIDE-UTILISATEUR.md](./docs/GUIDE-UTILISATEUR.md) | Utilisation du site |
-| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Stack et flux |
-| [docs/API.md](./docs/API.md) | Endpoints HTTP |
+| [docs/GUIDE-UTILISATEUR.md](./docs/GUIDE-UTILISATEUR.md) | Utilisation (passphrase, soft-lock, coffre) |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Stack et flux crypto |
+| [docs/API.md](./docs/API.md) | Endpoints HTTP (dont passphrase / recovery) |
 | [docs/DEPLOIEMENT.md](./docs/DEPLOIEMENT.md) | Local, Supabase, Vercel |
 | [docs/SECURITE.md](./docs/SECURITE.md) | Modèle de sécurité |
+| [docs/EXTENSION-NAVIGATEUR.md](./docs/EXTENSION-NAVIGATEUR.md) | Spec extension navigateur |
 | [docs/AUDIT.md](./docs/AUDIT.md) | Audit sécu / perf / maintenance |
 
 > **Dépôt public** : ne committez jamais `.env`, jetons, chaînes DB réelles ni données personnelles.

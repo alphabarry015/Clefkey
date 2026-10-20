@@ -1,6 +1,45 @@
-"""En-têtes de sécurité HTTP (CSP, framing, MIME sniffing)."""
+"""En-têtes de sécurité HTTP (CSP, framing, MIME sniffing) + CORS desktop."""
 
 from __future__ import annotations
+
+from django.conf import settings
+from django.http import HttpResponse
+
+
+class CorsMiddleware:
+    """Autorise le client desktop (origine ≠ API) à appeler l’API en fetch.
+
+    Origines : settings.CORS_ALLOWED_ORIGINS (env CORS_ORIGINS + défauts DEBUG).
+    Pas de credentials cookies — le client envoie un Bearer JWT.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.allowed = frozenset(getattr(settings, "CORS_ALLOWED_ORIGINS", ()) or ())
+
+    def __call__(self, request):
+        origin = (request.headers.get("Origin") or "").strip()
+        allowed = bool(origin and origin in self.allowed)
+
+        if request.method == "OPTIONS" and allowed:
+            response = HttpResponse(status=204)
+            self._apply_cors(response, origin, preflight=True)
+            return response
+
+        response = self.get_response(request)
+        if allowed:
+            self._apply_cors(response, origin, preflight=False)
+        return response
+
+    @staticmethod
+    def _apply_cors(response, origin: str, *, preflight: bool) -> None:
+        response["Access-Control-Allow-Origin"] = origin
+        response["Vary"] = "Origin"
+        response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept"
+        response["Access-Control-Max-Age"] = "86400"
+        if preflight:
+            response["Content-Length"] = "0"
 
 
 class SecurityHeadersMiddleware:

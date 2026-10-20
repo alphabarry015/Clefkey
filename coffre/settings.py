@@ -88,6 +88,32 @@ if IS_VERCEL and not _UPSTASH_OK and not _RATE_ALLOW_MEMORY:
 
 ALLOWED_HOSTS = _default_allowed_hosts()
 
+
+def _cors_allowed_origins() -> list[str]:
+    """Origines autorisées pour le client desktop (Tauri / serve :1420).
+
+    - Toujours : CORS_ORIGINS (liste séparée par des virgules)
+    - Si DEBUG : localhost/127.0.0.1:1420 + origines Tauri courantes
+    """
+    origins: list[str] = []
+    extra = os.getenv("CORS_ORIGINS", "").strip()
+    if extra:
+        origins.extend(o.strip() for o in extra.split(",") if o.strip())
+    if DEBUG:
+        origins.extend(
+            [
+                "http://localhost:1420",
+                "http://127.0.0.1:1420",
+                "tauri://localhost",
+                "https://tauri.localhost",
+                "http://tauri.localhost",
+            ]
+        )
+    return list(dict.fromkeys(origins))
+
+
+CORS_ALLOWED_ORIGINS = _cors_allowed_origins()
+
 # True sur Vercel : Upstash obligatoire, fail-closed (voir vault.ratelimit).
 RATE_LIMIT_REQUIRE_UPSTASH = IS_VERCEL and not _RATE_ALLOW_MEMORY
 
@@ -102,6 +128,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "vault.middleware.CorsMiddleware",
     "vault.middleware.SecurityHeadersMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]

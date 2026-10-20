@@ -97,6 +97,8 @@ export function saveSession(state) {
         encrypted_vault_key: state.authMaterial.encrypted_vault_key,
         encrypted_private_key: state.authMaterial.encrypted_private_key || null,
         public_key: state.authMaterial.public_key || null,
+        passphrase_salt: state.authMaterial.passphrase_salt || null,
+        encrypted_vault_key_passphrase: state.authMaterial.encrypted_vault_key_passphrase || null,
       },
       lastActivity: memoryLastActivity,
     };

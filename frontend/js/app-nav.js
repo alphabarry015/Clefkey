@@ -16,6 +16,7 @@ const PAGE_TITLES = {
   contacts: { title: 'Contacts', subtitle: 'Destinataires de vos partages' },
   profile: { title: 'Mon profil', subtitle: 'Informations de votre compte' },
   password: { title: 'Mot de passe maître', subtitle: 'Changez-le sans clés de récupération' },
+  passphrase: { title: 'Passphrase', subtitle: 'Phrase de déverrouillage du coffre' },
   audit: { title: 'Audit', subtitle: 'Vérifiez si un mot de passe a fuité' },
   generator: { title: 'Générateur', subtitle: 'Mots de passe et passphrases sécurisés' },
 };
@@ -46,7 +47,7 @@ export function installVaultNav(deps) {
     const page = PAGE_TITLES[state.page] || PAGE_TITLES.dashboard;
     $('#page-title').textContent = page.title;
     $('#page-subtitle').textContent = page.subtitle;
-    const onProfile = state.page === 'profile' || state.page === 'password';
+    const onProfile = state.page === 'profile' || state.page === 'password' || state.page === 'passphrase';
     const onAudit = state.page === 'audit';
     const onGenerator = state.page === 'generator';
     const onShares = state.page === 'shares-received'
@@ -137,6 +138,7 @@ export function installVaultNav(deps) {
   function applyVaultPage(page) {
     if (page !== 'profile') deps.closeAllProfileFieldEdits();
     if (page !== 'password') deps.resetPasswordChangeForm();
+    if (page !== 'passphrase') deps.resetPassphraseChangeForm?.();
     if (page !== 'project-detail') {
       state.activeProjectId = null;
       state.projectDetailSelectedIds = [];
@@ -157,6 +159,7 @@ export function installVaultNav(deps) {
     $('#contacts-view')?.classList.toggle('hidden', page !== 'contacts');
     $('#profile-view').classList.toggle('hidden', page !== 'profile');
     $('#password-view')?.classList.toggle('hidden', page !== 'password');
+    $('#passphrase-view')?.classList.toggle('hidden', page !== 'passphrase');
     $('#audit-view')?.classList.toggle('hidden', page !== 'audit');
     $('#generator-view')?.classList.toggle('hidden', page !== 'generator');
     updatePageTitle();
@@ -172,6 +175,7 @@ export function installVaultNav(deps) {
       else if (page === 'contacts') deps.renderContactsPage();
       else if (page === 'profile') deps.renderProfile();
       else if (page === 'password') deps.refreshIcons($('#password-view'));
+      else if (page === 'passphrase') deps.refreshIcons($('#passphrase-view'));
       else if (page === 'audit') deps.renderAudit();
       else if (page === 'generator') deps.renderGenerator();
     } catch (err) {
@@ -219,7 +223,11 @@ export function installVaultNav(deps) {
     switchPage('dashboard');
     if (!state.devMode) {
       saveSession(state);
-      startIdleWatch(() => state, (reason) => deps.lockVault(reason || 'idle'));
+      startIdleWatch(() => state, (reason) => {
+        // 15 min d'inactivité → déconnexion complète ; onglet caché → soft-lock
+        if (reason === 'idle') deps.hardLogout(reason);
+        else deps.lockVault(reason || 'hidden');
+      });
       deps.loadShares().catch((err) => console.warn('Partages:', err));
     }
   }

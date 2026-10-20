@@ -225,6 +225,35 @@ body {
   box-shadow: 0 2px 8px var(--accent-glow);
 }
 
+.auth-unlock-modes {
+  display: flex;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  border: 1px solid var(--border);
+  gap: 4px;
+}
+
+.auth-unlock-mode {
+  flex: 1;
+  padding: 0.55rem 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.auth-unlock-mode.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
 .auth-form { display: flex; flex-direction: column; gap: 0.85rem; }
 
 #form-login.auth-form {

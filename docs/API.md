@@ -33,13 +33,15 @@ Les exemples ci-dessous sont schématiques. N’y placez jamais de jetons, mots 
 | GET | `/auth/me` | Oui | Profil (noms, email, compteurs — **sans** matériel crypto) |
 | PATCH | `/auth/me` | Oui | Mise à jour profil (noms, email) |
 | POST | `/auth/password` | Oui | Change le mot de passe maître (session déverrouillée, sans clés de récupération) |
+| POST | `/auth/passphrase` | Oui | Crée / change la passphrase (soft-lock) |
 | POST | `/auth/recovery/begin` | Non | Démarre la récupération (preuve / challenge) |
-| POST | `/auth/recovery/complete` | Non | Termine la récupération et régénère le matériel |
+| POST | `/auth/recovery/complete` | Non | Termine la récupération (nouveau mot de passe maître) |
+| POST | `/auth/recovery/passphrase` | Non | Termine la récupération (nouvelle passphrase) |
 
 ### POST `/auth/register` (corps typique)
 
 Champs texte : `email`, `first_name`, `middle_name`, `last_name`  
-Champs base64 : `salt` (16 o), `auth_verifier` (32 o), `public_key` (32 o), `encrypted_vault_key` / `encrypted_private_key` (AES-GCM 60–512 o), plus `recovery_keys` (exactement 7 paquets).
+Champs base64 : `salt` (16 o), `auth_verifier` (32 o), `public_key` (32 o), `encrypted_vault_key` / `encrypted_private_key` (AES-GCM 60–512 o), `passphrase_salt`, `passphrase_verifier`, `encrypted_vault_key_passphrase`, plus `recovery_keys` (exactement 7 paquets).
 
 Réponse **201** : `access_token`, `user_id`, `email`, noms, blobs crypto (nécessaires au client pour déverrouiller — pas renvoyés ensuite par `/auth/me`).
 
@@ -59,13 +61,34 @@ Session JWT + preuve de l’ancien maître (vérificateur dérivé). Corps :
 }
 ```
 
-Le serveur compare le vérificateur actuel, remplace le vérificateur et le blob de `vaultKey`. Les clés de récupération **ne sont pas** consommées. Réponse : même forme que login (`access_token` + matériaux).
+Le serveur compare le vérificateur actuel, remplace le vérificateur et le blob de `vaultKey`. Les clés de récupération **ne sont pas** consommées. Réponse : même forme que login (`access_token` + matériaux, y compris passphrase si configurée).
+
+### POST `/auth/passphrase`
+
+Crée ou change la passphrase (soft-lock). Corps :
+
+```json
+{
+  "current_passphrase_verifier": "<base64>",
+  "passphrase_salt": "<base64>",
+  "passphrase_verifier": "<base64>",
+  "encrypted_vault_key_passphrase": "<base64>"
+}
+```
+
+`current_passphrase_verifier` est **requis** seulement si une passphrase existe déjà. Les clés de récupération **ne sont pas** consommées. Réponse : même forme que login (`has_passphrase`, blobs passphrase).
+
+### POST `/auth/recovery/passphrase`
+
+Après `recovery/begin` (unwrap local de `vaultKey`), le client envoie une nouvelle passphrase + `verifier` + `key_proof`. La clé de récupération utilisée est **invalidée**. Réponse : session + matériaux (comme login).
 
 ### POST `/auth/login`
 
 ```json
 { "email": "utilisateur@exemple.org", "auth_verifier": "<base64>" }
 ```
+
+Réponse : JWT + blobs crypto, dont `passphrase_salt` / `encrypted_vault_key_passphrase` si le compte en a (`has_passphrase: true`).
 
 ## Coffre — `/vault/`
 

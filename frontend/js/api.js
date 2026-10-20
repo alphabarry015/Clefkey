@@ -75,6 +75,21 @@ export const api = {
     });
   },
 
+  changePassphrase(token, payload) {
+    return request('/auth/passphrase', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  recoveryPassphraseComplete(payload) {
+    return request('/auth/recovery/passphrase', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   getProfile(token) {
     return request('/auth/me', { headers: { Authorization: `Bearer ${token}` } });
   },

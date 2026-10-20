@@ -34,8 +34,28 @@ from ._helpers import (
     _parse_registration_names,
     _profile_payload,
     _seal_key_proof,
+    _user_has_passphrase,
     _validate_name_field,
 )
+
+
+def _parse_passphrase_package(data: dict) -> tuple[bytes, bytes, bytes] | str:
+    """Valide {passphrase_salt, passphrase_verifier, encrypted_vault_key_passphrase}."""
+    salt_b64 = data.get("passphrase_salt")
+    verifier_b64 = data.get("passphrase_verifier")
+    blob_b64 = data.get("encrypted_vault_key_passphrase")
+    if not salt_b64 or not verifier_b64 or not blob_b64:
+        return "Passphrase requise"
+    salt = _decode_fixed_b64(salt_b64, SALT_SIZE, "passphrase_salt")
+    if isinstance(salt, str):
+        return salt
+    verifier = _decode_fixed_b64(verifier_b64, VERIFIER_SIZE, "passphrase_verifier")
+    if isinstance(verifier, str):
+        return verifier
+    blob = _decode_wrapped_key_b64(blob_b64, "encrypted_vault_key_passphrase")
+    if isinstance(blob, str):
+        return blob
+    return salt, verifier, blob
 
 def _parse_recovery_packages(raw) -> list[tuple[bytes, bytes, bytes]] | str:
     """Valide exactement 7 paquets {verifier, encrypted_vault_key, key_proof}."""
@@ -106,6 +126,11 @@ def register(request):
     if isinstance(packages, str):
         return api_error(packages, 400)
 
+    passphrase_pkg = _parse_passphrase_package(data)
+    if isinstance(passphrase_pkg, str):
+        return api_error(passphrase_pkg, 400)
+    passphrase_salt, passphrase_verifier, encrypted_vault_key_passphrase = passphrase_pkg
+
     for value, label, required_field in (
         (first_name, "Le prénom", True),
         (middle_name, "Le deuxième prénom", False),
@@ -149,6 +174,9 @@ def register(request):
                 encrypted_vault_key=encrypted_vault_key,
                 public_key=public_key,
                 encrypted_private_key=encrypted_private_key,
+                passphrase_salt=passphrase_salt,
+                passphrase_verifier=passphrase_verifier,
+                encrypted_vault_key_passphrase=encrypted_vault_key_passphrase,
             )
             _save_recovery_keys(user, packages)
     except Exception:
@@ -299,6 +327,106 @@ def change_password(request):
     user.auth_verifier = auth_verifier
     user.encrypted_vault_key = encrypted_vault_key
     user.save(update_fields=["auth_verifier", "encrypted_vault_key"])
+    return JsonResponse(_auth_response(user))
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@rate_limit("auth-passphrase", limit=5, window_seconds=300)
+@require_auth
+def change_passphrase(request):
+    """
+    Crée ou change la passphrase depuis une session authentifiée.
+    Si une passphrase existe déjà : current_passphrase_verifier requis.
+    Les clés de récupération ne sont pas consommées.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_error("Corps JSON invalide", 400)
+
+    passphrase_pkg = _parse_passphrase_package(data)
+    if isinstance(passphrase_pkg, str):
+        return api_error(passphrase_pkg, 400)
+    passphrase_salt, passphrase_verifier, encrypted_vault_key_passphrase = passphrase_pkg
+
+    user = request.vault_user
+    if _user_has_passphrase(user):
+        current_b64 = data.get("current_passphrase_verifier")
+        if not current_b64:
+            return api_error("Passphrase actuelle requise", 400)
+        current_verifier = _decode_fixed_b64(current_b64, VERIFIER_SIZE, "current_passphrase_verifier")
+        if isinstance(current_verifier, str):
+            return api_error("Passphrase actuelle incorrecte", 401)
+        stored = bytes(user.passphrase_verifier)
+        if len(current_verifier) != len(stored) or not hmac.compare_digest(current_verifier, stored):
+            return api_error("Passphrase actuelle incorrecte", 401)
+        if hmac.compare_digest(passphrase_verifier, stored):
+            return api_error("La nouvelle passphrase doit être différente", 400)
+
+    user.passphrase_salt = passphrase_salt
+    user.passphrase_verifier = passphrase_verifier
+    user.encrypted_vault_key_passphrase = encrypted_vault_key_passphrase
+    user.save(update_fields=[
+        "passphrase_salt",
+        "passphrase_verifier",
+        "encrypted_vault_key_passphrase",
+    ])
+    return JsonResponse(_auth_response(user))
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@rate_limit("auth-recovery-passphrase", limit=5, window_seconds=300)
+def recovery_passphrase_complete(request):
+    """
+    Réinitialise la passphrase via une clé de récupération (comme recovery/complete).
+    Invalide uniquement la clé utilisée.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return api_error("Corps JSON invalide", 400)
+
+    email = (data.get("email") or "").strip().lower()
+    verifier_b64 = data.get("verifier")
+    key_proof_b64 = data.get("key_proof")
+    if not email or not verifier_b64 or not key_proof_b64:
+        return api_error("Champs requis manquants", 400)
+
+    passphrase_pkg = _parse_passphrase_package(data)
+    if isinstance(passphrase_pkg, str):
+        return api_error(passphrase_pkg, 400)
+    passphrase_salt, passphrase_verifier, encrypted_vault_key_passphrase = passphrase_pkg
+
+    verifier = _decode_fixed_b64(verifier_b64, VERIFIER_SIZE, "verifier")
+    if isinstance(verifier, str):
+        return api_error("Récupération impossible", 400)
+    key_proof = _decode_fixed_b64(key_proof_b64, VERIFIER_SIZE, "key_proof")
+    if isinstance(key_proof, str):
+        return api_error("Récupération impossible", 400)
+
+    user = VaultUser.objects.filter(email__iexact=email).first()
+    recovery = VaultRecoveryKey.objects.filter(verifier=verifier).first()
+    if (
+        user is None
+        or recovery is None
+        or recovery.user_id != user.id
+        or not _key_proof_matches(bytes(recovery.key_proof), key_proof)
+    ):
+        return api_error("Récupération impossible", 400)
+
+    with transaction.atomic():
+        user.passphrase_salt = passphrase_salt
+        user.passphrase_verifier = passphrase_verifier
+        user.encrypted_vault_key_passphrase = encrypted_vault_key_passphrase
+        user.save(update_fields=[
+            "passphrase_salt",
+            "passphrase_verifier",
+            "encrypted_vault_key_passphrase",
+        ])
+        recovery.delete()
+
     return JsonResponse(_auth_response(user))
 
 

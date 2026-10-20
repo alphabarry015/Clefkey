@@ -313,13 +313,20 @@
                   </span>
                   <i data-lucide="chevron-right" class="profile-shortcut-arrow"></i>
                 </button>
+                <button type="button" class="profile-lock-btn" id="btn-open-change-passphrase">
+                  <span class="profile-lock-icon"><i data-lucide="quote"></i></span>
+                  <span class="profile-lock-text">
+                    <strong>Changer la passphrase</strong>
+                    <span>Phrase de déverrouillage (min. 3 mots) — soft-lock</span>
+                  </span>
+                  <i data-lucide="chevron-right" class="profile-shortcut-arrow"></i>
+                </button>
                 <div class="profile-session-pref">
                   <div class="profile-session-pref-text">
                     <strong>Rechargement (F5) et verrouillage</strong>
                     <span>
-                      Après F5, inactivité (15 min) ou onglet en arrière-plan, le coffre se verrouille. Seul le
-                      JWT et le matériel chiffré restent en session — jamais les clés en clair. Un mot de passe
-                      maître suffit pour rouvrir.
+                      Onglet en arrière-plan (5 min) ou verrouillage manuel : soft-lock — passphrase ou mot de
+                      passe maître. Inactivité 15 min : déconnexion complète. Jamais de clés en clair en session.
                     </span>
                   </div>
                 </div>
@@ -433,7 +440,7 @@
                       id="profile-new-password"
                       class="profile-field-input"
                       required
-                      minlength="12"
+                      minlength="8"
                       autocomplete="off"
                     >
                     <button type="button" class="btn-eye" data-target="profile-new-password" aria-label="Afficher">
@@ -451,7 +458,7 @@
                       id="profile-new-password-confirm"
                       class="profile-field-input"
                       required
-                      minlength="12"
+                      minlength="8"
                       autocomplete="off"
                     >
                     <button
@@ -466,6 +473,69 @@
                 </div>
                 <button type="submit" id="btn-change-password" class="btn btn-primary profile-password-submit">
                   Enregistrer le mot de passe
+                </button>
+              </form>
+            </section>
+          </div>
+        </div>
+
+        <div id="passphrase-view" class="profile-view password-view hidden">
+          <div class="profile-content">
+            <button type="button" id="btn-passphrase-back" class="btn btn-ghost btn-sm project-detail-back">
+              <i data-lucide="arrow-left"></i>
+              <span>Profil</span>
+            </button>
+            <section class="profile-card">
+              <div class="profile-card-header">
+                <h3><i data-lucide="quote"></i> Changer la passphrase</h3>
+              </div>
+              <p class="profile-security-text profile-password-hint">
+                La passphrase sert au soft-lock (avec le mot de passe maître en alternative).
+                Min. 3 mots — majuscule forcée en début de phrase et après chaque point.
+              </p>
+              <form id="form-change-passphrase" class="profile-password-form" autocomplete="off" data-form-type="other">
+                <div class="form-group" id="profile-current-passphrase-group">
+                  <label for="profile-current-passphrase">Passphrase actuelle</label>
+                  <div class="input-wrap">
+                    <input
+                      type="text"
+                      id="profile-current-passphrase"
+                      class="profile-field-input"
+                      autocomplete="off"
+                      spellcheck="false"
+                    >
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="profile-new-passphrase">Nouvelle passphrase</label>
+                  <div class="input-wrap">
+                    <input
+                      type="text"
+                      id="profile-new-passphrase"
+                      class="profile-field-input"
+                      required
+                      placeholder="Ex. Le chat dort sur le toit"
+                      autocomplete="off"
+                      spellcheck="false"
+                    >
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="profile-new-passphrase-confirm">Confirmer</label>
+                  <div class="input-wrap">
+                    <input
+                      type="text"
+                      id="profile-new-passphrase-confirm"
+                      class="profile-field-input"
+                      required
+                      placeholder="Retapez la passphrase"
+                      autocomplete="off"
+                      spellcheck="false"
+                    >
+                  </div>
+                </div>
+                <button type="submit" id="btn-change-passphrase" class="btn btn-primary profile-password-submit">
+                  Enregistrer la passphrase
                 </button>
               </form>
             </section>

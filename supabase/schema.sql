@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS users (
     encrypted_vault_key   BYTEA        NOT NULL,
     public_key            BYTEA        NOT NULL,
     encrypted_private_key BYTEA        NOT NULL,
+    passphrase_salt                  BYTEA,
+    passphrase_verifier              BYTEA,
+    encrypted_vault_key_passphrase   BYTEA,
     created_at            TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 

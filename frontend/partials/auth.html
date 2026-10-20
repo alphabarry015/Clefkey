@@ -74,10 +74,39 @@
 
         <form id="form-unlock" class="auth-form hidden" autocomplete="off" data-form-type="other" novalidate>
           <p class="shares-hint">
-            Session en pause. Saisissez votre mot de passe maître pour rouvrir le coffre sans vous
-            reconnecter.
+            Session en pause. Déverrouillez avec votre <strong>passphrase</strong> ou votre
+            <strong>mot de passe maître</strong>.
           </p>
-          <div class="form-group">
+          <div class="auth-unlock-modes" role="tablist" aria-label="Mode de déverrouillage">
+            <button type="button" class="auth-unlock-mode active" id="unlock-mode-passphrase" data-unlock-mode="passphrase">
+              Passphrase
+            </button>
+            <button type="button" class="auth-unlock-mode" id="unlock-mode-master" data-unlock-mode="master">
+              Mot de passe
+            </button>
+          </div>
+          <div class="form-group" id="unlock-passphrase-group">
+            <label for="unlock-passphrase">Passphrase</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="quote"></i></span>
+              <input
+                type="text"
+                id="unlock-passphrase"
+                name="clefkey-passphrase-unlock"
+                placeholder="Ex. Le chat dort sur le toit"
+                autocomplete="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+              >
+            </div>
+            <button type="button" id="btn-forgot-passphrase" class="link-btn" style="margin-top:0.4rem">
+              Passphrase oubliée ?
+            </button>
+          </div>
+          <div class="form-group hidden" id="unlock-password-group">
             <label for="unlock-password">Mot de passe maître</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
@@ -162,7 +191,7 @@
             <label for="recovery-new-password">Nouveau mot de passe maître</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
-              <input type="password" id="recovery-new-password" required minlength="12" autocomplete="off">
+              <input type="password" id="recovery-new-password" required minlength="8" autocomplete="off">
               <button type="button" class="btn-eye" data-target="recovery-new-password" aria-label="Afficher">
                 <i data-lucide="eye"></i>
               </button>
@@ -174,11 +203,58 @@
             <label for="recovery-new-password-confirm">Confirmer</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
-              <input type="password" id="recovery-new-password-confirm" required minlength="12" autocomplete="off">
+              <input type="password" id="recovery-new-password-confirm" required minlength="8" autocomplete="off">
             </div>
           </div>
           <button type="submit" id="btn-recovery-complete" class="btn btn-primary btn-full">
             <span>Réinitialiser le coffre</span>
+            <i data-lucide="key-round"></i>
+          </button>
+        </form>
+
+        <form id="form-recovery-passphrase" class="auth-form hidden" autocomplete="off" data-form-type="other">
+          <p class="shares-hint">
+            Choisissez une nouvelle passphrase (min. 3 mots). La clé de récupération utilisée sera invalidée.
+          </p>
+          <div class="form-group">
+            <label for="recovery-new-passphrase">Nouvelle passphrase</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="quote"></i></span>
+              <input
+                type="text"
+                id="recovery-new-passphrase"
+                required
+                placeholder="Ex. Le chat. Dort sur le toit"
+                autocomplete="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+              >
+            </div>
+            <p class="shares-hint" style="margin-top:0.35rem">
+              Majuscule automatique en début de phrase et après chaque point.
+            </p>
+          </div>
+          <div class="form-group">
+            <label for="recovery-new-passphrase-confirm">Confirmer</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="quote"></i></span>
+              <input
+                type="text"
+                id="recovery-new-passphrase-confirm"
+                required
+                placeholder="Retapez la passphrase"
+                autocomplete="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+              >
+            </div>
+          </div>
+          <button type="submit" id="btn-recovery-passphrase-complete" class="btn btn-primary btn-full">
+            <span>Réinitialiser la passphrase</span>
             <i data-lucide="key-round"></i>
           </button>
         </form>
@@ -264,7 +340,7 @@
                 id="register-password"
                 name="clefkey-master-register"
                 required
-                placeholder="Min. 12 caractères"
+                placeholder="Min. 8 caractères"
                 autocomplete="off"
                 data-lpignore="true"
                 data-1p-ignore="true"
@@ -279,7 +355,7 @@
             <div id="strength-label" class="strength-label"></div>
           </div>
           <div class="form-group form-group--span">
-            <label for="register-password-confirm">Confirmer</label>
+            <label for="register-password-confirm">Confirmer le mot de passe</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
               <input
@@ -289,6 +365,47 @@
                 required
                 placeholder="••••••••"
                 autocomplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+              >
+            </div>
+          </div>
+          <div class="form-group form-group--span">
+            <label for="register-passphrase">Passphrase</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="quote"></i></span>
+              <input
+                type="text"
+                id="register-passphrase"
+                name="clefkey-passphrase-register"
+                required
+                placeholder="Ex. Le chat dort sur le toit"
+                autocomplete="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+              >
+            </div>
+            <p class="shares-hint" style="margin-top:0.35rem">
+              Min. 3 mots. Majuscule forcée en début de phrase et après chaque point.
+            </p>
+          </div>
+          <div class="form-group form-group--span">
+            <label for="register-passphrase-confirm">Confirmer la passphrase</label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="quote"></i></span>
+              <input
+                type="text"
+                id="register-passphrase-confirm"
+                name="clefkey-passphrase-confirm"
+                required
+                placeholder="Retapez la passphrase"
+                autocomplete="off"
+                spellcheck="false"
                 data-lpignore="true"
                 data-1p-ignore="true"
                 data-bwignore="true"

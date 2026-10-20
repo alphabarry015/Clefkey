@@ -32,6 +32,7 @@ const {
   showScreen,
   openAuthTab,
   openUnlockScreen,
+  setUnlockMode,
   showRecoveryKeysModal,
   bindLandingNavigation,
   bindRecoveryExportButtons,
@@ -48,6 +49,7 @@ const {
 deps.showScreen = showScreen;
 deps.openAuthTab = openAuthTab;
 deps.openUnlockScreen = openUnlockScreen;
+deps.setUnlockMode = setUnlockMode;
 deps.showRecoveryKeysModal = showRecoveryKeysModal;
 
 bindLandingNavigation({ onUnlockBack: () => deps.hardLogout('unlock_back') });
@@ -76,6 +78,7 @@ initTheme();
 initIcons();
 deps.initProfileFieldEdits();
 deps.initPasswordChangeForm();
+deps.initPassphraseChangeForm?.();
 refreshIcons($('#screen-landing'));
 bindBreachWidget($('#lp-audit'), {
   form: '#lp-audit-form',

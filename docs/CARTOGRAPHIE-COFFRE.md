@@ -8,6 +8,8 @@ Clefkey est un gestionnaire de mots de passe web dit zero knowledge. En pratique
 
 Le mot de passe maître joue donc deux rôles à la fois : il authentifie la personne auprès de l’API (via un dérivé), et il déverrouille le matériel cryptographique nécessaire pour lire ou écrire les entrées. Le serveur ne connaît jamais ce mot de passe.
 
+En complément, une **passphrase** (phrase d’au moins trois mots, majuscule forcée) est créée à l’inscription. Elle n’ouvre pas la première connexion : elle enveloppe une seconde copie de la clé de coffre pour le **soft-lock** (F5, verrouillage manuel, onglet en arrière-plan). L’utilisateur choisit librement passphrase **ou** maître pour rouvrir.
+
 ## Vue d’ensemble des couches
 
 Le navigateur affiche l’interface (landing, inscription, connexion, dashboard, liste, détail, profil) et exécute toute la cryptographie via WebCrypto et Argon2id. Django, déployé en serverless sur Vercel, expose l’API HTTP, sert les fichiers front, émet les JWT et applique le rate limiting. PostgreSQL (Supabase) conserve les comptes et les blobs. Redis Upstash sert, en production, de compteur partagé pour limiter les abus.
@@ -16,11 +18,11 @@ Chaque couche a une responsabilité nette. Le front décide du contenu en clair.
 
 ## Compte et matériel cryptographique
 
-À l’inscription, le navigateur génère un sel aléatoire, dérive une clé d’authentification et une clé de coffre à partir du maître, produit une paire de clés pour le partage futur, chiffre la clé de coffre et la clé privée, puis n’envoie au serveur que ce qui est déjà protégé : email, noms de profil, sel, vérificateur, blobs de clés. Un exemple concret : Alice s’inscrit avec un maître long et unique ; le serveur enregistre son email et des octets chiffrés ; Alice seule peut, plus tard, recalculer les mêmes dérivés sur un autre appareil.
+À l’inscription, le navigateur génère un sel aléatoire, dérive une clé d’authentification et une clé de coffre à partir du maître (**min. 8 caractères**, complexité, hors listes SecLists), produit une paire de clés pour le partage futur, chiffre la clé de coffre et la clé privée, crée un wrap passphrase (sel dédié + vérificateur + vault key chiffrée), génère 7 clés de récupération, puis n’envoie au serveur que ce qui est déjà protégé. Un exemple concret : Alice s’inscrit avec un maître long et unique plus une passphrase mémorable ; le serveur enregistre son email et des octets chiffrés ; Alice seule peut, plus tard, recalculer les mêmes dérivés sur un autre appareil.
 
-À la connexion, le client demande le sel (l’endpoint répond toujours, même pour un email inconnu, avec un sel factice si besoin, pour ne pas aider à l’énumération), dérive le vérificateur, l’envoie, reçoit un JWT si la comparaison côté serveur réussit, puis déchiffre la clé de coffre en local. La session garde les clés déchiffrées en mémoire vive uniquement. On persiste en `sessionStorage` le JWT et le `authMaterial` (salt + blobs déjà chiffrés) : après F5 ou verrouillage, un écran « mot de passe maître » redérive les clés localement. La déconnexion efface tout.
+À la connexion, le client demande le sel (l’endpoint répond toujours, même pour un email inconnu, avec un sel factice si besoin, pour ne pas aider à l’énumération), dérive le vérificateur, l’envoie, reçoit un JWT si la comparaison côté serveur réussit, puis déchiffre la clé de coffre en local. La session garde les clés déchiffrées en mémoire vive uniquement. On persiste en `sessionStorage` le JWT et le `authMaterial` (salt + blobs déjà chiffrés, y compris passphrase) : après F5, verrouillage manuel ou onglet caché ≥ 5 min, un écran soft-lock propose **passphrase ou mot de passe maître**. Après **15 min d’inactivité**, hard logout (tout est effacé). La déconnexion manuelle efface tout.
 
-Le code de récupération est une chaîne hexadécimale longue, présentée à l’utilisateur sous forme groupée pour la saisie (groupes de quatre caractères). Il ne remplace pas le maître pour l’usage quotidien : c’est une voie de secours pour régénérer l’accès au matériel. En base, ce qui est stocké pour prouver la validité n’est pas le code en clair : c’est une empreinte scellée côté serveur avec le secret d’application Django.
+Les **7 clés de récupération** sont des secrets hexadécimaux longs, présentés groupés. Elles ne remplacent pas le maître pour l’usage quotidien : ce sont des voies de secours pour **réinitialiser le maître** ou la **passphrase**. En base, le serveur ne stocke qu’un vérificateur et un blob — jamais la clé en clair ; la preuve de possession de vault key est scellée (HMAC) avec le secret d’application Django.
 
 ## Les entrées du coffre
 
@@ -38,11 +40,11 @@ Le partage s’appuie sur la paire de clés : la clé publique du destinataire (
 
 ## Flux utilisateur typiques
 
-Inscription. L’utilisateur remplit le formulaire, le front refuse un maître trop court ou présent dans les listes de mots de passe courants embarquées (SecLists), calcule le matériel, appelle `POST /auth/register`, puis bascule vers une session authentifiée. Afficher le code de récupération à ce moment est critique : s’il est perdu avec le maître, le coffre devient irrécupérable.
+Inscription. L’utilisateur remplit le formulaire (maître + passphrase), le front refuse un maître trop court / trop courant (SecLists) et une passphrase de moins de 3 mots, calcule le matériel, appelle `POST /auth/register`, puis affiche les **7 clés de récupération**. Les perdre avec le maître et la passphrase rend le coffre irrécupérable.
 
 Connexion. Email et maître, dérivation, `POST /auth/login`, JWT, déchiffrement de la clé de coffre, chargement des entrées. En local uniquement, laisser les champs vides peut activer un mode démo sans toucher la vraie base : utile pour développer l’UI, dangereux à ne jamais activer en production avec des données réelles.
 
-Usage du coffre. Recherche, filtres de type, copie presse-papiers, détail, génération de mot de passe (local WebCrypto ou endpoint authentifié). Le **Générateur** (onglets Mot de passe / Username / Passphrase) aide à créer des secrets forts : pour l’onglet Username, le navigateur demande au serveur (proxy Sherlock) de vérifier la disponibilité de variantes — aucun secret du coffre n’est impliqué, seul un pseudo public est envoyé à des sites tiers. Le **Dashboard** affiche un aperçu (compteurs, actions rapides, graphiques) et renvoie la liste des clés vers « Toutes les clés ». Depuis le **profil**, on peut changer le mot de passe maître (preuve de l’ancien maître, rechiffrement local de `vaultKey`) sans utiliser les clés de récupération. Verrouillage : fin de session côté client.
+Usage du coffre. Recherche, filtres de type, copie presse-papiers, détail, génération de mot de passe (local WebCrypto ou endpoint authentifié). Le **Générateur** (onglets Mot de passe / Username / Passphrase) aide à créer des secrets forts : pour l’onglet Username, le navigateur demande au serveur (proxy Sherlock) de vérifier la disponibilité de variantes — aucun secret du coffre n’est impliqué, seul un pseudo public est envoyé à des sites tiers. Le **Dashboard** affiche un aperçu (compteurs, actions rapides, graphiques) et renvoie la liste des clés vers « Toutes les clés ». Depuis le **profil**, on peut changer le mot de passe maître et la **passphrase** (sans consommer les clés de récupération pour un changement en session). Soft-lock : passphrase **ou** maître.
 
 ## Ce que le serveur voit vraiment
 

@@ -128,9 +128,17 @@ def _validate_name_field(value: str, label: str, required: bool, max_len: int = 
     return None
 
 
+def _user_has_passphrase(user: VaultUser) -> bool:
+    return bool(
+        user.passphrase_salt
+        and user.passphrase_verifier
+        and user.encrypted_vault_key_passphrase
+    )
+
+
 def _auth_response(user: VaultUser) -> dict:
     token = create_access_token(str(user.id), user.email)
-    return {
+    payload = {
         "access_token": token,
         "token_type": "bearer",
         "user_id": str(user.id),
@@ -143,7 +151,12 @@ def _auth_response(user: VaultUser) -> dict:
         "encrypted_vault_key": b64_encode(user.encrypted_vault_key),
         "public_key": b64_encode(user.public_key),
         "encrypted_private_key": b64_encode(user.encrypted_private_key),
+        "has_passphrase": _user_has_passphrase(user),
     }
+    if _user_has_passphrase(user):
+        payload["passphrase_salt"] = b64_encode(user.passphrase_salt)
+        payload["encrypted_vault_key_passphrase"] = b64_encode(user.encrypted_vault_key_passphrase)
+    return payload
 
 
 def _entry_response(entry: VaultEntry) -> dict:

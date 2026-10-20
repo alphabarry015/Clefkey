@@ -4,9 +4,15 @@
 import { api } from './api.js';
 import { saveSession, wipeKeyBytes } from './session.js';
 import {
-  fromB64, toB64, deriveKey, createAuthVerifier, prepareMasterPasswordReset,
+  fromB64, toB64, deriveKey, createAuthVerifier, createPassphraseVerifier,
+  decryptBytes, prepareMasterPasswordReset, preparePassphraseReset,
 } from './crypto.js';
 import { checkStrength, validateMasterPassword } from './master-password.js';
+import {
+  applyPassphraseFormatting,
+  formatPassphraseInput,
+  validatePassphrase,
+} from './passphrase.js';
 import { $, $$, EMPTY_VALUE, setAvatar, toast } from './ui.js';
 
 export function createProfile(deps) {
@@ -371,6 +377,112 @@ export function createProfile(deps) {
     updatePasswordStrengthMeter('');
   }
 
+  function hasPassphraseConfigured() {
+    return Boolean(
+      state.authMaterial?.passphrase_salt && state.authMaterial?.encrypted_vault_key_passphrase,
+    );
+  }
+
+  function resetPassphraseChangeForm() {
+    $('#form-change-passphrase')?.reset();
+    const group = $('#profile-current-passphrase-group');
+    const current = $('#profile-current-passphrase');
+    if (group) group.classList.toggle('hidden', !hasPassphraseConfigured());
+    if (current) current.required = hasPassphraseConfigured();
+  }
+
+  async function submitPassphraseChange(event) {
+    event.preventDefault();
+    const current = formatPassphraseInput($('#profile-current-passphrase')?.value || '');
+    const next = formatPassphraseInput($('#profile-new-passphrase')?.value || '');
+    const confirm = formatPassphraseInput($('#profile-new-passphrase-confirm')?.value || '');
+    const btn = $('#btn-change-passphrase');
+    const hadPassphrase = hasPassphraseConfigured();
+
+    if (!next || !confirm) {
+      toast('Tous les champs sont requis', 'error');
+      return;
+    }
+    if (hadPassphrase && !current) {
+      toast('Passphrase actuelle requise', 'error');
+      return;
+    }
+    if (next !== confirm) {
+      toast('Les passphrases ne correspondent pas', 'error');
+      return;
+    }
+    if (hadPassphrase && next === current) {
+      toast('La nouvelle passphrase doit être différente', 'error');
+      return;
+    }
+    if (state.devMode) {
+      toast('Changement de passphrase indisponible en mode développement', 'info');
+      return;
+    }
+    if (!state.vaultKey) {
+      toast('Coffre verrouillé — reconnectez-vous', 'error');
+      return;
+    }
+
+    const phraseError = validatePassphrase(next);
+    if (phraseError) {
+      toast(phraseError, 'error');
+      return;
+    }
+
+    const showLoading = deps.showLoading;
+    const hideLoading = deps.hideLoading;
+    const authMaterialFromPayload = deps.authMaterialFromPayload;
+
+    btn.disabled = true;
+    showLoading?.('Mise à jour de la passphrase...');
+    let currentDerived = null;
+    try {
+      const payload = {};
+      if (hadPassphrase) {
+        const salt = fromB64(state.authMaterial.passphrase_salt);
+        currentDerived = await deriveKey(current, salt);
+        const currentVerifier = await createPassphraseVerifier(currentDerived);
+        try {
+          await decryptBytes(fromB64(state.authMaterial.encrypted_vault_key_passphrase), currentDerived);
+        } catch {
+          toast('Passphrase actuelle incorrecte', 'error');
+          return;
+        }
+        payload.current_passphrase_verifier = toB64(currentVerifier);
+      }
+      const prep = await preparePassphraseReset(state.vaultKey, next);
+      payload.passphrase_salt = toB64(prep.salt);
+      payload.passphrase_verifier = toB64(prep.verifier);
+      payload.encrypted_vault_key_passphrase = toB64(prep.encryptedVaultKey);
+      const data = await api.changePassphrase(state.token, payload);
+      if (data.access_token) state.token = data.access_token;
+      if (authMaterialFromPayload) {
+        state.authMaterial = authMaterialFromPayload(data) || {
+          ...state.authMaterial,
+          passphrase_salt: data.passphrase_salt,
+          encrypted_vault_key_passphrase: data.encrypted_vault_key_passphrase,
+        };
+      } else {
+        state.authMaterial = {
+          ...state.authMaterial,
+          passphrase_salt: data.passphrase_salt,
+          encrypted_vault_key_passphrase: data.encrypted_vault_key_passphrase,
+        };
+      }
+      saveSession(state);
+      resetPassphraseChangeForm();
+      deps.switchPage?.('profile');
+      toast(hadPassphrase ? 'Passphrase mise à jour' : 'Passphrase créée', 'success');
+    } catch (err) {
+      toast(err.message || 'Impossible de changer la passphrase', 'error');
+    } finally {
+      wipeKeyBytes(currentDerived);
+      hideLoading?.();
+      btn.disabled = false;
+    }
+  }
+
   function initPasswordChangeForm() {
     $('#profile-new-password')?.addEventListener('input', (e) => {
       updatePasswordStrengthMeter(e.target.value);
@@ -386,11 +498,29 @@ export function createProfile(deps) {
     });
   }
 
+  function initPassphraseChangeForm() {
+    ['#profile-current-passphrase', '#profile-new-passphrase', '#profile-new-passphrase-confirm']
+      .forEach((sel) => {
+        $(sel)?.addEventListener('input', (e) => applyPassphraseFormatting(e.target));
+      });
+    $('#form-change-passphrase')?.addEventListener('submit', (event) => {
+      submitPassphraseChange(event).catch(() => {});
+    });
+    $('#btn-open-change-passphrase')?.addEventListener('click', () => {
+      resetPassphraseChangeForm();
+      deps.switchPage?.('passphrase');
+    });
+    $('#btn-passphrase-back')?.addEventListener('click', () => {
+      deps.switchPage?.('profile');
+    });
+  }
+
   return {
     buildDisplayName, normalizeUser, userFromProfile, PROFILE_FIELD_CONFIG,
     formatProfileDate, formatMemberSince, shortenUserId,
     updateProfileChip, setProfileStatus, applyUserToUI, renderProfile,
     closeAllProfileFieldEdits, openProfileFieldEdit, saveProfileField,
-    initProfileFieldEdits, initPasswordChangeForm, resetPasswordChangeForm, syncPersistSessionPrefUI,
+    initProfileFieldEdits, initPasswordChangeForm, resetPasswordChangeForm,
+    initPassphraseChangeForm, resetPassphraseChangeForm, syncPersistSessionPrefUI,
   };
 }

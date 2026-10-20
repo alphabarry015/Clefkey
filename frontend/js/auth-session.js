@@ -23,12 +23,17 @@ export function createAuthSession(deps) {
     if (!payload?.salt || !payload?.encrypted_vault_key) {
       return null;
     }
-    return {
+    const material = {
       salt: payload.salt,
       encrypted_vault_key: payload.encrypted_vault_key,
       encrypted_private_key: payload.encrypted_private_key || null,
       public_key: payload.public_key || null,
     };
+    if (payload.passphrase_salt && payload.encrypted_vault_key_passphrase) {
+      material.passphrase_salt = payload.passphrase_salt;
+      material.encrypted_vault_key_passphrase = payload.encrypted_vault_key_passphrase;
+    }
+    return material;
   }
 
   function sameBytes(a, b) {
@@ -133,7 +138,7 @@ export function createAuthSession(deps) {
     if (reason !== 'silent') {
       const minutes = Math.round(IDLE_TIMEOUT_MS / 60000);
       const messages = {
-        idle: `Session expirée après ${minutes} min d'inactivité`,
+        idle: `Déconnecté après ${minutes} min d'inactivité`,
         hidden: 'Session fermée (onglet en arrière-plan trop longtemps)',
         manual: 'Déconnecté',
         unlock_back: 'Déconnecté',
@@ -172,8 +177,8 @@ export function createAuthSession(deps) {
     const minutes = Math.round(IDLE_TIMEOUT_MS / 60000);
     const messages = {
       idle: `Coffre verrouillé après ${minutes} min d'inactivité`,
-      hidden: 'Coffre verrouillé (onglet en arrière-plan)',
-      manual: 'Coffre verrouillé',
+      hidden: 'Coffre verrouillé (onglet en arrière-plan) — passphrase ou mot de passe',
+      manual: 'Coffre verrouillé — passphrase ou mot de passe',
     };
     toast(messages[reason] || messages.manual, 'info');
   }

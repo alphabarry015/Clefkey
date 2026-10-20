@@ -5,7 +5,7 @@
 import { isCommonPassword } from './common-passwords.js';
 
 /** Longueur minimale requise (caractères), pas un secret. */
-export const MASTER_MIN_LENGTH = 12;
+export const MASTER_MIN_LENGTH = 8;
 
 export function checkStrength(password) {
   let score = 0;

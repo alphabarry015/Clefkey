@@ -181,6 +181,13 @@ export async function createAuthVerifier(derivedKey) {
   return new Uint8Array(hash);
 }
 
+/** Vérificateur distinct pour la passphrase (domaine séparé du maître). */
+export async function createPassphraseVerifier(derivedKey) {
+  const data = concat(derivedKey, new TextEncoder().encode('passphrase_verifier'));
+  const hash = await crypto.subtle.digest('SHA-256', toBuffer(data));
+  return new Uint8Array(hash);
+}
+
 // ── AES-256-GCM ──────────────────────────────────────────
 
 async function importAesKey(rawKey) {
@@ -366,9 +373,30 @@ export async function prepareMasterPasswordReset(vaultKey, newMasterPassword, sa
   return { authVerifier, encryptedVaultKey };
 }
 
+/**
+ * Enveloppe vaultKey avec une clé dérivée de la passphrase (soft-lock / unlock).
+ * @returns {{ salt: Uint8Array, verifier: Uint8Array, encryptedVaultKey: Uint8Array }}
+ */
+export async function createPassphrasePackage(vaultKey, passphrase) {
+  const salt = generateSalt();
+  const derived = await deriveKey(passphrase, salt);
+  const verifier = await createPassphraseVerifier(derived);
+  const encryptedVaultKey = await encryptBytes(vaultKey, derived);
+  return { salt, verifier, encryptedVaultKey };
+}
+
+/** Même logique que createPassphrasePackage (réutilise un sel fourni si besoin). */
+export async function preparePassphraseReset(vaultKey, passphrase, salt = null) {
+  const useSalt = salt || generateSalt();
+  const derived = await deriveKey(passphrase, useSalt);
+  const verifier = await createPassphraseVerifier(derived);
+  const encryptedVaultKey = await encryptBytes(vaultKey, derived);
+  return { salt: useSalt, verifier, encryptedVaultKey };
+}
+
 // ── Session crypto ───────────────────────────────────────
 
-export async function prepareRegistration(masterPassword) {
+export async function prepareRegistration(masterPassword, passphrase) {
   const salt = generateSalt();
   const derived = await deriveKey(masterPassword, salt);
   const authVerifier = await createAuthVerifier(derived);
@@ -377,6 +405,7 @@ export async function prepareRegistration(masterPassword) {
   const encryptedVaultKey = await encryptBytes(vaultKey, derived);
   const encryptedPrivateKey = await encryptPrivateKey(privateKey, vaultKey);
   const recovery = await createRecoveryPackages(vaultKey);
+  const passphrasePkg = await createPassphrasePackage(vaultKey, passphrase);
   return {
     salt,
     authVerifier,
@@ -387,6 +416,9 @@ export async function prepareRegistration(masterPassword) {
     encryptedPrivateKey,
     recoveryCodes: recovery.codes,
     recoveryPackages: recovery.packages,
+    passphraseSalt: passphrasePkg.salt,
+    passphraseVerifier: passphrasePkg.verifier,
+    encryptedVaultKeyPassphrase: passphrasePkg.encryptedVaultKey,
   };
 }
 
@@ -398,6 +430,22 @@ export async function unlockSession(authResponse, masterPassword, options = {}) 
     derived = await deriveKey(masterPassword, salt);
   }
   const vaultKey = await decryptBytes(fromB64(authResponse.encrypted_vault_key), derived);
+  const privateKey = await decryptPrivateKey(fromB64(authResponse.encrypted_private_key), vaultKey);
+  const publicKey = fromB64(authResponse.public_key);
+  return { vaultKey, privateKey, publicKey };
+}
+
+/** Soft-lock : déverrouille via la passphrase (blob dédié). */
+export async function unlockSessionWithPassphrase(authResponse, passphrase) {
+  if (!authResponse?.passphrase_salt || !authResponse?.encrypted_vault_key_passphrase) {
+    throw new Error('Aucune passphrase configurée pour ce compte');
+  }
+  const salt = fromB64(authResponse.passphrase_salt);
+  const derived = await deriveKey(passphrase, salt);
+  const vaultKey = await decryptBytes(
+    fromB64(authResponse.encrypted_vault_key_passphrase),
+    derived,
+  );
   const privateKey = await decryptPrivateKey(fromB64(authResponse.encrypted_private_key), vaultKey);
   const publicKey = fromB64(authResponse.public_key);
   return { vaultKey, privateKey, publicKey };

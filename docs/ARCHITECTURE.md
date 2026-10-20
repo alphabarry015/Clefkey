@@ -46,17 +46,19 @@ Secrets : uniquement via variables d’environnement (fichier `.env` local gitig
 
 ## Flux crypto (simplifié)
 
-1. **Inscription** : le client dérive (Argon2id) un matériel d’auth et une clé de coffre, génère une paire de clés, chiffre la vault key et la clé privée, enregistre un chemin de recovery, envoie les blobs + un `auth_verifier`.
-2. **Connexion** : salt (éventuellement factice) → dérivation du verifier → JWT si OK → déchiffrement local de la vault key.
-3. **Entrées** : JSON clair (titre, type `login`|`oauth`|`api_key`|`ssh_key`, username, password, notes, URL) chiffré AES-GCM ; la base ne stocke que `encrypted_data` (BYTEA).
-4. **Recovery** : preuve scellée côté serveur (HMAC), jamais le code de récupération en clair en base.
+1. **Inscription** : le client dérive (Argon2id) un matériel d’auth et une clé de coffre, génère une paire de clés, chiffre la vault key et la clé privée, crée un **wrap passphrase** (sel + vérificateur + vault key chiffrée par la passphrase), enregistre 7 paquets de recovery, envoie les blobs + `auth_verifier`.
+2. **Connexion** : salt (éventuellement factice) → dérivation du verifier → JWT si OK → déchiffrement local de la vault key (maître). Les blobs passphrase sont renvoyés pour le soft-lock ultérieur.
+3. **Soft-lock** : clés en clair effacées ; redéchiffrement via **passphrase** *ou* **maître** (même `vaultKey`).
+4. **Entrées** : JSON clair (titre, type `login`|`oauth`|`api_key`|`ssh_key`, username, password, notes, URL) chiffré AES-GCM ; la base ne stocke que `encrypted_data` (BYTEA).
+5. **Recovery** : preuve scellée côté serveur (HMAC) — reset maître (`/auth/recovery/complete`) ou passphrase (`/auth/recovery/passphrase`) ; la clé utilisée est invalidée.
 
 ## Tables principales
 
 | Table | Rôle |
 |-------|------|
-| `users` | Compte + matériel crypto (salt, verifier, clés chiffrées, recovery) |
+| `users` | Compte + matériel crypto (salt, verifier, clés chiffrées, **passphrase_***, recovery) |
 | `vault_entries` | Entrées du coffre (`encrypted_data`, `owner_id`) |
+| `vault_recovery_keys` | 7 wraps de vault key + vérificateurs (une clé consommée par reset) |
 | tables shares | Partages d’entrées (blobs / métadonnées non sensibles en clair) |
 
 Schéma SQL de référence : `supabase/schema.sql`.
@@ -64,7 +66,8 @@ Schéma SQL de référence : `supabase/schema.sql`.
 ## Frontend
 
 - UI vanilla dans `frontend/` (HTML / CSS / modules ES)
-- Modules notables : `crypto.js`, `session.js`, `auth-screens.js`, `recovery-input.js`, `app.js`, `api.js`, `vault-views.js`, `generator.js`, `shortcuts.js`
+- Modules notables : `crypto.js`, `passphrase.js`, `master-password.js`, `session.js`, `auth-screens.js`, `recovery-input.js`, `app.js`, `api.js`, `vault-views.js`, `generator.js`, `shortcuts.js`
+- Session : `IDLE_TIMEOUT_MS` = 15 min (hard logout) ; `HIDDEN_LOCK_MS` = 5 min (soft-lock)
 - Crypto & icônes **vendored** dans `frontend/vendor/` (pas de CDN)
 - Listes SecLists (sélection) : `frontend/data/` + chargement 2 phases
 - Sync listes : `python scripts/sync_common_password_lists.py`

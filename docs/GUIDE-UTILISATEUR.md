@@ -2,7 +2,7 @@
 
 ## À quoi sert Clefkey. ?
 
-Clefkey. stocke vos identifiants (sites, emails, mots de passe, notes, clés API) de façon chiffrée. Seul **votre mot de passe maître** permet de les lire, dans votre navigateur. Voir aussi la [cartographie](./CARTOGRAPHIE-COFFRE.md) pour le fonctionnement détaillé.
+Clefkey. stocke vos identifiants (sites, emails, mots de passe, notes, clés API) de façon chiffrée. Le **mot de passe maître** (et la **passphrase** pour le soft-lock) permettent de les lire **uniquement dans votre navigateur**. Voir aussi la [cartographie](./CARTOGRAPHIE-COFFRE.md) pour le fonctionnement détaillé.
 
 ## Écrans principaux
 
@@ -12,19 +12,30 @@ Page d’accueil avec le nom **Clefkey.**, un lien vers le dépôt GitHub public
 
 ### 2. Inscription
 
-Renseignez prénom, nom (deuxième prénom optionnel), email, mot de passe maître (**min. 12 caractères**, majuscules, minuscules, chiffre, caractère spécial, **pas dans les listes de mots de passe courants**) et confirmation.
+Renseignez prénom, nom (deuxième prénom optionnel), email, mot de passe maître (**min. 8 caractères**, majuscules, minuscules, chiffre, caractère spécial, **pas dans les listes de mots de passe courants**), une **passphrase** (min. 3 mots, majuscule forcée en début de phrase et après chaque point) et confirmations.
 
 **Important** : ne laissez **pas** le navigateur enregistrer le mot de passe maître (l’app désactive volontairement cette suggestion).
 
 Le mot de passe maître **n’est pas envoyé** au serveur : le navigateur en dérive des clés, puis envoie uniquement des données déjà chiffrées.
 
-Conservez le **code de récupération** affiché après inscription (groupes de caractères) : sans maître ni code, le coffre est irrécupérable.
+Conservez les **7 clés de récupération** affichées après inscription : sans maître, sans passphrase **et** sans ces clés, le coffre est irrécupérable.
 
 ### 3. Connexion
 
 Email + mot de passe maître → déverrouillage du coffre.
 
-Après **F5**, inactivité (15 min) ou onglet en arrière-plan, un écran demande uniquement le **mot de passe maître** (pas besoin de ressaisir l’email). **Se déconnecter** efface toute la session.
+### 3 bis. Soft-lock et déconnexion
+
+Deux comportements distincts :
+
+| Situation | Effet | Pour rouvrir |
+|-----------|--------|----------------|
+| **F5**, verrouillage manuel, ou onglet en arrière-plan **≥ 5 min** | Soft-lock : JWT + blobs chiffrés gardés, clés en clair effacées | **Passphrase** *ou* **mot de passe maître** (choix libre) |
+| **Inactivité 15 min** | Déconnexion complète (hard logout) | Email + mot de passe maître |
+
+L’écran soft-lock propose deux onglets : *Passphrase* et *Mot de passe*. Pas besoin de ressaisir l’email.
+
+**Passphrase oubliée** : depuis le soft-lock → lien dédié → une de vos clés de récupération → nouvelle passphrase (la clé utilisée est invalidée).
 
 Sur `localhost` uniquement : laisser les champs **vides** charge un mode démo (données **fictives** en mémoire). Désactiver avec `?dev=0`.
 
@@ -71,7 +82,25 @@ Les raccourcis du Dashboard (**Mot de passe fort**, **Username**, **Passphrase**
 
 #### Profil
 
-Ouvert depuis l’**avatar** en haut à droite (ou « Profil » dans la sidebar) : infos compte (édition inline), tags techniques, bouton **Changer le mot de passe maître** (ouvre une page dédiée, sans clés de récupération), **Verrouiller le coffre** (soft lock : le maître suffit pour rouvrir).
+Ouvert depuis l’**avatar** en haut à droite (ou « Profil » dans la sidebar) :
+
+- Infos compte (édition inline) et tags techniques
+- **Changer le mot de passe maître** — page dédiée, sans consommer les clés de récupération
+- **Changer la passphrase** — même principe (actuelle + nouvelle, ou création si compte ancien sans passphrase)
+- **Verrouiller le coffre** — soft-lock : passphrase **ou** maître pour rouvrir
+
+## Passphrase (déverrouillage rapide)
+
+| Règle | Détail |
+|-------|--------|
+| Création | À l’**inscription** (obligatoire pour les nouveaux comptes) |
+| Format | Min. **3 mots** ; majuscule **forcée** en début de phrase et après chaque `.` |
+| Usage | Soft-lock uniquement (au choix avec le mot de passe maître) |
+| Première connexion | Toujours email + **mot de passe maître** |
+| Oubli | Reset via **clé de récupération** (comme le reset du maître) |
+| Profil | Section dédiée pour la modifier |
+
+La passphrase ne remplace pas le maître pour la connexion initiale : elle enveloppe une copie de la clé de coffre pour rouvrir rapidement après un soft-lock.
 
 ## Types d’entrées
 
@@ -106,7 +135,9 @@ Les clés peuvent être rangées dans un **projet**. La liste des projets et l�
 | Ajouter une entrée | Bouton **+** / Nouvelle clé, ou raccourci **Ctrl+N** ; choisir le type |
 | Copier un secret | Icône copier sur une carte ou dans le détail |
 | Supprimer | Demande de confirmation en retapant le titre |
-| Verrouiller | Sidebar, profil ou topbar → session fermée |
+| Verrouiller | Sidebar, profil ou topbar → soft-lock (passphrase ou maître) |
+| Changer la passphrase | Profil → Changer la passphrase |
+| Passphrase oubliée | Soft-lock → Passphrase oubliée ? → clé de récupération |
 
 ## PWA
 
