@@ -12,87 +12,154 @@
         var resolved = pref === 'system' ? (dark ? 'dark' : 'light') : pref;
         document.documentElement.setAttribute('data-theme-pref', pref);
         document.documentElement.setAttribute('data-theme', resolved);
-        document.documentElement.style.backgroundColor = resolved === 'dark' ? '#111111' : '#ffffff';
+        document.documentElement.style.backgroundColor = resolved === 'dark' ? '#0a0a0a' : '#f4f6fb';
       } catch (e) {}
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Télécharger Clefkey pour Windows et macOS — coffre zero-knowledge.">
-  <meta name="theme-color" content="#111111">
+  <meta name="description" content="Télécharger Clefkey pour Windows, macOS et l’extension navigateur.">
+  <meta name="theme-color" content="#0a0a0a">
   <title>Télécharger — Clefkey.</title>
   <link rel="icon" href="/icons/icon-mark.png?v=270" type="image/png">
   <link rel="icon" href="/favicon.ico?v=270" sizes="any">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"></noscript>
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/download.css">
 </head>
 <body class="dl-body">
-  <main class="dl-shell">
-    <header class="dl-header">
-      <a href="/" class="dl-brand" aria-label="Clefkey.">
-        <img class="dl-brand-logo" src="/icons/icon-mark.png" alt="" width="36" height="36" decoding="async">
-      </a>
-      <a href="/" class="dl-back">Retour au site</a>
-    </header>
+  <header class="dl-topbar">
+    <a href="/" class="dl-back">Retour au site</a>
+  </header>
 
-    <section class="dl-hero">
-      <p class="dl-kicker">Application desktop</p>
-      <h1>Télécharger Clefkey.</h1>
-      <p class="dl-lead">
-        Client natif du gestionnaire de mots de passe zero-knowledge.
-        Le chiffrement reste sur votre machine ; l’API distante ne voit jamais vos secrets en clair.
-      </p>
+  <main>
+    <section class="dl-hero" aria-label="Télécharger Clefkey">
+      <div class="dl-hero-bg" aria-hidden="true"></div>
+      <canvas class="dl-hero-pixels" aria-hidden="true"></canvas>
+      <div class="dl-hero-logo-bg" aria-hidden="true">
+        <img
+          class="dl-hero-chevalier"
+          src="/icons/logo-chevalier.png"
+          alt=""
+          width="480"
+          height="480"
+          decoding="async"
+          fetchpriority="low"
+        >
+      </div>
+      <div class="dl-hero-copy">
+        <p class="dl-brand-word">Clefkey.</p>
+        <h1 class="dl-headline">Vos mots de passe,<br>où vous en avez besoin.</h1>
+        <p class="dl-lead">
+          Installez Clefkey sur votre ordinateur ou dans votre navigateur.
+          Un seul compte, un coffre simple et sûr.
+        </p>
+        <div class="dl-hero-actions">
+          <a
+            class="dl-btn dl-btn-primary"
+            id="btn-dl-windows"
+            data-platform="windows"
+            href="https://github.com/alphabarry015/clefkey-app-desktop/releases/latest/download/Clefkey-Setup.exe"
+            download="Clefkey-Setup.exe"
+            rel="noopener noreferrer"
+            referrerpolicy="no-referrer"
+          >Télécharger pour Windows</a>
+          <a
+            class="dl-btn dl-btn-outline"
+            id="btn-dl-macos"
+            data-platform="macos"
+            href="https://github.com/alphabarry015/clefkey-app-desktop/releases/latest/download/Clefkey-macOS.dmg"
+            download="Clefkey-macOS.dmg"
+            rel="noopener noreferrer"
+            referrerpolicy="no-referrer"
+          >Télécharger pour macOS</a>
+          <a
+            class="dl-btn dl-btn-outline"
+            id="btn-dl-extension"
+            data-platform="extension"
+            href="https://chromewebstore.google.com/detail/clefkey/amknkijnpfdomhjccnmegojiolnphgpo"
+            rel="noopener noreferrer"
+            referrerpolicy="no-referrer"
+            target="_blank"
+          >Télécharger l’extension</a>
+        </div>
+      </div>
     </section>
 
-    <section class="dl-platforms" aria-label="Choisir une plateforme">
-      <article class="dl-card" data-platform="windows" id="dl-windows">
-        <div class="dl-card-top">
-          <span class="dl-os-badge" aria-hidden="true">Win</span>
-          <h2>Windows</h2>
-        </div>
-        <ul class="dl-list">
-          <li>Installeur NSIS (`.exe`) pour Windows 10 / 11</li>
-          <li>WebView2 requis (souvent déjà installé)</li>
-          <li>Connexion à l’API <code>clefkey.vercel.app</code></li>
+    <section id="avantages" class="dl-section dl-section-features" aria-labelledby="dl-features-title">
+      <div class="dl-section-inner">
+        <p class="dl-kicker">Avantages</p>
+        <h2 id="dl-features-title" class="dl-section-title">
+          Un coffre sous contrôle.<span class="dl-section-title-accent"> Zero-knowledge.</span>
+        </h2>
+        <p class="dl-section-lead">
+          Chiffrement local, sync discrète, mêmes secrets sur le web et le desktop.
+          Clefkey est pensé pour que vos clés restent les vôtres.
+        </p>
+        <ul class="dl-feature-list">
+          <li>
+            <strong>Zero-knowledge</strong>
+            <span>Vos mots de passe sont chiffrés sur votre machine. Le serveur ne voit jamais le contenu du coffre en clair.</span>
+          </li>
+          <li>
+            <strong>Passphrase + maître</strong>
+            <span>Soft-lock rapide avec la passphrase, déverrouillage complet avec le mot de passe maître (8 caractères min.).</span>
+          </li>
+          <li>
+            <strong>Web et desktop</strong>
+            <span>Un seul compte pour le navigateur et l’app native. Même coffre, mêmes clés, sans ressaisie.</span>
+          </li>
+          <li>
+            <strong>Récupération</strong>
+            <span>Clés de récupération générées à l’inscription pour retrouver l’accès si le mot de passe maître est perdu.</span>
+          </li>
+          <li>
+            <strong>Partage sécurisé</strong>
+            <span>Partagez une entrée avec un autre compte Clefkey sans exposer le contenu hors du chiffrement de bout en bout.</span>
+          </li>
+          <li>
+            <strong>Open source</strong>
+            <span>Code auditable sur GitHub. Builds Windows et macOS publiés via les releases officielles.</span>
+          </li>
         </ul>
-        <a
-          class="dl-btn dl-btn-primary"
-          id="btn-dl-windows"
-          href="https://github.com/alphabarry015/clefkey-app-desktop/releases/latest/download/Clefkey-Setup.exe"
-          download="Clefkey-Setup.exe"
-          rel="noopener noreferrer"
-        >Télécharger pour Windows</a>
-      </article>
-
-      <article class="dl-card" data-platform="macos" id="dl-macos">
-        <div class="dl-card-top">
-          <span class="dl-os-badge" aria-hidden="true">Mac</span>
-          <h2>macOS</h2>
-        </div>
-        <ul class="dl-list">
-          <li>Image disque (`.dmg`) pour macOS récent</li>
-          <li>Glisser Clefkey dans Applications</li>
-          <li>Si Gatekeeper bloque : clic droit → Ouvrir (build non notarisé)</li>
-        </ul>
-        <a
-          class="dl-btn dl-btn-primary"
-          id="btn-dl-macos"
-          href="https://github.com/alphabarry015/clefkey-app-desktop/releases/latest/download/Clefkey-macOS.dmg"
-          download="Clefkey-macOS.dmg"
-          rel="noopener noreferrer"
-        >Télécharger pour macOS</a>
-      </article>
+      </div>
     </section>
 
-    <section class="dl-notes">
-      <h2>Bon à savoir</h2>
-      <ul>
-        <li>Même compte et même coffre que sur le site web.</li>
-        <li>Passphrase + mot de passe maître (minimum 8 caractères).</li>
-        <li>Code source : <a href="https://github.com/alphabarry015/clefkey-app-desktop" rel="noopener noreferrer">clefkey-app-desktop</a>.</li>
-        <li>Notes de version : <a href="https://github.com/alphabarry015/clefkey-app-desktop/releases/latest" rel="noopener noreferrer">GitHub Releases</a>.</li>
-      </ul>
+    <section class="dl-section dl-section-trust" aria-labelledby="dl-trust-title">
+      <div class="dl-section-inner">
+        <p class="dl-kicker">Ressources</p>
+        <h2 id="dl-trust-title" class="dl-section-title">
+          Même coffre,<span class="dl-section-title-accent"> partout.</span>
+        </h2>
+        <p class="dl-section-lead">
+          Un seul compte web et desktop. Passphrase pour le soft-lock, mot de passe maître pour l’accès complet.
+        </p>
+        <ul class="dl-feature-list dl-docs-list">
+          <li>
+            <a href="https://github.com/alphabarry015/clefkey-app-desktop" rel="noopener noreferrer">
+              <strong>Code source</strong>
+              <span>Dépôt clefkey-app-desktop — lire, vérifier, contribuer.</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://github.com/alphabarry015/clefkey-app-desktop/releases/latest" rel="noopener noreferrer">
+              <strong>Notes de version</strong>
+              <span>Builds Windows et macOS sur GitHub Releases.</span>
+            </a>
+          </li>
+          <li>
+            <a href="/">
+              <strong>Coffre navigateur</strong>
+              <span>Ouvrir Clefkey dans le navigateur avec le même compte.</span>
+            </a>
+          </li>
+        </ul>
+      </div>
     </section>
   </main>
+
   <script src="/js/download-page.js" defer></script>
 </body>
 </html>
