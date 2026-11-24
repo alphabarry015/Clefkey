@@ -336,7 +336,14 @@
         <div id="shares-received-view" class="shares-view contacts-view share-inbox hidden">
           <div id="shares-received-list-panel">
             <div class="shares-toolbar">
-              <p class="shares-hint">Clés reçues, regroupées par la personne qui vous les a envoyées.</p>
+              <div class="shares-toolbar-row">
+                <p class="shares-hint">Toutes les clés reçues, dans une seule liste.</p>
+                <label id="shares-search-received" class="input input-bordered input-lg shares-search">
+                  <i data-lucide="search" aria-hidden="true"></i>
+                  <input type="search" id="shares-received-search" placeholder="Nom de la personne ou de la clé" autocomplete="off">
+                </label>
+              </div>
+              <p id="shares-received-no-match" class="shares-hint hidden">Aucun résultat.</p>
             </div>
             <div id="shares-received-list" class="contacts-grid"></div>
             <div id="shares-received-empty" class="entries-empty hidden">

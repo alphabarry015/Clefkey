@@ -2,7 +2,14 @@
         <div id="shares-sent-view" class="shares-view contacts-view share-inbox hidden">
           <div id="shares-sent-list-panel">
             <div class="shares-toolbar">
-              <p class="shares-hint">Clés envoyées, regroupées par destinataire. Vous pouvez révoquer l’accès à tout moment.</p>
+              <div class="shares-toolbar-row">
+                <p class="shares-hint">Toutes les clés envoyées, dans une seule liste.</p>
+                <label id="shares-search-sent" class="input input-bordered input-lg shares-search">
+                  <i data-lucide="search" aria-hidden="true"></i>
+                  <input type="search" id="shares-sent-search" placeholder="Nom de la personne ou de la clé" autocomplete="off">
+                </label>
+              </div>
+              <p id="shares-sent-no-match" class="shares-hint hidden">Aucun résultat.</p>
             </div>
             <div id="shares-sent-list" class="contacts-grid"></div>
             <div id="shares-sent-empty" class="entries-empty hidden">
@@ -119,8 +126,12 @@
 
               <section class="contacts-bento-tile contacts-bento-shares">
                 <div class="contacts-bento-shares-head">
-                  <h3 class="contacts-detail-section-title">Clés partagées</h3>
+                  <h3 class="contacts-detail-section-title">Avec ce contact</h3>
                   <p id="contacts-detail-meta" class="shares-hint"></p>
+                </div>
+                <div class="contact-share-tabs" role="tablist" aria-label="Partages avec ce contact">
+                  <button type="button" class="contact-share-tab is-active" data-contact-share-tab="received" role="tab" aria-selected="true">Reçu</button>
+                  <button type="button" class="contact-share-tab" data-contact-share-tab="sent" role="tab" aria-selected="false">Envoyé</button>
                 </div>
                 <div id="contacts-detail-shares" class="entries-grid contacts-bento-shares-list"></div>
                 <div id="contacts-detail-shares-empty" class="contacts-bento-empty hidden">
@@ -133,36 +144,46 @@
         </div>
 
         <div id="profile-view" class="profile-view hidden">
+          <header class="profile-topbar">
+            <p class="profile-crumb">
+              <span>Coffre</span>
+              <span class="profile-crumb-sep" aria-hidden="true">›</span>
+              <span class="profile-crumb-current">Profil</span>
+            </p>
+          </header>
+
           <section class="profile-banner">
-            <div class="profile-banner-decor" aria-hidden="true">
-              <div class="profile-orb profile-orb-1"></div>
-              <div class="profile-orb profile-orb-2"></div>
-            </div>
             <div class="profile-banner-inner">
               <div id="profile-avatar" class="profile-avatar"></div>
-              <h2 id="profile-display-name">…</h2>
-              <p id="profile-email" class="profile-email-line">…</p>
-              <div id="profile-status" class="profile-status">
-                <span class="profile-status-dot"></span>
-                <span id="profile-status-label">Coffre actif</span>
-              </div>
-              <div class="profile-banner-chips">
-                <div class="profile-chip">
-                  <i data-lucide="calendar"></i>
+              <div class="profile-hero-copy">
+                <div class="profile-hero-title">
+                  <h2 id="profile-display-name">…</h2>
+                  <span class="badge badge-primary">Compte</span>
+                </div>
+                <p id="profile-email" class="profile-email-line">…</p>
+                <p class="profile-hero-meta">
                   <span id="profile-member-since">…</span>
-                </div>
-                <div class="profile-chip">
-                  <i data-lucide="key-round"></i>
-                  <span><strong id="profile-chip-entries">0</strong> clé(s)</span>
-                </div>
+                </p>
               </div>
+              <span id="profile-status" class="profile-status">
+                <span id="profile-status-label">Coffre actif</span>
+                <span class="profile-status-dot" aria-hidden="true"></span>
+              </span>
             </div>
           </section>
 
+          <div class="tabs tabs-border profile-tabs" role="tablist" aria-label="Sections du profil">
+            <button type="button" class="tab tab-active" data-profile-tab="personal" role="tab" aria-selected="true">Personnel</button>
+            <button type="button" class="tab" data-profile-tab="security" role="tab" aria-selected="false">Sécurité</button>
+            <button type="button" class="tab" data-profile-tab="export" role="tab" aria-selected="false">Export</button>
+          </div>
+
           <div class="profile-content">
+              <div class="profile-tab-panel" data-profile-panel="personal">
+              <div class="profile-grid">
               <section class="profile-card">
                 <div class="profile-card-header">
-                  <h3><i data-lucide="id-card"></i> Compte</h3>
+                  <h3>Informations personnelles</h3>
                 </div>
                 <ul class="profile-fields">
                   <li class="profile-field profile-field-editable" data-field="first_name">
@@ -189,7 +210,7 @@
                         <input
                           type="text"
                           id="inline-edit-first-name"
-                          class="profile-field-input"
+                          class="input input-bordered profile-field-input"
                           maxlength="50"
                           placeholder="Votre prénom"
                         >
@@ -232,7 +253,7 @@
                         <input
                           type="text"
                           id="inline-edit-middle-name"
-                          class="profile-field-input"
+                          class="input input-bordered profile-field-input"
                           maxlength="50"
                           placeholder="Deuxième prénom"
                         >
@@ -267,7 +288,7 @@
                         <input
                           type="text"
                           id="inline-edit-last-name"
-                          class="profile-field-input"
+                          class="input input-bordered profile-field-input"
                           maxlength="50"
                           placeholder="Votre nom"
                         >
@@ -278,6 +299,13 @@
                       </div>
                     </div>
                   </li>
+                </ul>
+              </section>
+              <section class="profile-card">
+                <div class="profile-card-header">
+                  <h3>Compte</h3>
+                </div>
+                <ul class="profile-fields">
                   <li class="profile-field profile-field-readonly">
                     <div class="profile-field-icon"><i data-lucide="mail"></i></div>
                     <div class="profile-field-body">
@@ -329,9 +357,20 @@
                       </div>
                     </div>
                   </li>
+                  <li class="profile-field profile-field-readonly">
+                    <div class="profile-field-body">
+                      <div class="profile-field-view">
+                        <span class="profile-field-label">Clés</span>
+                        <span class="profile-field-value"><strong id="profile-chip-entries">0</strong> clé(s)</span>
+                      </div>
+                    </div>
+                  </li>
                 </ul>
               </section>
+              </div>
+              </div>
 
+              <div class="profile-tab-panel hidden" data-profile-panel="security">
               <section class="profile-card profile-security-card">
                 <div class="profile-card-header">
                   <h3><i data-lucide="shield-check"></i> Sécurité</h3>
@@ -353,6 +392,27 @@
                   </span>
                   <i data-lucide="chevron-right" class="profile-shortcut-arrow"></i>
                 </button>
+                <div class="profile-lock-btn device-unlock-row" id="btn-device-unlock">
+                  <span class="profile-lock-icon"><i data-lucide="scan-face"></i></span>
+                  <span class="profile-lock-text">
+                    <strong id="device-unlock-title">Activer le capteur</strong>
+                    <span id="device-unlock-hint">Déverrouille ce coffre sur cet appareil après un soft-lock.</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    class="toggle toggle-neutral"
+                    id="device-unlock-switch"
+                    aria-label="Activer le capteur sur cet appareil"
+                  >
+                </div>
+                <button type="button" class="profile-lock-btn" id="btn-open-totp">
+                  <span class="profile-lock-icon"><i data-lucide="shield-check"></i></span>
+                  <span class="profile-lock-text">
+                    <strong id="totp-row-title">Authentificateur</strong>
+                    <span id="totp-row-hint">Code à 6 chiffres à chaque connexion.</span>
+                  </span>
+                  <i data-lucide="chevron-right" class="profile-shortcut-arrow"></i>
+                </button>
                 <button type="button" class="profile-lock-btn" id="btn-open-change-passphrase">
                   <span class="profile-lock-icon"><i data-lucide="quote"></i></span>
                   <span class="profile-lock-text">
@@ -371,7 +431,9 @@
                   </div>
                 </div>
               </section>
+              </div>
 
+              <div class="profile-tab-panel hidden" data-profile-panel="export">
               <section class="profile-card profile-export-card">
                 <div class="profile-card-header">
                   <h3><i data-lucide="save"></i> Exporter mes clés</h3>
@@ -429,17 +491,9 @@
                 </div>
               </section>
 
-              <section class="profile-card profile-lock-card">
-                <button type="button" class="profile-lock-btn" id="btn-profile-lock">
-                  <span class="profile-lock-icon"><i data-lucide="lock"></i></span>
-                  <span class="profile-lock-text">
-                    <strong>Verrouiller le coffre</strong>
-                    <span>Efface les clés en mémoire — le mot de passe maître rouvre la session</span>
-                  </span>
-                  <i data-lucide="chevron-right" class="profile-shortcut-arrow"></i>
-                </button>
-              </section>
+              </div>
           </div>
+          <button type="button" class="profile-lock-fixed" id="btn-profile-lock">Verrouiller</button>
         </div>
 
         <div id="password-view" class="profile-view password-view hidden">
@@ -463,7 +517,7 @@
                     <input
                       type="password"
                       id="profile-current-password"
-                      class="profile-field-input"
+                      class="input input-bordered profile-field-input"
                       required
                       autocomplete="off"
                     >
@@ -478,7 +532,7 @@
                     <input
                       type="password"
                       id="profile-new-password"
-                      class="profile-field-input"
+                      class="input input-bordered profile-field-input"
                       required
                       minlength="8"
                       autocomplete="off"
@@ -496,7 +550,7 @@
                     <input
                       type="password"
                       id="profile-new-password-confirm"
-                      class="profile-field-input"
+                      class="input input-bordered profile-field-input"
                       required
                       minlength="8"
                       autocomplete="off"
@@ -540,7 +594,7 @@
                     <input
                       type="text"
                       id="profile-current-passphrase"
-                      class="profile-field-input"
+                      class="input input-bordered profile-field-input"
                       autocomplete="off"
                       spellcheck="false"
                     >
@@ -552,7 +606,7 @@
                     <input
                       type="text"
                       id="profile-new-passphrase"
-                      class="profile-field-input"
+                      class="input input-bordered profile-field-input"
                       required
                       placeholder="Ex. Le chat dort sur le toit"
                       autocomplete="off"
@@ -566,7 +620,7 @@
                     <input
                       type="text"
                       id="profile-new-passphrase-confirm"
-                      class="profile-field-input"
+                      class="input input-bordered profile-field-input"
                       required
                       placeholder="Retapez la passphrase"
                       autocomplete="off"
@@ -577,6 +631,77 @@
                 <button type="submit" id="btn-change-passphrase" class="btn btn-primary profile-password-submit">
                   Enregistrer la passphrase
                 </button>
+              </form>
+            </section>
+          </div>
+        </div>
+
+        <div id="totp-view" class="profile-view password-view hidden">
+          <div class="profile-content">
+            <button type="button" id="btn-totp-page-back" class="btn btn-ghost btn-sm project-detail-back">
+              <i data-lucide="arrow-left"></i>
+              <span>Profil</span>
+            </button>
+            <section class="profile-card" id="totp-setup">
+              <div class="profile-card-header">
+                <h3><i data-lucide="shield-check"></i> Authentificateur</h3>
+              </div>
+              <p class="profile-security-text profile-password-hint">
+                Scannez le QR code avec Google Authenticator, Microsoft Authenticator ou Aegis.
+                Le code protège la connexion, pas le coffre.
+              </p>
+              <button type="button" id="btn-totp-begin" class="btn btn-primary profile-password-submit">
+                Générer un QR code
+              </button>
+              <div id="totp-enroll" class="hidden">
+                <div id="totp-qr" class="totp-qr" role="img" aria-label="QR code pour l’authentificateur"></div>
+                <button type="button" id="btn-totp-manual" class="btn btn-ghost btn-sm">
+                  Saisir la clé
+                </button>
+                <p id="totp-secret" class="totp-secret hidden"></p>
+              </div>
+              <form id="form-totp-confirm" class="profile-password-form hidden" autocomplete="off">
+                <div class="form-group">
+                  <label for="totp-confirm-code">Code à 6 chiffres</label>
+                  <div class="input-wrap">
+                    <input type="text" id="totp-confirm-code" class="input input-bordered profile-field-input" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary profile-password-submit">Activer</button>
+              </form>
+            </section>
+            <section class="profile-card hidden" id="totp-codes-card">
+              <div class="profile-card-header">
+                <h3>Codes de secours</h3>
+              </div>
+              <p class="profile-security-text">
+                Gardez-les hors ligne. Chaque code ne sert qu’une fois si vous n’avez plus l’application.
+              </p>
+              <ul id="totp-backup-list" class="totp-codes"></ul>
+              <button type="button" id="btn-totp-codes-done" class="btn btn-primary profile-password-submit">J’ai copié les codes</button>
+            </section>
+            <section class="profile-card hidden" id="totp-manage">
+              <div class="profile-card-header">
+                <h3><i data-lucide="shield-check"></i> Authentificateur activé</h3>
+              </div>
+              <p class="profile-security-text profile-password-hint">
+                Pour le retirer ou régénérer les codes de secours, confirmez le mot de passe maître et un code valide.
+              </p>
+              <form id="form-totp-manage" class="profile-password-form" autocomplete="off">
+                <div class="form-group">
+                  <label for="totp-master">Mot de passe maître</label>
+                  <div class="input-wrap">
+                    <input type="password" id="totp-master" class="input input-bordered profile-field-input" autocomplete="off" required>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="totp-manage-code">Code ou code de secours</label>
+                  <div class="input-wrap">
+                    <input type="text" id="totp-manage-code" class="input input-bordered profile-field-input" autocomplete="one-time-code" required>
+                  </div>
+                </div>
+                <button type="submit" id="btn-totp-disable" class="btn btn-primary profile-password-submit">Retirer l’authentificateur</button>
+                <button type="button" id="btn-totp-regenerate" class="btn btn-ghost profile-password-submit">Nouveaux codes de secours</button>
               </form>
             </section>
           </div>

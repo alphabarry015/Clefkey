@@ -5,7 +5,7 @@ import { api } from './api.js';
 import { saveSession, wipeKeyBytes } from './session.js';
 import {
   fromB64, toB64, deriveKey, createAuthVerifier, createPassphraseVerifier,
-  decryptBytes, prepareMasterPasswordReset, preparePassphraseReset,
+  decryptBytes, prepareLogin, prepareMasterPasswordReset, preparePassphraseReset,
 } from './crypto.js';
 import { checkStrength, validateMasterPassword } from './master-password.js';
 import {
@@ -14,6 +14,16 @@ import {
   validatePassphrase,
 } from './passphrase.js';
 import { $, $$, EMPTY_VALUE, setAvatar, toast } from './ui.js';
+import {
+  DeviceUnlockCancelled,
+  clearDeviceUnlock,
+  deviceUnlockBlockReason,
+  deviceUnlockLabel,
+  deviceUnlockSupported,
+  enrollDeviceUnlock,
+  hasDeviceUnlock,
+} from './device-unlock.js';
+import { qrcode } from '../vendor/qrcode-generator.js';
 
 export function createProfile(deps) {
   const { state, refreshIcons } = deps;
@@ -159,6 +169,8 @@ export function createProfile(deps) {
       $('#profile-detail-created').textContent = 'Environnement local';
       $('#profile-member-since').textContent = 'Environnement local';
       refreshIcons($('#profile-view'));
+      void syncDeviceUnlockControl();
+      $('#btn-open-totp')?.classList.add('hidden');
       return;
     }
 
@@ -170,12 +182,15 @@ export function createProfile(deps) {
       $('#profile-detail-id').dataset.full = profile.user_id;
       $('#profile-detail-created').textContent = formatProfileDate(profile.created_at);
       $('#profile-member-since').textContent = formatMemberSince(profile.created_at);
+      state.totpEnabled = Boolean(profile.totp_enabled);
+      refreshTotpPage();
     } catch {
       $('#profile-detail-created').textContent = EMPTY_VALUE;
       $('#profile-member-since').textContent = EMPTY_VALUE;
     }
 
     refreshIcons($('#profile-view'));
+    void syncDeviceUnlockControl();
   }
 
   function closeAllProfileFieldEdits() {
@@ -255,7 +270,21 @@ export function createProfile(deps) {
     }
   }
 
+  function showProfileTab(name) {
+    $$('#profile-view [data-profile-tab]').forEach((button) => {
+      const on = button.dataset.profileTab === name;
+      button.classList.toggle('tab-active', on);
+      button.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    $$('#profile-view [data-profile-panel]').forEach((panel) => {
+      panel.classList.toggle('hidden', panel.dataset.profilePanel !== name);
+    });
+  }
+
   function initProfileFieldEdits() {
+    $$('#profile-view [data-profile-tab]').forEach((button) => {
+      button.addEventListener('click', () => showProfileTab(button.dataset.profileTab));
+    });
     $$('.profile-field-editable').forEach(row => {
       const field = row.dataset.field;
 
@@ -360,6 +389,7 @@ export function createProfile(deps) {
         };
       }
       saveSession(state);
+      await clearDeviceUnlock(state.user);
       resetPasswordChangeForm();
       deps.switchPage?.('profile');
       toast('Mot de passe maître mis à jour', 'success');
@@ -471,6 +501,7 @@ export function createProfile(deps) {
         };
       }
       saveSession(state);
+      await clearDeviceUnlock(state.user);
       resetPassphraseChangeForm();
       deps.switchPage?.('profile');
       toast(hadPassphrase ? 'Passphrase mise à jour' : 'Passphrase créée', 'success');
@@ -513,6 +544,206 @@ export function createProfile(deps) {
     $('#btn-passphrase-back')?.addEventListener('click', () => {
       deps.switchPage?.('profile');
     });
+    $('#device-unlock-switch')?.addEventListener('change', () => {
+      toggleDeviceUnlock().catch(() => {});
+    });
+  }
+
+  async function syncDeviceUnlockControl() {
+    const button = $('#btn-device-unlock');
+    if (!button) return;
+    const label = await deviceUnlockLabel();
+    const show = !state.devMode && Boolean(label);
+    button.classList.toggle('hidden', !show);
+    if (!show) return;
+    const ready = await deviceUnlockSupported();
+    const enrolled = ready && await hasDeviceUnlock(state.user);
+    const title = $('#device-unlock-title');
+    const hint = $('#device-unlock-hint');
+    const input = $('#device-unlock-switch');
+    const reason = ready ? '' : await deviceUnlockBlockReason();
+    if (title) title.textContent = label;
+    if (hint) {
+      hint.textContent = enrolled
+        ? 'Activé sur cet appareil.'
+        : (reason || 'Déverrouille ce coffre sur cet appareil après un soft-lock.');
+    }
+    if (input) input.checked = enrolled;
+    refreshIcons(button);
+  }
+
+  async function toggleDeviceUnlock() {
+    const reason = await deviceUnlockBlockReason();
+    if (reason && !(await hasDeviceUnlock(state.user))) {
+      toast(reason, 'info');
+      await syncDeviceUnlockControl();
+      return;
+    }
+    if (await hasDeviceUnlock(state.user)) {
+      await clearDeviceUnlock(state.user);
+      toast('Capteur retiré de cet appareil', 'info');
+      await syncDeviceUnlockControl();
+      return;
+    }
+    if (!state.vaultKey || !state.privateKey) {
+      toast('Ouvrez d’abord le coffre avec le mot de passe maître', 'info');
+      await syncDeviceUnlockControl();
+      return;
+    }
+    try {
+      const label = await enrollDeviceUnlock(state);
+      toast(`${label} activé sur cet appareil`, 'success');
+    } catch (err) {
+      if (err instanceof DeviceUnlockCancelled || err?.name === 'DeviceUnlockCancelled') {
+        toast('Activation annulée', 'info');
+        await syncDeviceUnlockControl();
+        return;
+      }
+      toast(err.message || 'Impossible d’activer le capteur', 'info');
+    }
+    await syncDeviceUnlockControl();
+  }
+
+  function showTotpPanels(mode) {
+    $('#totp-setup')?.classList.toggle('hidden', mode !== 'setup');
+    $('#totp-codes-card')?.classList.toggle('hidden', mode !== 'codes');
+    $('#totp-manage')?.classList.toggle('hidden', mode !== 'manage');
+  }
+
+  function refreshTotpPage() {
+    const hint = $('#totp-row-hint');
+    if (hint) {
+      hint.textContent = state.totpEnabled
+        ? 'Activé. Un code est demandé à chaque connexion.'
+        : 'Code à 6 chiffres à chaque connexion.';
+    }
+    showTotpPanels(state.totpEnabled ? 'manage' : 'setup');
+  }
+
+  function renderTotpQr(uri) {
+    const box = $('#totp-qr');
+    if (!box) return;
+    box.replaceChildren();
+    const qr = qrcode(0, 'M');
+    qr.addData(uri);
+    qr.make();
+    const markup = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    const svg = new DOMParser().parseFromString(markup, 'image/svg+xml').querySelector('svg');
+    if (svg) box.appendChild(document.importNode(svg, true));
+  }
+
+  function resetTotpForm() {
+    const secret = $('#totp-secret');
+    if (secret) {
+      secret.textContent = '';
+      secret.classList.add('hidden');
+    }
+    $('#totp-qr')?.replaceChildren();
+    $('#totp-enroll')?.classList.add('hidden');
+    const manual = $('#btn-totp-manual');
+    if (manual) manual.textContent = 'Saisir la clé';
+    $('#form-totp-confirm')?.classList.add('hidden');
+    $('#form-totp-confirm')?.reset();
+    $('#form-totp-manage')?.reset();
+    $('#totp-backup-list')?.replaceChildren();
+    showTotpPanels(state.totpEnabled ? 'manage' : 'setup');
+  }
+
+  function showBackupCodes(codes) {
+    const list = $('#totp-backup-list');
+    if (!list) return;
+    list.replaceChildren();
+    for (const code of codes) {
+      const item = document.createElement('li');
+      item.textContent = code;
+      list.appendChild(item);
+    }
+    showTotpPanels('codes');
+  }
+
+  async function currentMasterVerifier() {
+    const master = $('#totp-master')?.value || '';
+    const prepared = await prepareLogin(state.user.email, master, window.location.origin);
+    if (prepared.derived) prepared.derived.fill(0);
+    return prepared.authVerifier;
+  }
+
+  function initTotpForm() {
+    $('#btn-open-totp')?.addEventListener('click', () => {
+      if (state.devMode) return;
+      deps.switchPage?.('totp');
+    });
+    $('#btn-totp-page-back')?.addEventListener('click', () => {
+      deps.switchPage?.('profile');
+    });
+    $('#btn-totp-manual')?.addEventListener('click', () => {
+      const secret = $('#totp-secret');
+      if (!secret) return;
+      const show = secret.classList.contains('hidden');
+      secret.classList.toggle('hidden', !show);
+      const manual = $('#btn-totp-manual');
+      if (manual) manual.textContent = show ? 'Masquer la clé' : 'Saisir la clé';
+    });
+    $('#btn-totp-begin')?.addEventListener('click', async () => {
+      try {
+        const data = await api.totpBegin(state.token);
+        const secret = $('#totp-secret');
+        if (secret) {
+          secret.textContent = data.secret;
+          secret.classList.add('hidden');
+        }
+        renderTotpQr(data.otpauth_uri);
+        $('#totp-enroll')?.classList.remove('hidden');
+        const manual = $('#btn-totp-manual');
+        if (manual) manual.textContent = 'Saisir la clé';
+        $('#form-totp-confirm')?.classList.remove('hidden');
+        toast('Scannez le QR code, puis saisissez le code à 6 chiffres.', 'info');
+      } catch (err) {
+        toast(err.message, 'info');
+      }
+    });
+    $('#form-totp-confirm')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      try {
+        const data = await api.totpConfirm(state.token, $('#totp-confirm-code')?.value.trim() || '');
+        state.totpEnabled = true;
+        showBackupCodes(data.backup_codes || []);
+        toast('Authentificateur activé', 'success');
+      } catch (err) {
+        toast(err.message, 'info');
+      }
+    });
+    $('#btn-totp-codes-done')?.addEventListener('click', () => {
+      $('#totp-backup-list')?.replaceChildren();
+      refreshTotpPage();
+      deps.switchPage?.('profile');
+    });
+    $('#form-totp-manage')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      try {
+        await api.totpDisable(state.token, {
+          current_auth_verifier: await currentMasterVerifier(),
+          code: $('#totp-manage-code')?.value.trim() || '',
+        });
+        state.totpEnabled = false;
+        resetTotpForm();
+        toast('Authentificateur retiré', 'info');
+        deps.switchPage?.('profile');
+      } catch (err) {
+        toast(err.message, 'info');
+      }
+    });
+    $('#btn-totp-regenerate')?.addEventListener('click', async () => {
+      try {
+        const data = await api.totpRegenerate(state.token, {
+          current_auth_verifier: await currentMasterVerifier(),
+          code: $('#totp-manage-code')?.value.trim() || '',
+        });
+        showBackupCodes(data.backup_codes || []);
+      } catch (err) {
+        toast(err.message, 'info');
+      }
+    });
   }
 
   return {
@@ -522,5 +753,6 @@ export function createProfile(deps) {
     closeAllProfileFieldEdits, openProfileFieldEdit, saveProfileField,
     initProfileFieldEdits, initPasswordChangeForm, resetPasswordChangeForm,
     initPassphraseChangeForm, resetPassphraseChangeForm, syncPersistSessionPrefUI,
+    initTotpForm, resetTotpForm, refreshTotpPage,
   };
 }

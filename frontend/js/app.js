@@ -31,6 +31,7 @@ const { state, deps } = createAppContext();
 const {
   showScreen,
   openAuthTab,
+  openTotpChallenge,
   openUnlockScreen,
   setUnlockMode,
   showRecoveryKeysModal,
@@ -48,6 +49,7 @@ const {
 
 deps.showScreen = showScreen;
 deps.openAuthTab = openAuthTab;
+deps.openTotpChallenge = openTotpChallenge;
 deps.openUnlockScreen = openUnlockScreen;
 deps.setUnlockMode = setUnlockMode;
 deps.showRecoveryKeysModal = showRecoveryKeysModal;
@@ -79,6 +81,7 @@ initIcons();
 deps.initProfileFieldEdits();
 deps.initPasswordChangeForm();
 deps.initPassphraseChangeForm?.();
+deps.initTotpForm?.();
 refreshIcons($('#screen-landing'));
 bindBreachWidget($('#lp-audit'), {
   form: '#lp-audit-form',

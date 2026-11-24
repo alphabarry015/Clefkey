@@ -98,6 +98,7 @@ def _profile_payload(user: VaultUser, entries_count: int | None = None) -> dict:
         "display_name": user.display_name,
         "created_at": user.created_at.isoformat(),
         "entries_count": entries_count,
+        "totp_enabled": bool(user.totp_enabled),
     }
 
 

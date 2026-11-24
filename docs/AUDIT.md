@@ -1,6 +1,6 @@
 # Audit — sécurité, performance, maintenance
 
-Date de révision : **2026-08-02** (correctifs P1 appliqués) · Périmètre : Django (`coffre/`, `vault/`) + frontend PWA + docs + Supabase.
+Date de révision : **2026-11-24** (2FA, capteur, mobile) · Périmètre : Django (`coffre/`, `vault/`) + frontend PWA + docs + Supabase.
 
 Document vivant : mettre à jour après changements majeurs. Cartographie : [CARTOGRAPHIE-COFFRE.md](./CARTOGRAPHIE-COFFRE.md).
 
@@ -9,6 +9,17 @@ Dépôt **public** : aucun secret de production dans Git. `.env` ignoré ; `*.ex
 Canvas IDE : ouvrir [`audit-complet-gardefort.canvas.tsx`](/Users/alpha/.cursor/projects/c-Fichiers-projets-Donn-es-obsidian-Fichiers-projets-Projet-Perso-Repositories-Gestionnnaire-de-mot-de-passe/canvases/audit-complet-gardefort.canvas.tsx) à côté du chat.
 
 ---
+
+## Synthèse (2026-11-24)
+
+| Domaine | Verdict |
+|---------|---------|
+| Sécurité | 2FA session seulement : le secret TOTP est scellé, le jeton `purpose=totp` n’ouvre pas `/auth/me`, le coffre reste chiffré par le mot de passe maître. Rejeu du code et double activation fermés par mise à jour conditionnelle. Capteur : clés locales en AES-GCM via PRF, effacées à la déconnexion. |
+| Performance | Pas de nouveau secret envoyé à un service de QR. Champ de recherche filtré en mémoire. |
+| Mobile / PWA | Image de connexion masquée sous 860px. Champs auth en 16px (pas de zoom iOS). Recherche Reçu/Envoyé et pastille « Coffre actif » se replient sous 640px. |
+| Code | Listes Reçu et Envoyé plates ; onglets Reçu/Envoyé seulement sur la fiche contact. |
+
+Aucun P0 ouvert sur ce passage.
 
 ## Synthèse (2026-08-02)
 

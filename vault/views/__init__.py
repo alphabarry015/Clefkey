@@ -55,6 +55,7 @@ from .shares import (
     vault_shares,
 )
 from .static_pages import docs_app, download, favicon, health, index, manifest, privacy, service_worker
+from .totp import login_totp, totp_begin, totp_confirm, totp_disable, totp_recovery_regenerate
 
 __all__ = [
     "KEY_PROOF_SEAL_PREFIX",
@@ -71,6 +72,11 @@ __all__ = [
     "health",
     "register",
     "login",
+    "login_totp",
+    "totp_begin",
+    "totp_confirm",
+    "totp_disable",
+    "totp_recovery_regenerate",
     "profile_me",
     "get_salt",
     "recovery_begin",

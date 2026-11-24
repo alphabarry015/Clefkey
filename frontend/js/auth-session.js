@@ -10,6 +10,7 @@ import {
   wipeUnlockedSecrets, wipeStateSecrets, wipeKeyBytes,
 } from './session.js';
 import { setRecoveryCodeValue } from './recovery-input.js';
+import { clearDeviceUnlock } from './device-unlock.js';
 import { setLucideIcon } from './icons.js';
 import { clearDetailPlainSecret } from './detail-secret.js';
 import {
@@ -85,6 +86,7 @@ export function createAuthSession(deps) {
   function hardLogout(reason = 'manual') {
     stopIdleWatch();
     if (state.masterConfirmResolve) settleMasterConfirm(false);
+    void clearDeviceUnlock(state.user);
     clearStoredSession();
     wipeStateSecrets(state);
     clearEntrySecretsInMemory();

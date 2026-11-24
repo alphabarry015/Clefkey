@@ -22,6 +22,9 @@ import {
   validatePassphrase,
 } from './passphrase.js';
 import { setRecoveryCodeValue } from './recovery-input.js';
+import {
+  DeviceUnlockCancelled, clearDeviceUnlock, unlockWithDevice,
+} from './device-unlock.js';
 import { $, toast, showLoading, hideLoading } from './ui.js';
 
 export function bindAuth(deps) {
@@ -32,10 +35,44 @@ export function bindAuth(deps) {
     authMaterialFromPayload, userFromProfile, showVault,
     syncFolderFilterButtons, populateFolderSelect,
     loadEntries, refreshCurrentView, showRecoveryKeysModal,
-    openAuthTab, openUnlockScreen, setUnlockMode, showScreen,
+    openAuthTab, openUnlockScreen, setUnlockMode, showScreen, openTotpChallenge,
     closeModal, openModal, showLoading: _sl, hideLoading: _hl,
   } = deps;
   void _sl; void _hl; void showScreen; void openUnlockScreen; void openModal;
+
+  let totpLogin = null;
+
+  function dropTotpLogin() {
+    if (totpLogin?.prepared?.derived) {
+      try { totpLogin.prepared.derived.fill(0); } catch { /* déjà libéré */ }
+    }
+    totpLogin = null;
+  }
+
+  async function enterVault(data, master, prepared) {
+    const keys = await unlockSession(data, master, {
+      derivedKey: prepared.derived,
+      saltB64: prepared.saltB64,
+    });
+    if (prepared.derived) prepared.derived.fill(0);
+    prepared.derived = null;
+    clearAuthSecrets();
+    state.devMode = false;
+    state.token = data.access_token;
+    state.user = userFromProfile(data);
+    state.authMaterial = authMaterialFromPayload(data);
+    Object.assign(state, keys);
+    state.entries = [];
+    showVault();
+    try {
+      await loadEntries();
+      refreshCurrentView();
+    } catch (err) {
+      console.warn('Chargement des clés partiel:', err);
+      toast('Connexion réussie, mais certaines clés n\'ont pas pu être chargées', 'info');
+    }
+    toast('Coffre déverrouillé', 'success');
+  }
 
   $('#confirm-name-input').addEventListener('input', (e) => {
     $('#btn-confirm-ok').disabled = e.target.value !== state.confirmDeleteName;
@@ -154,36 +191,57 @@ export function bindAuth(deps) {
     try {
       const prepared = await prepareLogin(creds.email, creds.master, window.location.origin);
       const data = await api.login(creds.email, prepared.authVerifier);
-      const keys = await unlockSession(data, creds.master, {
-        derivedKey: prepared.derived,
-        saltB64: prepared.saltB64,
-      });
-      // Efface le matériel KDF de la closure dès que possible.
-      if (prepared.derived) prepared.derived.fill(0);
-      prepared.derived = null;
-      clearAuthSecrets();
-      state.devMode = false;
-      state.token = data.access_token;
-      state.user = userFromProfile(data);
-      state.authMaterial = authMaterialFromPayload(data);
-      Object.assign(state, keys);
-      state.entries = [];
-      // Afficher l’UI tout de suite (lettres) ; les clés se chargent ensuite.
-      showVault();
-      try {
-        await loadEntries();
-        refreshCurrentView();
-      } catch (err) {
-        console.warn('Chargement des clés partiel:', err);
-        toast('Connexion réussie, mais certaines clés n\'ont pas pu être chargées', 'info');
+      if (data.totp_required) {
+        dropTotpLogin();
+        totpLogin = {
+          master: creds.master,
+          prepared,
+          token: data.totp_token,
+        };
+        openTotpChallenge?.();
+        return;
       }
-      toast('Coffre déverrouillé', 'success');
+      await enterVault(data, creds.master, prepared);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
       hideLoading();
       btn.disabled = false;
     }
+  });
+
+  $('#form-totp')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const session = totpLogin;
+    const code = $('#totp-code')?.value.trim() || '';
+    if (!session) {
+      openAuthTab('login');
+      return;
+    }
+    if (!code) {
+      toast('Saisissez le code', 'info');
+      return;
+    }
+    const btn = $('#btn-totp');
+    if (btn) btn.disabled = true;
+    showLoading('Vérification du code...');
+    try {
+      const data = await api.loginTotp(session.token, code);
+      const prepared = session.prepared;
+      const master = session.master;
+      totpLogin = null;
+      await enterVault(data, master, prepared);
+    } catch (err) {
+      toast(err.message, 'info');
+    } finally {
+      hideLoading();
+      if (btn) btn.disabled = false;
+    }
+  });
+
+  $('#btn-totp-back')?.addEventListener('click', () => {
+    dropTotpLogin();
+    openAuthTab('login');
   });
 
   $('#form-register').addEventListener('submit', async (e) => {
@@ -392,6 +450,7 @@ export function bindAuth(deps) {
       state.recoverySession = null;
       clearAuthSecrets();
       $('#form-recovery-reset')?.reset();
+      await clearDeviceUnlock(state.user);
       try {
         await loadEntries();
       } catch (err) {
@@ -450,6 +509,7 @@ export function bindAuth(deps) {
       state.recoveryTarget = null;
       clearAuthSecrets();
       $('#form-recovery-passphrase')?.reset();
+      await clearDeviceUnlock(state.user);
       try {
         await loadEntries();
       } catch (err) {
@@ -462,6 +522,36 @@ export function bindAuth(deps) {
     } finally {
       hideLoading();
       btn.disabled = false;
+    }
+  });
+
+  $('#btn-device-unlock-open')?.addEventListener('click', async () => {
+    const btn = $('#btn-device-unlock-open');
+    if (btn) btn.disabled = true;
+    showLoading('Déverrouillage du coffre...');
+    try {
+      const keys = await unlockWithDevice(state.user);
+      clearAuthSecrets();
+      Object.assign(state, keys);
+      state.entries = [];
+      showVault();
+      try {
+        await loadEntries();
+        refreshCurrentView();
+      } catch (err) {
+        console.warn('Chargement des clés partiel:', err);
+        toast('Coffre ouvert, mais certaines clés n\'ont pas pu être chargées', 'info');
+      }
+      toast('Coffre déverrouillé', 'success');
+    } catch (err) {
+      if (err instanceof DeviceUnlockCancelled || err?.name === 'DeviceUnlockCancelled') {
+        toast('Déverrouillage annulé', 'info');
+      } else {
+        toast(err.message || 'Impossible de déverrouiller avec le capteur', 'error');
+      }
+    } finally {
+      hideLoading();
+      if (btn) btn.disabled = false;
     }
   });
 

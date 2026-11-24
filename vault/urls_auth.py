@@ -5,6 +5,11 @@ from . import views
 urlpatterns = [
     path("register", views.register, name="auth-register"),
     path("login", views.login, name="auth-login"),
+    path("login/totp", views.login_totp, name="auth-login-totp"),
+    path("totp/begin", views.totp_begin, name="auth-totp-begin"),
+    path("totp/confirm", views.totp_confirm, name="auth-totp-confirm"),
+    path("totp/disable", views.totp_disable, name="auth-totp-disable"),
+    path("totp/recovery", views.totp_recovery_regenerate, name="auth-totp-recovery"),
     path("me", views.profile_me, name="auth-me"),
     path("salt", views.get_salt, name="auth-salt"),
     path("lookup", views.lookup_user, name="auth-lookup"),

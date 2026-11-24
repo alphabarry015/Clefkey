@@ -4,7 +4,7 @@
 import { api } from './api.js';
 import { fromB64, toB64, encryptForRecipient } from './crypto.js';
 import {
-  $, toast, showLoading, hideLoading, openModal, closeModal,
+  $, $$, toast, showLoading, hideLoading, openModal, closeModal,
 } from './ui.js';
 
 export function bindShares(deps) {
@@ -18,6 +18,23 @@ export function bindShares(deps) {
   void _cm; void _om;
 
   $('#btn-close-share')?.addEventListener('click', () => closeModal($('#modal-share')));
+
+  $$('[data-contact-share-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.contactShareTab = button.dataset.contactShareTab === 'sent' ? 'sent' : 'received';
+      renderContactsPage();
+    });
+  });
+
+  $('#shares-received-search')?.addEventListener('input', (e) => {
+    state.receivedSearch = e.target.value || '';
+    renderSharesReceived();
+  });
+
+  $('#shares-sent-search')?.addEventListener('input', (e) => {
+    state.sentSearch = e.target.value || '';
+    renderSharesSent();
+  });
 
   $('#btn-contacts-back')?.addEventListener('click', () => {
     state.contactsSelectedEmail = null;

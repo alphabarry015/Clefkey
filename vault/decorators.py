@@ -21,6 +21,8 @@ def get_current_user(request) -> VaultUser | None:
         return None
     try:
         payload = decode_access_token(token)
+        if payload.get("purpose") == "totp":
+            return None
         user_id = payload.get("sub")
         if not user_id:
             return None

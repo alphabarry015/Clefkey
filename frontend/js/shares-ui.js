@@ -56,10 +56,25 @@ export function createShares(deps) {
     };
   }
 
-  function shareKeyCard(e, i, mode) {
+  function shareQueryMatches(share, personName, query) {
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) return true;
+    const hay = [
+      personName,
+      share.title,
+      share.username,
+      share.sender_email,
+      share.sender_display_name,
+      share.recipient_email,
+      share.recipient_display_name,
+    ].filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(q);
+  }
+
+  function shareKeyCard(e, i, mode, personName = '') {
     const note = mode === 'received' ? (e.share_note || '').trim() : '';
     const noteLabel = note ? (note.length > 60 ? `${note.slice(0, 60)}…` : note) : '';
-    const subtitle = [e.username, noteLabel].filter(Boolean).join(' · ');
+    const subtitle = [personName, e.username, noteLabel].filter(Boolean).join(' · ');
     const action = mode === 'received' ? 'show-share-received' : 'show-share-sent';
     const removeTitle = mode === 'received' ? 'Retirer' : 'Révoquer';
     return `
@@ -175,41 +190,34 @@ export function createShares(deps) {
     const detailPanel = $('#shares-received-detail-panel');
     const list = $('#shares-received-list');
     const empty = $('#shares-received-empty');
+    const noMatch = $('#shares-received-no-match');
     if (!listPanel || !detailPanel || !list || !empty) return;
     deps.updateEntryCounts();
-
-    if (state.sharesReceived.length === 0) {
-      state.receivedSenderEmail = null;
-      detailPanel.classList.add('hidden');
-      listPanel.classList.remove('hidden');
-      list.replaceChildren();
-      empty.classList.remove('hidden');
-      return;
-    }
-
-    if (state.receivedSenderEmail) {
-      const sender = getReceivedSenders().find((s) => s.email === state.receivedSenderEmail);
-      if (!sender) state.receivedSenderEmail = null;
-    }
-
-    if (state.receivedSenderEmail) {
-      listPanel.classList.add('hidden');
-      detailPanel.classList.remove('hidden');
-      renderReceivedSenderDetail(state.receivedSenderEmail);
-      return;
-    }
-
+    state.receivedSenderEmail = null;
     detailPanel.classList.add('hidden');
     listPanel.classList.remove('hidden');
-    empty.classList.add('hidden');
 
-    const senders = getReceivedSenders();
-    setHtml(list, senders.map((s, i) => {
-      const count = s.shares.length;
-      const meta = `${count} clé${count > 1 ? 's' : ''} reçue${count > 1 ? 's' : ''}`;
-      return personCard(s, i, 'show-received-sender', meta);
+    if (state.sharesReceived.length === 0) {
+      list.replaceChildren();
+      empty.classList.remove('hidden');
+      noMatch?.classList.add('hidden');
+      return;
+    }
+
+    empty.classList.add('hidden');
+    const query = state.receivedSearch || '';
+    const rows = state.sharesReceived.filter((share) => {
+      const person = share.sender_display_name || share.sender_email || '';
+      return shareQueryMatches(share, person, query);
+    });
+    noMatch?.classList.toggle('hidden', rows.length > 0);
+    setHtml(list, rows.map((share, i) => {
+      const person = share.sender_display_name || share.sender_email || '';
+      return shareKeyCard(share, i, 'received', person);
     }).join(''));
     refreshIcons(list);
+    deps.setupFaviconImages(list);
+    bindShareKeyClicks(list);
   }
 
   function recipientKey(share) {
@@ -293,41 +301,34 @@ export function createShares(deps) {
     const detailPanel = $('#shares-sent-detail-panel');
     const list = $('#shares-sent-list');
     const empty = $('#shares-sent-empty');
+    const noMatch = $('#shares-sent-no-match');
     if (!listPanel || !detailPanel || !list || !empty) return;
     deps.updateEntryCounts();
-
-    if (state.sharesSent.length === 0) {
-      state.sentRecipientEmail = null;
-      detailPanel.classList.add('hidden');
-      listPanel.classList.remove('hidden');
-      list.replaceChildren();
-      empty.classList.remove('hidden');
-      return;
-    }
-
-    if (state.sentRecipientEmail) {
-      const recipient = getSentRecipients().find((s) => s.email === state.sentRecipientEmail);
-      if (!recipient) state.sentRecipientEmail = null;
-    }
-
-    if (state.sentRecipientEmail) {
-      listPanel.classList.add('hidden');
-      detailPanel.classList.remove('hidden');
-      renderSentRecipientDetail(state.sentRecipientEmail);
-      return;
-    }
-
+    state.sentRecipientEmail = null;
     detailPanel.classList.add('hidden');
     listPanel.classList.remove('hidden');
-    empty.classList.add('hidden');
 
-    const recipients = getSentRecipients();
-    setHtml(list, recipients.map((s, i) => {
-      const count = s.shares.length;
-      const meta = `${count} clé${count > 1 ? 's' : ''} envoyée${count > 1 ? 's' : ''}`;
-      return personCard(s, i, 'show-sent-recipient', meta);
+    if (state.sharesSent.length === 0) {
+      list.replaceChildren();
+      empty.classList.remove('hidden');
+      noMatch?.classList.add('hidden');
+      return;
+    }
+
+    empty.classList.add('hidden');
+    const query = state.sentSearch || '';
+    const rows = state.sharesSent.filter((share) => {
+      const person = share.recipient_display_name || share.recipient_email || '';
+      return shareQueryMatches(share, person, query);
+    });
+    noMatch?.classList.toggle('hidden', rows.length > 0);
+    setHtml(list, rows.map((share, i) => {
+      const person = share.recipient_display_name || share.recipient_email || '';
+      return shareKeyCard(share, i, 'sent', person);
     }).join(''));
     refreshIcons(list);
+    deps.setupFaviconImages(list);
+    bindShareKeyClicks(list);
   }
 
   function contactsStorageKey() {
@@ -526,7 +527,12 @@ export function createShares(deps) {
 
     const name = contact.display_name || contact.email;
     const when = formatContactDate(contact.last_shared_at);
-    const count = contact.share_count || 0;
+    const tab = state.contactShareTab === 'sent' ? 'sent' : 'received';
+    state.contactShareTab = tab;
+    const receivedShares = state.sharesReceived.filter((share) => senderKey(share) === contact.email);
+    const sentShares = contact.shares;
+    const activeShares = tab === 'sent' ? sentShares : receivedShares;
+    const count = activeShares.length;
 
     $('#contacts-detail-name').textContent = name;
     const emailEl = $('#contacts-detail-email');
@@ -538,8 +544,13 @@ export function createShares(deps) {
       $('#contacts-detail-share-count').textContent = String(count);
     }
     if ($('#contacts-detail-share-label')) {
-      $('#contacts-detail-share-label').textContent = count <= 1 ? 'active' : 'actives';
+      $('#contacts-detail-share-label').textContent = tab === 'sent' ? 'envoyée' : 'reçue';
     }
+    $$('#contacts-detail-panel [data-contact-share-tab]').forEach((button) => {
+      const on = button.dataset.contactShareTab === tab;
+      button.classList.toggle('is-active', on);
+      button.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
     if ($('#contacts-detail-last-share')) {
       $('#contacts-detail-last-share').textContent = when || '—';
     }
@@ -553,12 +564,18 @@ export function createShares(deps) {
     const sharesList = $('#contacts-detail-shares');
     const sharesEmpty = $('#contacts-detail-shares-empty');
     if (sharesList && sharesEmpty) {
-      if (!contact.shares.length) {
+      if (!activeShares.length) {
         sharesList.replaceChildren();
         sharesEmpty.classList.remove('hidden');
+        const emptyText = sharesEmpty.querySelector('p');
+        if (emptyText) {
+          emptyText.textContent = tab === 'sent'
+            ? 'Aucune clé envoyée à ce contact.'
+            : 'Aucune clé reçue de ce contact.';
+        }
       } else {
         sharesEmpty.classList.add('hidden');
-        setHtml(sharesList, contact.shares.map((e, i) => shareKeyCard(e, i, 'sent')).join(''));
+        setHtml(sharesList, activeShares.map((e, i) => shareKeyCard(e, i, tab, name)).join(''));
         refreshIcons(sharesList);
         deps.setupFaviconImages(sharesList);
         bindShareKeyClicks(sharesList);

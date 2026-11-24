@@ -11,7 +11,7 @@ from django.http import FileResponse, HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
-from ..auth import b64_decode, b64_encode, create_access_token
+from ..auth import b64_decode, b64_encode, create_access_token, create_totp_challenge
 from ..decorators import api_error, require_auth
 from ..favicon import fetch_site_favicon, normalize_page_url
 from ..models import VaultEntry, VaultRecoveryKey, VaultShare, VaultUser
@@ -456,6 +456,13 @@ def login(request):
     stored = bytes(user.auth_verifier) if user else _DUMMY_AUTH_VERIFIER
     if len(provided) != len(stored) or not hmac.compare_digest(provided, stored) or user is None:
         return api_error("Identifiants invalides", 401)
+
+    if user.totp_enabled and user.totp_secret:
+        return JsonResponse({
+            "totp_required": True,
+            "totp_token": create_totp_challenge(str(user.id), user.email),
+            "email": user.email,
+        })
 
     return JsonResponse(_auth_response(user))
 

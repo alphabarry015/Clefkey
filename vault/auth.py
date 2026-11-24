@@ -21,5 +21,12 @@ def create_access_token(user_id: str, email: str) -> str:
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
+def create_totp_challenge(user_id: str, email: str) -> str:
+    """Jeton court qui n'ouvre ni la session ni le coffre. Uniquement l'étape 2FA."""
+    expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+    payload = {"sub": user_id, "email": email, "exp": expire, "purpose": "totp"}
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
 def decode_access_token(token: str) -> dict:
     return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])

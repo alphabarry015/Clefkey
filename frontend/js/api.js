@@ -53,6 +53,45 @@ export const api = {
     });
   },
 
+  loginTotp(totpToken, code) {
+    return request('/auth/login/totp', {
+      method: 'POST',
+      body: JSON.stringify({ totp_token: totpToken, code }),
+    });
+  },
+
+  totpBegin(token) {
+    return request('/auth/totp/begin', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({}),
+    });
+  },
+
+  totpConfirm(token, code) {
+    return request('/auth/totp/confirm', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code }),
+    });
+  },
+
+  totpDisable(token, payload) {
+    return request('/auth/totp/disable', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  totpRegenerate(token, payload) {
+    return request('/auth/totp/recovery', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+  },
+
   recoveryBegin(email, verifierB64) {
     return request('/auth/recovery/begin', {
       method: 'POST',

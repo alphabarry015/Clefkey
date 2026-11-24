@@ -21,6 +21,11 @@ class VaultUser(models.Model):
     passphrase_salt = models.BinaryField(null=True, blank=True)
     passphrase_verifier = models.BinaryField(null=True, blank=True)
     encrypted_vault_key_passphrase = models.BinaryField(null=True, blank=True)
+    # 2FA authenticator : secret scellé, jamais utilisé pour déchiffrer le coffre.
+    totp_enabled = models.BooleanField(default=False)
+    totp_secret = models.BinaryField(null=True, blank=True)
+    totp_pending_secret = models.BinaryField(null=True, blank=True)
+    totp_last_step = models.BigIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -98,6 +103,25 @@ class VaultShare(models.Model):
 
     def __str__(self):
         return f"Partage {self.id}"
+
+
+class VaultTotpBackupCode(models.Model):
+    """Code de secours du 2FA. Seul le HMAC est stocké."""
+
+    id = models.CharField(primary_key=True, max_length=36, default=lambda: str(uuid.uuid4()), editable=False)
+    user = models.ForeignKey(
+        VaultUser,
+        on_delete=models.CASCADE,
+        related_name="totp_backup_codes",
+        db_column="user_id",
+    )
+    code_hash = models.BinaryField()
+    used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "vault_totp_backup_codes"
+        ordering = ["created_at"]
 
 
 class VaultRecoveryKey(models.Model):

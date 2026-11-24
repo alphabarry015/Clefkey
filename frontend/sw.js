@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v290';
+const CACHE_VERSION = 'v313';
 const CACHE_STATIC = `clefkey-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
@@ -45,6 +45,7 @@ const PRECACHE = [
   '/js/icons.js',
   '/js/pwa.js',
   '/js/theme.js',
+  '/js/device-unlock.js',
   '/js/theme-boot.js',
   '/js/download-theme.js',
   '/js/common-passwords.js',
@@ -72,6 +73,7 @@ const PRECACHE = [
   '/vendor/hash-wasm.esm.min.js',
   '/vendor/noble-ed25519.bundle.js',
   '/vendor/lucide.bundle.js',
+  '/vendor/qrcode-generator.js',
   '/manifest.webmanifest',
   '/icons/icon.svg',
   '/icons/favicon.svg',

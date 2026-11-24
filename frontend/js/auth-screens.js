@@ -3,6 +3,8 @@
  * Extrait de app.js pour limiter le monolithe UI.
  */
 
+import { deviceUnlockLabel, deviceUnlockSupported, hasDeviceUnlock } from './device-unlock.js';
+
 export function createAuthScreens({
   $,
   state,
@@ -34,6 +36,7 @@ export function createAuthScreens({
 
   function hideAllAuthForms() {
     $('#form-login')?.classList.add('hidden');
+    $('#form-totp')?.classList.add('hidden');
     $('#form-register')?.classList.add('hidden');
     $('#form-recovery')?.classList.add('hidden');
     $('#form-recovery-reset')?.classList.add('hidden');
@@ -115,6 +118,19 @@ export function createAuthScreens({
     refreshIcons(shown);
   }
 
+  function openTotpChallenge() {
+    setAuthCopy('Authentificateur', 'Deuxième étape', 'Authentificateur');
+    $('#auth-panel-title')?.classList.remove('hidden');
+    $('.auth-tabs')?.classList.add('hidden');
+    hideAllAuthForms();
+    $('#form-totp')?.classList.remove('hidden');
+    showScreen('auth');
+    refreshIcons($('#form-totp'));
+    const input = $('#totp-code');
+    if (input) input.value = '';
+    setTimeout(() => input?.focus(), 50);
+  }
+
   function setUnlockMode(mode = 'passphrase') {
     const usePassphrase = mode === 'passphrase';
     $('#unlock-mode-passphrase')?.classList.toggle('active', usePassphrase);
@@ -144,6 +160,23 @@ export function createAuthScreens({
     setUnlockMode(hasPassphrase ? 'passphrase' : 'master');
     showScreen('auth');
     refreshIcons($('#form-unlock'));
+    void refreshDeviceUnlockButton();
+  }
+
+  async function refreshDeviceUnlockButton() {
+    const button = $('#btn-device-unlock-open');
+    const hint = $('#device-unlock-or');
+    const label = $('#device-unlock-open-label');
+    if (!button) return;
+    const show = !state.devMode
+      && await deviceUnlockSupported()
+      && await hasDeviceUnlock(state.user);
+    button.classList.toggle('hidden', !show);
+    hint?.classList.toggle('hidden', !show);
+    if (show && label) {
+      const name = await deviceUnlockLabel();
+      label.textContent = name ? `Déverrouiller avec ${name}` : 'Déverrouiller avec le capteur';
+    }
   }
 
   function recoveryExportMeta() {
@@ -279,6 +312,7 @@ export function createAuthScreens({
     screens,
     showScreen,
     openAuthTab,
+    openTotpChallenge,
     openUnlockScreen,
     setUnlockMode,
     showRecoveryKeysModal,

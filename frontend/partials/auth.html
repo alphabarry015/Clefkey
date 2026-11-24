@@ -80,7 +80,37 @@
           </button>
         </form>
 
+        <form id="form-totp" class="auth-form hidden" autocomplete="off" data-form-type="other" novalidate>
+          <p class="shares-hint">
+            Saisissez le code à 6 chiffres de votre application d’authentification,
+            ou un code de secours.
+          </p>
+          <div class="form-group">
+            <label class="label" for="totp-code">Code</label>
+            <input
+              class="input"
+              id="totp-code"
+              name="clefkey-totp"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="11"
+              placeholder="123456"
+              required
+            >
+          </div>
+          <button type="submit" id="btn-totp" class="btn btn-primary btn-full">
+            <span>Valider</span>
+          </button>
+          <p class="auth-forgot">
+            <button type="button" id="btn-totp-back" class="link-btn">Retour à la connexion</button>
+          </p>
+        </form>
+
         <form id="form-unlock" class="auth-form hidden" autocomplete="off" data-form-type="other" novalidate>
+          <button type="button" id="btn-device-unlock-open" class="btn btn-primary btn-full hidden">
+            <span id="device-unlock-open-label">Déverrouiller</span>
+          </button>
+          <p id="device-unlock-or" class="shares-hint hidden">ou avec la passphrase / le mot de passe maître</p>
           <p class="shares-hint">
             Session en pause. Déverrouillez avec votre <strong>passphrase</strong> ou votre
             <strong>mot de passe maître</strong>.

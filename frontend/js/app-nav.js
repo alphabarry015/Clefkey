@@ -17,6 +17,7 @@ const PAGE_TITLES = {
   profile: { title: 'Mon profil', subtitle: 'Informations de votre compte' },
   password: { title: 'Mot de passe maître', subtitle: 'Changez-le sans clés de récupération' },
   passphrase: { title: 'Passphrase', subtitle: 'Phrase de déverrouillage du coffre' },
+  totp: { title: 'Authentificateur', subtitle: 'Code à 6 chiffres à la connexion' },
   audit: { title: 'Audit', subtitle: 'Vérifiez si un mot de passe a fuité' },
   generator: { title: 'Générateur', subtitle: 'Mots de passe et passphrases sécurisés' },
 };
@@ -139,6 +140,7 @@ export function installVaultNav(deps) {
     if (page !== 'profile') deps.closeAllProfileFieldEdits();
     if (page !== 'password') deps.resetPasswordChangeForm();
     if (page !== 'passphrase') deps.resetPassphraseChangeForm?.();
+    if (page !== 'totp') deps.resetTotpForm?.();
     if (page !== 'project-detail') {
       state.activeProjectId = null;
       state.projectDetailSelectedIds = [];
@@ -162,6 +164,7 @@ export function installVaultNav(deps) {
     $('#profile-view').classList.toggle('hidden', page !== 'profile');
     $('#password-view')?.classList.toggle('hidden', page !== 'password');
     $('#passphrase-view')?.classList.toggle('hidden', page !== 'passphrase');
+    $('#totp-view')?.classList.toggle('hidden', page !== 'totp');
     $('#audit-view')?.classList.toggle('hidden', page !== 'audit');
     $('#generator-view')?.classList.toggle('hidden', page !== 'generator');
     updatePageTitle();
@@ -178,6 +181,10 @@ export function installVaultNav(deps) {
       else if (page === 'profile') deps.renderProfile();
       else if (page === 'password') deps.refreshIcons($('#password-view'));
       else if (page === 'passphrase') deps.refreshIcons($('#passphrase-view'));
+      else if (page === 'totp') {
+        deps.refreshTotpPage?.();
+        deps.refreshIcons($('#totp-view'));
+      }
       else if (page === 'audit') deps.renderAudit();
       else if (page === 'generator') deps.renderGenerator();
     } catch (err) {
