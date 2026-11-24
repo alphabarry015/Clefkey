@@ -1,15 +1,55 @@
 
-        <div id="shares-sent-view" class="shares-view hidden">
-          <div class="shares-toolbar">
-            <p class="shares-hint">Clés que vous avez partagées. Vous pouvez révoquer l’accès à tout moment.</p>
-          </div>
-          <div id="shares-sent-list" class="entries-grid"></div>
-          <div id="shares-sent-empty" class="entries-empty hidden">
-            <div class="empty-illustration empty-illustration-sm">
-              <i data-lucide="users"></i>
+        <div id="shares-sent-view" class="shares-view contacts-view share-inbox hidden">
+          <div id="shares-sent-list-panel">
+            <div class="shares-toolbar">
+              <p class="shares-hint">Clés envoyées, regroupées par destinataire. Vous pouvez révoquer l’accès à tout moment.</p>
             </div>
-            <h3>Aucun partage envoyé</h3>
-            <p>Ouvrez une clé de votre coffre et utilisez « Partager ».</p>
+            <div id="shares-sent-list" class="contacts-grid"></div>
+            <div id="shares-sent-empty" class="entries-empty hidden">
+              <div class="empty-illustration empty-illustration-sm">
+                <i data-lucide="users"></i>
+              </div>
+              <h3>Aucun partage envoyé</h3>
+              <p>Ouvrez une clé de votre coffre et utilisez « Partager ».</p>
+            </div>
+          </div>
+          <div id="shares-sent-detail-panel" class="contacts-detail hidden">
+            <button type="button" id="btn-sent-back" class="btn btn-secondary btn-sm contacts-back">
+              <i data-lucide="arrow-left"></i>
+              <span>Envoyé</span>
+            </button>
+            <div class="contacts-bento" aria-label="Clés envoyées à ce destinataire">
+              <section class="contacts-bento-tile contacts-bento-identity">
+                <div id="sent-detail-avatar" class="contacts-detail-avatar" aria-hidden="true"></div>
+                <div class="contacts-bento-identity-copy">
+                  <p class="contacts-bento-kicker">Destinataire</p>
+                  <h2 id="sent-detail-name">…</h2>
+                  <a id="sent-detail-email" class="contacts-detail-email" href="mailto:"></a>
+                </div>
+              </section>
+              <div class="contacts-bento-stats">
+                <section class="contacts-bento-tile contacts-bento-stat">
+                  <span class="contacts-bento-stat-label">Clés envoyées</span>
+                  <strong id="sent-detail-share-count" class="contacts-bento-stat-value">0</strong>
+                  <span id="sent-detail-share-label" class="contacts-bento-stat-hint">active</span>
+                </section>
+                <section class="contacts-bento-tile contacts-bento-stat">
+                  <span class="contacts-bento-stat-label">Dernier envoi</span>
+                  <strong
+                    id="sent-detail-last-share"
+                    class="contacts-bento-stat-value contacts-bento-stat-value-sm"
+                  >—</strong>
+                  <span class="contacts-bento-stat-hint">historique</span>
+                </section>
+              </div>
+              <section class="contacts-bento-tile contacts-bento-shares">
+                <div class="contacts-bento-shares-head">
+                  <h3 class="contacts-detail-section-title">Clés envoyées</h3>
+                  <p id="sent-detail-meta" class="shares-hint"></p>
+                </div>
+                <div id="sent-detail-shares" class="entries-grid contacts-bento-shares-list"></div>
+              </section>
+            </div>
           </div>
         </div>
 

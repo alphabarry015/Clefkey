@@ -333,15 +333,56 @@
           </div>
         </div>
 
-        <div id="shares-received-view" class="shares-view hidden">
-          <div class="shares-toolbar">
-            <p class="shares-hint">Clés que d’autres utilisateurs vous ont envoyées.</p>
+        <div id="shares-received-view" class="shares-view contacts-view share-inbox hidden">
+          <div id="shares-received-list-panel">
+            <div class="shares-toolbar">
+              <p class="shares-hint">Clés reçues, regroupées par la personne qui vous les a envoyées.</p>
+            </div>
+            <div id="shares-received-list" class="contacts-grid"></div>
+            <div id="shares-received-empty" class="entries-empty hidden">
+              <div class="empty-illustration empty-illustration-sm">
+                <i data-lucide="inbox"></i>
+              </div>
+              <h3>Aucun partage reçu</h3>
+              <p>Quand quelqu’un partage une clé avec vous, elle apparaît ici.</p>
+            </div>
           </div>
-          <div id="shares-received-list" class="entries-grid"></div>
-          <div id="shares-received-empty" class="entries-empty hidden">
-            <div class="empty-illustration empty-illustration-sm">
-                          </div>
-            <h3>Aucun partage reçu</h3>
-            <p>Quand quelqu’un partage une clé avec vous, elle apparaît ici.</p>
+          <div id="shares-received-detail-panel" class="contacts-detail hidden">
+            <button type="button" id="btn-received-back" class="btn btn-secondary btn-sm contacts-back">
+              <i data-lucide="arrow-left"></i>
+              <span>Reçu</span>
+            </button>
+            <div class="contacts-bento" aria-label="Clés reçues de cet expéditeur">
+              <section class="contacts-bento-tile contacts-bento-identity">
+                <div id="received-detail-avatar" class="contacts-detail-avatar" aria-hidden="true"></div>
+                <div class="contacts-bento-identity-copy">
+                  <p class="contacts-bento-kicker">Expéditeur</p>
+                  <h2 id="received-detail-name">…</h2>
+                  <a id="received-detail-email" class="contacts-detail-email" href="mailto:"></a>
+                </div>
+              </section>
+              <div class="contacts-bento-stats">
+                <section class="contacts-bento-tile contacts-bento-stat">
+                  <span class="contacts-bento-stat-label">Clés reçues</span>
+                  <strong id="received-detail-share-count" class="contacts-bento-stat-value">0</strong>
+                  <span id="received-detail-share-label" class="contacts-bento-stat-hint">active</span>
+                </section>
+                <section class="contacts-bento-tile contacts-bento-stat">
+                  <span class="contacts-bento-stat-label">Dernier envoi</span>
+                  <strong
+                    id="received-detail-last-share"
+                    class="contacts-bento-stat-value contacts-bento-stat-value-sm"
+                  >—</strong>
+                  <span class="contacts-bento-stat-hint">historique</span>
+                </section>
+              </div>
+              <section class="contacts-bento-tile contacts-bento-shares">
+                <div class="contacts-bento-shares-head">
+                  <h3 class="contacts-detail-section-title">Clés reçues</h3>
+                  <p id="received-detail-meta" class="shares-hint"></p>
+                </div>
+                <div id="received-detail-shares" class="entries-grid contacts-bento-shares-list"></div>
+              </section>
+            </div>
           </div>
         </div>

@@ -32,6 +32,8 @@ function createInitialState() {
     sharesReceived: [],
     sharesSent: [],
     contactsSelectedEmail: null,
+    receivedSenderEmail: null,
+    sentRecipientEmail: null,
     sharePrefillEmail: null,
     sharePickSearch: '',
     devMode: false,

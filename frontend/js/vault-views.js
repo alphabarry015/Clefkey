@@ -155,14 +155,16 @@ export function createVaultViews(deps) {
     state.sharesReceived = receivedMapped.filter(Boolean);
 
     state.sharesSent = rawSent.map((s) => {
-      const entry = state.entries.find((e) => e.id === s.entry_id);
+      const entry = state.entries.find((e) => String(e.id) === String(s.entry_id));
       return {
         id: s.id,
         shareId: s.id,
         entry_id: s.entry_id,
+        type: entry?.type || 'login',
         title: entry?.title || 'Clé partagée',
-        username: entry?.username || s.recipient_email,
+        username: entry?.username || '',
         url: entry?.url || '',
+        notes: entry?.notes || '',
         password: entry?.password || '',
         recipient_email: s.recipient_email,
         recipient_display_name: s.recipient_display_name,

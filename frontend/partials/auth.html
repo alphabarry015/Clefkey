@@ -11,29 +11,37 @@
       </button>
       <div class="auth-card">
         <div class="auth-card-side">
-          <div class="auth-logo">
-            <img class="auth-logo-mark" src="/icons/icon-mark.png?v=268" width="40" height="40" alt="">
-            <h1 class="auth-brand">Clefkey<span class="lp-brand-dot">.</span></h1>
-            <p class="subtitle">Vos mots de passe, chiffrés et sécurisés</p>
+          <div class="auth-hero">
+            <div class="auth-hero-art-frame">
+              <img class="auth-hero-art" src="/assets/auth-astronaut.png" alt="">
+            </div>
           </div>
         </div>
 
-        <div class="auth-card-main">
-          <div class="auth-tabs">
-            <button id="tab-login" class="tab active">Connexion</button>
-            <button id="tab-register" class="tab">Inscription</button>
+        <div class="auth-card-main card bg-base-100">
+          <div class="auth-kicker">
+            <p class="auth-kicker-title" id="auth-hero-title">Connexion</p>
+            <p class="auth-kicker-line" id="auth-hero-line">Retrouvez votre coffre</p>
           </div>
+          <div class="auth-tabs tabs tabs-box">
+            <button id="tab-login" class="tab tab-active" type="button" aria-selected="true">Connexion</button>
+            <button id="tab-register" class="tab" type="button" aria-selected="false">Créer un compte</button>
+          </div>
+          <h2 class="auth-panel-title hidden" id="auth-panel-title">Connexion</h2>
 
           <form id="form-login" class="auth-form" autocomplete="off" data-form-type="other" novalidate>
+          <p class="shares-hint auth-form-lead">
+            Entrez l’email et le mot de passe maître de votre coffre.
+          </p>
           <div class="form-group">
-            <label for="login-email">Email</label>
+            <label class="label" for="login-email">Email</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="mail"></i></span>
-              <input
+              <input class="input"
                 type="text"
                 id="login-email"
                 name="clefkey-login-email"
-                placeholder="vous@email.com"
+                placeholder="nom@exemple.com"
                 autocomplete="off"
                 spellcheck="false"
                 data-lpignore="true"
@@ -44,14 +52,14 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="login-password">Mot de passe maître</label>
+            <label class="label" for="login-password">Mot de passe maître</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
-              <input
+              <input class="input"
                 type="password"
                 id="login-password"
                 name="clefkey-master-login"
-                placeholder="••••••••"
+                placeholder="Votre mot de passe maître"
                 autocomplete="off"
                 data-lpignore="true"
                 data-1p-ignore="true"
@@ -77,23 +85,23 @@
             Session en pause. Déverrouillez avec votre <strong>passphrase</strong> ou votre
             <strong>mot de passe maître</strong>.
           </p>
-          <div class="auth-unlock-modes" role="tablist" aria-label="Mode de déverrouillage">
-            <button type="button" class="auth-unlock-mode active" id="unlock-mode-passphrase" data-unlock-mode="passphrase">
+          <div class="auth-unlock-modes tabs tabs-box" role="tablist" aria-label="Mode de déverrouillage">
+            <button type="button" class="auth-unlock-mode tab tab-active" id="unlock-mode-passphrase" data-unlock-mode="passphrase">
               Passphrase
             </button>
-            <button type="button" class="auth-unlock-mode" id="unlock-mode-master" data-unlock-mode="master">
+            <button type="button" class="auth-unlock-mode tab" id="unlock-mode-master" data-unlock-mode="master">
               Mot de passe
             </button>
           </div>
           <div class="form-group" id="unlock-passphrase-group">
-            <label for="unlock-passphrase">Passphrase</label>
+            <label class="label" for="unlock-passphrase">Passphrase</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="quote"></i></span>
-              <input
+              <input class="input"
                 type="text"
                 id="unlock-passphrase"
                 name="clefkey-passphrase-unlock"
-                placeholder="Ex. Le chat dort sur le toit"
+                placeholder="Une phrase d’au moins 3 mots"
                 autocomplete="off"
                 spellcheck="false"
                 data-lpignore="true"
@@ -107,14 +115,14 @@
             </button>
           </div>
           <div class="form-group hidden" id="unlock-password-group">
-            <label for="unlock-password">Mot de passe maître</label>
+            <label class="label" for="unlock-password">Mot de passe maître</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
-              <input
+              <input class="input"
                 type="password"
                 id="unlock-password"
                 name="clefkey-master-unlock"
-                placeholder="••••••••"
+                placeholder="Votre mot de passe maître"
                 autocomplete="off"
                 data-lpignore="true"
                 data-1p-ignore="true"
@@ -138,27 +146,27 @@
         <form id="form-recovery" class="auth-form hidden" autocomplete="off" data-form-type="other">
           <p class="shares-hint">Entrez votre email et <strong>une</strong> de vos 7 clés de récupération.</p>
           <div class="form-group">
-            <label for="recovery-email">Email</label>
+            <label class="label" for="recovery-email">Email</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="mail"></i></span>
-              <input
+              <input class="input"
                 type="email"
                 id="recovery-email"
                 required
-                placeholder="vous@email.com"
+                placeholder="nom@exemple.com"
                 autocomplete="off"
                 spellcheck="false"
               >
             </div>
           </div>
           <div class="form-group">
-            <label for="recovery-code">Clé de récupération</label>
+            <label class="label" for="recovery-code">Clé de récupération</label>
             <input
               type="text"
               id="recovery-code"
-              class="recovery-code-input"
+              class="input recovery-code-input"
               required
-              placeholder="XXXX-XXXX-XXXX-XXXX-…"
+              placeholder="Collez une clé de récupération"
               spellcheck="false"
               autocomplete="off"
               autocapitalize="characters"
@@ -188,10 +196,10 @@
         <form id="form-recovery-reset" class="auth-form hidden" autocomplete="off" data-form-type="other">
           <p class="shares-hint">Choisissez un nouveau mot de passe maître. La clé utilisée sera invalidée.</p>
           <div class="form-group">
-            <label for="recovery-new-password">Nouveau mot de passe maître</label>
+            <label class="label" for="recovery-new-password">Nouveau mot de passe maître</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
-              <input type="password" id="recovery-new-password" required minlength="8" autocomplete="off">
+              <input class="input" type="password" id="recovery-new-password" required minlength="8" autocomplete="off" placeholder="8 caractères minimum">
               <button type="button" class="btn-eye" data-target="recovery-new-password" aria-label="Afficher">
                 <i data-lucide="eye"></i>
               </button>
@@ -200,10 +208,10 @@
             <div id="recovery-strength-label" class="strength-label"></div>
           </div>
           <div class="form-group">
-            <label for="recovery-new-password-confirm">Confirmer</label>
+            <label class="label" for="recovery-new-password-confirm">Confirmer</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
-              <input type="password" id="recovery-new-password-confirm" required minlength="8" autocomplete="off">
+              <input class="input" type="password" id="recovery-new-password-confirm" required minlength="8" autocomplete="off" placeholder="Répétez le mot de passe">
             </div>
           </div>
           <button type="submit" id="btn-recovery-complete" class="btn btn-primary btn-full">
@@ -217,14 +225,14 @@
             Choisissez une nouvelle passphrase (min. 3 mots). La clé de récupération utilisée sera invalidée.
           </p>
           <div class="form-group">
-            <label for="recovery-new-passphrase">Nouvelle passphrase</label>
+            <label class="label" for="recovery-new-passphrase">Nouvelle passphrase</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="quote"></i></span>
-              <input
+              <input class="input"
                 type="text"
                 id="recovery-new-passphrase"
                 required
-                placeholder="Ex. Le chat. Dort sur le toit"
+                placeholder="Une phrase d’au moins 3 mots"
                 autocomplete="off"
                 spellcheck="false"
                 data-lpignore="true"
@@ -232,19 +240,19 @@
                 data-bwignore="true"
               >
             </div>
-            <p class="shares-hint" style="margin-top:0.35rem">
+            <p class="shares-hint auth-field-hint">
               Majuscule automatique en début de phrase et après chaque point.
             </p>
           </div>
           <div class="form-group">
-            <label for="recovery-new-passphrase-confirm">Confirmer</label>
+            <label class="label" for="recovery-new-passphrase-confirm">Confirmer</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="quote"></i></span>
-              <input
+              <input class="input"
                 type="text"
                 id="recovery-new-passphrase-confirm"
                 required
-                placeholder="Retapez la passphrase"
+                placeholder="Répétez la passphrase"
                 autocomplete="off"
                 spellcheck="false"
                 data-lpignore="true"
@@ -260,16 +268,19 @@
         </form>
 
         <form id="form-register" class="auth-form hidden" autocomplete="off" data-form-type="other">
+          <div class="auth-stepper" id="register-steps" data-step="1">
+          <section class="auth-step is-active" data-step="1">
+          <div class="auth-name-grid">
           <div class="form-group">
-            <label for="register-first-name">Prénom</label>
+            <label class="label" for="register-first-name">Prénom</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="user"></i></span>
-              <input
+              <input class="input"
                 type="text"
                 id="register-first-name"
                 name="clefkey-first-name"
                 required
-                placeholder="Pierre"
+                placeholder="Votre prénom"
                 maxlength="50"
                 autocomplete="off"
                 data-lpignore="true"
@@ -279,32 +290,33 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="register-middle-name">Deuxième prénom <span class="optional">(optionnel)</span></label>
+            <label class="label" for="register-last-name">Nom</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="user"></i></span>
-              <input
-                type="text"
-                id="register-middle-name"
-                name="clefkey-middle-name"
-                placeholder="Jean"
-                maxlength="50"
-                autocomplete="off"
-                data-lpignore="true"
-                data-1p-ignore="true"
-                data-bwignore="true"
-              >
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="register-last-name">Nom</label>
-            <div class="input-wrap">
-              <span class="input-icon"><i data-lucide="user"></i></span>
-              <input
+              <input class="input"
                 type="text"
                 id="register-last-name"
                 name="clefkey-last-name"
                 required
-                placeholder="Dupont"
+                placeholder="Votre nom"
+                maxlength="50"
+                autocomplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+              >
+            </div>
+          </div>
+          </div>
+          <div class="form-group">
+            <label class="label" for="register-middle-name">Deuxième prénom <span class="optional">(optionnel)</span></label>
+            <div class="input-wrap">
+              <span class="input-icon"><i data-lucide="user"></i></span>
+              <input class="input"
+                type="text"
+                id="register-middle-name"
+                name="clefkey-middle-name"
+                placeholder="Facultatif"
                 maxlength="50"
                 autocomplete="off"
                 data-lpignore="true"
@@ -314,15 +326,15 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="register-email">Email</label>
+            <label class="label" for="register-email">Email</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="mail"></i></span>
-              <input
+              <input class="input"
                 type="email"
                 id="register-email"
                 name="clefkey-register-email"
                 required
-                placeholder="vous@email.com"
+                placeholder="nom@exemple.com"
                 autocomplete="off"
                 data-lpignore="true"
                 data-1p-ignore="true"
@@ -331,16 +343,21 @@
               >
             </div>
           </div>
+          <button type="button" id="btn-register-next" class="btn btn-primary btn-full">
+            <span>Continuer</span>
+          </button>
+          </section>
+          <section class="auth-step" data-step="2" inert>
           <div class="form-group form-group--span">
-            <label for="register-password">Mot de passe maître</label>
+            <label class="label" for="register-password">Mot de passe maître</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
-              <input
+              <input class="input"
                 type="password"
                 id="register-password"
                 name="clefkey-master-register"
                 required
-                placeholder="Min. 8 caractères"
+                placeholder="8 caractères minimum"
                 autocomplete="off"
                 data-lpignore="true"
                 data-1p-ignore="true"
@@ -355,15 +372,15 @@
             <div id="strength-label" class="strength-label"></div>
           </div>
           <div class="form-group form-group--span">
-            <label for="register-password-confirm">Confirmer le mot de passe</label>
+            <label class="label" for="register-password-confirm">Confirmer le mot de passe</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="lock"></i></span>
-              <input
+              <input class="input"
                 type="password"
                 id="register-password-confirm"
                 name="clefkey-master-confirm"
                 required
-                placeholder="••••••••"
+                placeholder="Répétez le mot de passe"
                 autocomplete="off"
                 data-lpignore="true"
                 data-1p-ignore="true"
@@ -373,15 +390,15 @@
             </div>
           </div>
           <div class="form-group form-group--span">
-            <label for="register-passphrase">Passphrase</label>
+            <label class="label" for="register-passphrase">Passphrase</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="quote"></i></span>
-              <input
+              <input class="input"
                 type="text"
                 id="register-passphrase"
                 name="clefkey-passphrase-register"
                 required
-                placeholder="Ex. Le chat dort sur le toit"
+                placeholder="Une phrase d’au moins 3 mots"
                 autocomplete="off"
                 spellcheck="false"
                 data-lpignore="true"
@@ -390,20 +407,20 @@
                 data-form-type="other"
               >
             </div>
-            <p class="shares-hint" style="margin-top:0.35rem">
+            <p class="shares-hint auth-field-hint">
               Min. 3 mots. Majuscule forcée en début de phrase et après chaque point.
             </p>
           </div>
           <div class="form-group form-group--span">
-            <label for="register-passphrase-confirm">Confirmer la passphrase</label>
+            <label class="label" for="register-passphrase-confirm">Confirmer la passphrase</label>
             <div class="input-wrap">
               <span class="input-icon"><i data-lucide="quote"></i></span>
-              <input
+              <input class="input"
                 type="text"
                 id="register-passphrase-confirm"
                 name="clefkey-passphrase-confirm"
                 required
-                placeholder="Retapez la passphrase"
+                placeholder="Répétez la passphrase"
                 autocomplete="off"
                 spellcheck="false"
                 data-lpignore="true"
@@ -413,10 +430,16 @@
               >
             </div>
           </div>
-          <button type="submit" id="btn-register" class="btn btn-primary btn-full">
-            <span>Créer mon compte</span>
-            <i data-lucide="user-plus"></i>
-          </button>
+          <div class="auth-step-actions">
+            <button type="button" id="btn-register-prev" class="btn btn-ghost">
+              <span>Retour</span>
+            </button>
+            <button type="submit" id="btn-register" class="btn btn-primary">
+              <span>Créer mon compte</span>
+            </button>
+          </div>
+          </section>
+          </div>
         </form>
         </div>
       </div>

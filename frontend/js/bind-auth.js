@@ -188,6 +188,10 @@ export function bindAuth(deps) {
 
   $('#form-register').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if ($('#register-steps')?.dataset.step !== '2') {
+      $('#btn-register-next')?.click();
+      return;
+    }
     const btn = $('#btn-register');
     const master = $('#register-password').value;
     const confirm = $('#register-password-confirm').value;

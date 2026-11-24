@@ -10,7 +10,7 @@ import {
 export function bindShares(deps) {
   const {
     state,
-    renderContactsPage, getShareContacts, removeShareContact,
+    renderContactsPage, renderSharesReceived, renderSharesSent, getShareContacts, removeShareContact,
     openSharePickEntryModal, openShareModal, renderSharePickEntryList,
     rememberShareContact, loadShares, showDeleteConfirm, entryType,
     closeModal: _cm, openModal: _om,
@@ -22,6 +22,16 @@ export function bindShares(deps) {
   $('#btn-contacts-back')?.addEventListener('click', () => {
     state.contactsSelectedEmail = null;
     renderContactsPage();
+  });
+
+  $('#btn-received-back')?.addEventListener('click', () => {
+    state.receivedSenderEmail = null;
+    renderSharesReceived();
+  });
+
+  $('#btn-sent-back')?.addEventListener('click', () => {
+    state.sentRecipientEmail = null;
+    renderSharesSent();
   });
 
   $('#btn-contact-share')?.addEventListener('click', () => {

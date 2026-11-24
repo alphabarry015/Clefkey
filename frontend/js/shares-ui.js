@@ -11,34 +11,68 @@ import {
 export function createShares(deps) {
   const { state, refreshIcons } = deps;
 
-  function renderSharesReceived() {
-    const list = $('#shares-received-list');
-    const empty = $('#shares-received-empty');
-    if (!list || !empty) return;
-    deps.updateEntryCounts();
-    if (state.sharesReceived.length === 0) {
-      list.replaceChildren();
-      empty.classList.remove('hidden');
-      return;
+  function senderKey(share) {
+    return String(share.sender_email || '').trim().toLowerCase() || 'inconnu';
+  }
+
+  /** Agrège les partages reçus par expéditeur. */
+  function getReceivedSenders() {
+    const byEmail = new Map();
+    for (const s of state.sharesReceived) {
+      const email = senderKey(s);
+      const existing = byEmail.get(email) || {
+        email,
+        display_name: '',
+        last_shared_at: null,
+        shares: [],
+      };
+      existing.display_name = s.sender_display_name || existing.display_name || '';
+      existing.shares.push(s);
+      const created = s.created_at || null;
+      if (created && (!existing.last_shared_at || created > existing.last_shared_at)) {
+        existing.last_shared_at = created;
+      }
+      byEmail.set(email, existing);
     }
-    empty.classList.add('hidden');
-    setHtml(list, state.sharesReceived.map((e, i) => `
+    return Array.from(byEmail.values()).sort((a, b) => {
+      const da = a.last_shared_at || '';
+      const db = b.last_shared_at || '';
+      return db.localeCompare(da);
+    });
+  }
+
+  /** Relie un envoi à la clé du coffre (type, URL, notes) pour le favicon. */
+  function withVaultEntry(share) {
+    const entry = state.entries.find((e) => String(e.id) === String(share.entry_id));
+    if (!entry) return share;
+    return {
+      ...share,
+      type: entry.type || share.type || 'login',
+      title: entry.title || share.title,
+      username: entry.username || share.username || '',
+      url: entry.url || share.url || '',
+      notes: entry.notes || share.notes || '',
+      password: entry.password || share.password || '',
+    };
+  }
+
+  function shareKeyCard(e, i, mode) {
+    const note = mode === 'received' ? (e.share_note || '').trim() : '';
+    const noteLabel = note ? (note.length > 60 ? `${note.slice(0, 60)}…` : note) : '';
+    const subtitle = [e.username, noteLabel].filter(Boolean).join(' · ');
+    const action = mode === 'received' ? 'show-share-received' : 'show-share-sent';
+    const removeTitle = mode === 'received' ? 'Retirer' : 'Révoquer';
+    return `
       <div
-        class="entry-card"
+        class="entry-card share-key-card"
         data-id="${esc(e.id)}"
         style="animation-delay:${i * 0.04}s"
-        data-action="show-share-received"
+        data-action="${action}"
       >
         ${deps.entryAvatarMarkup(e)}
         <div class="entry-info">
           <div class="entry-title">${esc(e.title)}</div>
-          <div class="entry-username">
-            De ${esc(e.sender_display_name || e.sender_email)}${
-              e.share_note
-                ? ` · ${esc(e.share_note.length > 60 ? `${e.share_note.slice(0, 60)}…` : e.share_note)}`
-                : ''
-            }
-          </div>
+          <div class="entry-username">${esc(subtitle)}</div>
         </div>
         <div class="entry-actions">
           <button
@@ -53,50 +87,247 @@ export function createShares(deps) {
           <button
             type="button"
             class="btn-icon btn-danger"
-            title="Retirer"
+            title="${removeTitle}"
             data-action="delete-share"
             data-id="${esc(e.id)}"
           >
             <i data-lucide="trash-2"></i>
           </button>
         </div>
-      </div>`).join(''));
-    refreshIcons(list);
-    deps.setupFaviconImages(list);
+      </div>`;
   }
 
-  function renderSharesSent() {
-    const list = $('#shares-sent-list');
-    const empty = $('#shares-sent-empty');
-    if (!list || !empty) return;
+  function personCard(person, i, action, meta) {
+    const label = person.display_name || person.email;
+    const when = formatContactDate(person.last_shared_at);
+    const [c1, c2] = getAvatarColor(label);
+    const mail = person.email.includes('@') ? person.email : '';
+    return `
+      <button
+        type="button"
+        class="contact-card share-person-card"
+        data-action="${action}"
+        data-email="${esc(person.email)}"
+        style="animation-delay:${i * 0.04}s"
+      >
+        <div
+          class="contact-avatar"
+          aria-hidden="true"
+          style="background:linear-gradient(135deg,${c1},${c2})"
+        >${esc(contactInitials(person))}</div>
+        <div class="contact-info">
+          <div class="contact-name">${esc(label)}</div>
+          <div class="contact-email">${esc(mail)}</div>
+          <div class="contact-meta">${esc(meta)}</div>
+          ${when ? `<div class="contact-date">${esc(when)}</div>` : ''}
+        </div>
+        <span class="contact-open">Voir</span>
+      </button>`;
+  }
+
+  function renderReceivedSenderDetail(email) {
+    const sender = getReceivedSenders().find((s) => s.email === email);
+    if (!sender) {
+      state.receivedSenderEmail = null;
+      renderSharesReceived();
+      return;
+    }
+
+    const name = sender.display_name || sender.email;
+    const when = formatContactDate(sender.last_shared_at);
+    const count = sender.shares.length;
+
+    $('#received-detail-name').textContent = name;
+    const emailEl = $('#received-detail-email');
+    if (emailEl) {
+      const mail = sender.email.includes('@') ? sender.email : '';
+      emailEl.textContent = mail || 'Expéditeur inconnu';
+      emailEl.href = mail ? `mailto:${mail}` : '#';
+    }
+    if ($('#received-detail-share-count')) {
+      $('#received-detail-share-count').textContent = String(count);
+    }
+    if ($('#received-detail-share-label')) {
+      $('#received-detail-share-label').textContent = count <= 1 ? 'active' : 'actives';
+    }
+    if ($('#received-detail-last-share')) {
+      $('#received-detail-last-share').textContent = when || '—';
+    }
+    if ($('#received-detail-meta')) {
+      $('#received-detail-meta').textContent = when
+        ? `Dernier envoi le ${when}`
+        : 'Aucun historique récent';
+    }
+    setAvatar($('#received-detail-avatar'), name);
+
+    const sharesList = $('#received-detail-shares');
+    if (sharesList) {
+      setHtml(sharesList, sender.shares.map((e, i) => shareKeyCard(e, i, 'received')).join(''));
+      refreshIcons(sharesList);
+      deps.setupFaviconImages(sharesList);
+      bindShareKeyClicks(sharesList);
+    }
+    refreshIcons($('#shares-received-detail-panel'));
+  }
+
+  function renderSharesReceived() {
+    const listPanel = $('#shares-received-list-panel');
+    const detailPanel = $('#shares-received-detail-panel');
+    const list = $('#shares-received-list');
+    const empty = $('#shares-received-empty');
+    if (!listPanel || !detailPanel || !list || !empty) return;
     deps.updateEntryCounts();
-    if (state.sharesSent.length === 0) {
+
+    if (state.sharesReceived.length === 0) {
+      state.receivedSenderEmail = null;
+      detailPanel.classList.add('hidden');
+      listPanel.classList.remove('hidden');
       list.replaceChildren();
       empty.classList.remove('hidden');
       return;
     }
+
+    if (state.receivedSenderEmail) {
+      const sender = getReceivedSenders().find((s) => s.email === state.receivedSenderEmail);
+      if (!sender) state.receivedSenderEmail = null;
+    }
+
+    if (state.receivedSenderEmail) {
+      listPanel.classList.add('hidden');
+      detailPanel.classList.remove('hidden');
+      renderReceivedSenderDetail(state.receivedSenderEmail);
+      return;
+    }
+
+    detailPanel.classList.add('hidden');
+    listPanel.classList.remove('hidden');
     empty.classList.add('hidden');
-    setHtml(list, state.sharesSent.map((e, i) => `
-      <div class="entry-card" data-id="${esc(e.id)}" style="animation-delay:${i * 0.04}s" data-action="show-share-sent">
-        ${deps.entryAvatarMarkup(e)}
-        <div class="entry-info">
-          <div class="entry-title">${esc(e.title)}</div>
-          <div class="entry-username">À ${esc(e.recipient_display_name || e.recipient_email)}</div>
-        </div>
-        <div class="entry-actions">
-          <button
-            type="button"
-            class="btn-icon btn-danger"
-            title="Révoquer"
-            data-action="delete-share"
-            data-id="${esc(e.id)}"
-          >
-            <i data-lucide="trash-2"></i>
-          </button>
-        </div>
-      </div>`).join(''));
+
+    const senders = getReceivedSenders();
+    setHtml(list, senders.map((s, i) => {
+      const count = s.shares.length;
+      const meta = `${count} clé${count > 1 ? 's' : ''} reçue${count > 1 ? 's' : ''}`;
+      return personCard(s, i, 'show-received-sender', meta);
+    }).join(''));
     refreshIcons(list);
-    deps.setupFaviconImages(list);
+  }
+
+  function recipientKey(share) {
+    return String(share.recipient_email || '').trim().toLowerCase() || 'inconnu';
+  }
+
+  /** Agrège les partages envoyés par destinataire. */
+  function getSentRecipients() {
+    const byEmail = new Map();
+    for (const s of state.sharesSent) {
+      const email = recipientKey(s);
+      const existing = byEmail.get(email) || {
+        email,
+        display_name: '',
+        last_shared_at: null,
+        shares: [],
+      };
+      existing.display_name = s.recipient_display_name || existing.display_name || '';
+      existing.shares.push(withVaultEntry(s));
+      const created = s.created_at || null;
+      if (created && (!existing.last_shared_at || created > existing.last_shared_at)) {
+        existing.last_shared_at = created;
+      }
+      byEmail.set(email, existing);
+    }
+    return Array.from(byEmail.values()).sort((a, b) => {
+      const da = a.last_shared_at || '';
+      const db = b.last_shared_at || '';
+      return db.localeCompare(da);
+    });
+  }
+
+  function renderSentRecipientDetail(email) {
+    const recipient = getSentRecipients().find((s) => s.email === email);
+    if (!recipient) {
+      state.sentRecipientEmail = null;
+      renderSharesSent();
+      return;
+    }
+
+    const name = recipient.display_name || recipient.email;
+    const when = formatContactDate(recipient.last_shared_at);
+    const count = recipient.shares.length;
+
+    $('#sent-detail-name').textContent = name;
+    const emailEl = $('#sent-detail-email');
+    if (emailEl) {
+      const mail = recipient.email.includes('@') ? recipient.email : '';
+      emailEl.textContent = mail || 'Destinataire inconnu';
+      emailEl.href = mail ? `mailto:${mail}` : '#';
+    }
+    if ($('#sent-detail-share-count')) {
+      $('#sent-detail-share-count').textContent = String(count);
+    }
+    if ($('#sent-detail-share-label')) {
+      $('#sent-detail-share-label').textContent = count <= 1 ? 'active' : 'actives';
+    }
+    if ($('#sent-detail-last-share')) {
+      $('#sent-detail-last-share').textContent = when || '—';
+    }
+    if ($('#sent-detail-meta')) {
+      $('#sent-detail-meta').textContent = when
+        ? `Dernier envoi le ${when}`
+        : 'Aucun historique récent';
+    }
+    setAvatar($('#sent-detail-avatar'), name);
+
+    const sharesList = $('#sent-detail-shares');
+    if (sharesList) {
+      setHtml(sharesList, recipient.shares.map((e, i) => shareKeyCard(e, i, 'sent')).join(''));
+      refreshIcons(sharesList);
+      deps.setupFaviconImages(sharesList);
+      bindShareKeyClicks(sharesList);
+    }
+    refreshIcons($('#shares-sent-detail-panel'));
+  }
+
+  function renderSharesSent() {
+    state.sharesSent = state.sharesSent.map(withVaultEntry);
+    const listPanel = $('#shares-sent-list-panel');
+    const detailPanel = $('#shares-sent-detail-panel');
+    const list = $('#shares-sent-list');
+    const empty = $('#shares-sent-empty');
+    if (!listPanel || !detailPanel || !list || !empty) return;
+    deps.updateEntryCounts();
+
+    if (state.sharesSent.length === 0) {
+      state.sentRecipientEmail = null;
+      detailPanel.classList.add('hidden');
+      listPanel.classList.remove('hidden');
+      list.replaceChildren();
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    if (state.sentRecipientEmail) {
+      const recipient = getSentRecipients().find((s) => s.email === state.sentRecipientEmail);
+      if (!recipient) state.sentRecipientEmail = null;
+    }
+
+    if (state.sentRecipientEmail) {
+      listPanel.classList.add('hidden');
+      detailPanel.classList.remove('hidden');
+      renderSentRecipientDetail(state.sentRecipientEmail);
+      return;
+    }
+
+    detailPanel.classList.add('hidden');
+    listPanel.classList.remove('hidden');
+    empty.classList.add('hidden');
+
+    const recipients = getSentRecipients();
+    setHtml(list, recipients.map((s, i) => {
+      const count = s.shares.length;
+      const meta = `${count} clé${count > 1 ? 's' : ''} envoyée${count > 1 ? 's' : ''}`;
+      return personCard(s, i, 'show-sent-recipient', meta);
+    }).join(''));
+    refreshIcons(list);
   }
 
   function contactsStorageKey() {
@@ -190,7 +421,7 @@ export function createShares(deps) {
         shares: [],
       };
       existing.display_name = s.recipient_display_name || existing.display_name || '';
-      existing.shares.push(s);
+      existing.shares.push(withVaultEntry(s));
       existing.share_count = existing.shares.length;
       const created = s.created_at || null;
       if (created && (!existing.last_shared_at || created > existing.last_shared_at)) {
@@ -227,6 +458,7 @@ export function createShares(deps) {
   }
 
   function renderContactsPage() {
+    state.sharesSent = state.sharesSent.map(withVaultEntry);
     const listPanel = $('#contacts-list-panel');
     const detailPanel = $('#contacts-detail-panel');
     if (!listPanel || !detailPanel) return;
@@ -326,32 +558,10 @@ export function createShares(deps) {
         sharesEmpty.classList.remove('hidden');
       } else {
         sharesEmpty.classList.add('hidden');
-        setHtml(sharesList, contact.shares.map((e, i) => `
-          <div
-            class="entry-card"
-            data-id="${esc(e.id)}"
-            style="animation-delay:${i * 0.04}s"
-            data-action="show-share-sent"
-          >
-            ${deps.entryAvatarMarkup(e)}
-            <div class="entry-info">
-              <div class="entry-title">${esc(e.title)}</div>
-              <div class="entry-username">${esc(e.username || e.recipient_email || '')}</div>
-            </div>
-            <div class="entry-actions">
-              <button
-                type="button"
-                class="btn-icon btn-danger"
-                title="Révoquer"
-                data-action="delete-share"
-                data-id="${esc(e.id)}"
-              >
-                <i data-lucide="trash-2"></i>
-              </button>
-            </div>
-          </div>`).join(''));
+        setHtml(sharesList, contact.shares.map((e, i) => shareKeyCard(e, i, 'sent')).join(''));
         refreshIcons(sharesList);
         deps.setupFaviconImages(sharesList);
+        bindShareKeyClicks(sharesList);
       }
     }
     refreshIcons($('#contacts-detail-panel'));
@@ -442,34 +652,51 @@ export function createShares(deps) {
     deps.setupFaviconImages(list);
   }
 
-  function showShareReceived(id) {
-    const e = state.sharesReceived.find((x) => x.id === id);
-    if (!e) return;
+  function bindShareKeyClicks(root) {
+    root.querySelectorAll('.entry-card[data-id]').forEach((card) => {
+      card.addEventListener('click', (event) => {
+        if (event.target.closest('.entry-actions')) return;
+        const id = card.dataset.id;
+        if (card.dataset.action === 'show-share-received') showShareReceived(id);
+        else if (card.dataset.action === 'show-share-sent') showShareSent(id);
+      });
+    });
+  }
+
+  function openShareDetail(entry, note) {
     state.detailEntryId = null;
-    deps.fillEntryDetailCommon(e);
-    deps.syncDetailProjectField(e, { editable: false });
+    deps.fillEntryDetailCommon(entry);
+    deps.syncDetailProjectField(entry, { editable: false });
     const shareNoteField = $('#detail-share-note-field');
-    if (e.share_note) {
+    const text = (note || '').trim();
+    if (text) {
       shareNoteField?.classList.remove('hidden');
-      $('#detail-share-note').textContent = e.share_note;
+      if ($('#detail-share-note')) $('#detail-share-note').textContent = text;
     } else {
       shareNoteField?.classList.add('hidden');
     }
-    $('#detail-share-note-field')?.classList.add('hidden');
     deps.setDetailDateMeta(null, { visible: false });
     deps.setDetailActionButtonsVisible({});
     openModal($('#modal-detail'));
     refreshIcons($('#modal-detail'));
+  }
+
+  function showShareReceived(id) {
+    const e = state.sharesReceived.find((x) => String(x.id) === String(id));
+    if (!e) return;
+    openShareDetail(e, e.share_note);
   };
 
   function showShareSent(id) {
-    const s = state.sharesSent.find((x) => x.id === id);
+    const s = state.sharesSent.find((x) => String(x.id) === String(id));
     if (!s) return;
-    if (s.entry_id && state.entries.some((e) => e.id === s.entry_id)) {
-      deps.showEntry(s.entry_id);
+    const owned = s.entry_id
+      && state.entries.find((e) => String(e.id) === String(s.entry_id));
+    if (owned) {
+      deps.showEntry(owned.id);
       return;
     }
-    toast(`Partagé avec ${s.recipient_display_name || s.recipient_email}`, 'info');
+    openShareDetail(s);
   };
 
   function deleteShare(id) {

@@ -98,6 +98,8 @@ export function createAuthSession(deps) {
       sharesReceived: [],
       sharesSent: [],
       contactsSelectedEmail: null,
+      receivedSenderEmail: null,
+      sentRecipientEmail: null,
       sharePrefillEmail: null,
       sharePickSearch: '',
       shareEntryId: null,
@@ -163,6 +165,8 @@ export function createAuthSession(deps) {
     state.sharesReceived = [];
     state.sharesSent = [];
     state.contactsSelectedEmail = null;
+    state.receivedSenderEmail = null;
+    state.sentRecipientEmail = null;
     state.sharePrefillEmail = null;
     state.sharePickSearch = '';
     state.shareEntryId = null;

@@ -11,8 +11,8 @@ const PAGE_TITLES = {
   vault: { title: 'Toutes les clés', subtitle: 'Votre coffre complet' },
   projects: { title: 'Projets', subtitle: 'Organisez vos clés par dossier' },
   'project-detail': { title: 'Projet', subtitle: 'Clés de ce projet' },
-  'shares-received': { title: 'Partage · Reçu', subtitle: 'Clés partagées avec vous' },
-  'shares-sent': { title: 'Partage · Envoyé', subtitle: 'Clés que vous avez partagées' },
+  'shares-received': { title: 'Partage · Reçu', subtitle: 'Clés reçues, par expéditeur' },
+  'shares-sent': { title: 'Partage · Envoyé', subtitle: 'Clés envoyées, par destinataire' },
   contacts: { title: 'Contacts', subtitle: 'Destinataires de vos partages' },
   profile: { title: 'Mon profil', subtitle: 'Informations de votre compte' },
   password: { title: 'Mot de passe maître', subtitle: 'Changez-le sans clés de récupération' },
@@ -144,6 +144,8 @@ export function installVaultNav(deps) {
       state.projectDetailSelectedIds = [];
     }
     if (page !== 'contacts') state.contactsSelectedEmail = null;
+    if (page !== 'shares-received') state.receivedSenderEmail = null;
+    if (page !== 'shares-sent') state.sentRecipientEmail = null;
     state.page = page;
     $$('.nav-item').forEach((b) => {
       const active = b.dataset.page === page

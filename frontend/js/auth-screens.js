@@ -41,6 +41,37 @@ export function createAuthScreens({
     $('#form-unlock')?.classList.add('hidden');
   }
 
+  function setAuthCopy(heroTitle, heroLine, panelTitle) {
+    if ($('#auth-hero-title')) $('#auth-hero-title').textContent = heroTitle;
+    if ($('#auth-hero-line')) $('#auth-hero-line').textContent = heroLine;
+    if ($('#auth-panel-title')) $('#auth-panel-title').textContent = panelTitle;
+  }
+
+  function showRegisterStep(step, { animate = true } = {}) {
+    const root = $('#register-steps');
+    if (!root) return;
+    const next = String(step) === '2' ? '2' : '1';
+    const prev = root.dataset.step || '1';
+    root.dataset.step = next;
+    root.classList.toggle('is-back', animate && next === '1' && prev === '2');
+    root.querySelectorAll('.auth-step').forEach((el) => {
+      const on = el.dataset.step === next;
+      el.classList.toggle('is-active', on);
+      if (on) el.removeAttribute('inert');
+      else el.setAttribute('inert', '');
+    });
+    if (next === '2') $('#register-password')?.focus();
+  }
+
+  function registerIdentityValid() {
+    const fields = ['#register-first-name', '#register-last-name', '#register-email'];
+    for (const sel of fields) {
+      const el = $(sel);
+      if (el && !el.reportValidity()) return false;
+    }
+    return true;
+  }
+
   function openAuthTab(tab = 'login') {
     const onLogin = tab === 'login';
     const onRegister = tab === 'register';
@@ -48,8 +79,18 @@ export function createAuthScreens({
     const onRecoveryReset = tab === 'recovery-reset';
     const onRecoveryPassphrase = tab === 'recovery-passphrase';
     const onRecoveryFlow = onRecovery || onRecoveryReset || onRecoveryPassphrase;
+    if (onLogin) setAuthCopy('Connexion', 'Retrouvez votre coffre', 'Connexion');
+    else if (onRegister) setAuthCopy('Créer un compte', 'Ouvrez votre coffre', 'Créer un compte');
+    else if (onRecovery) setAuthCopy('Mot de passe oublié', 'Récupérez l’accès', 'Récupération');
+    else if (onRecoveryReset) setAuthCopy('Nouveau mot de passe', 'Choisissez-en un nouveau', 'Nouveau mot de passe');
+    else if (onRecoveryPassphrase) setAuthCopy('Nouvelle passphrase', 'Choisissez-en une nouvelle', 'Passphrase');
+    $('#auth-panel-title')?.classList.toggle('hidden', onLogin || onRegister);
     $('#tab-login')?.classList.toggle('active', onLogin);
+    $('#tab-login')?.classList.toggle('tab-active', onLogin);
+    $('#tab-login')?.setAttribute('aria-selected', onLogin ? 'true' : 'false');
     $('#tab-register')?.classList.toggle('active', onRegister);
+    $('#tab-register')?.classList.toggle('tab-active', onRegister);
+    $('#tab-register')?.setAttribute('aria-selected', onRegister ? 'true' : 'false');
     $('.auth-tabs')?.classList.toggle('hidden', onRecoveryFlow);
     hideAllAuthForms();
     if (onLogin) $('#form-login')?.classList.remove('hidden');
@@ -57,19 +98,29 @@ export function createAuthScreens({
     if (onRecovery) $('#form-recovery')?.classList.remove('hidden');
     if (onRecoveryReset) $('#form-recovery-reset')?.classList.remove('hidden');
     if (onRecoveryPassphrase) $('#form-recovery-passphrase')?.classList.remove('hidden');
-    if (onRegister) prefetchCommonPasswords();
+    if (onRegister) {
+      prefetchCommonPasswords();
+      showRegisterStep(1, { animate: false });
+    }
     if (!onRecoveryFlow) {
       state.recoverySession = null;
       state.recoveryTarget = null;
     }
     showScreen('auth');
-    refreshIcons($('#screen-auth'));
+    const shown = onLogin ? $('#form-login')
+      : onRegister ? $('#form-register')
+      : onRecovery ? $('#form-recovery')
+      : onRecoveryReset ? $('#form-recovery-reset')
+      : $('#form-recovery-passphrase');
+    refreshIcons(shown);
   }
 
   function setUnlockMode(mode = 'passphrase') {
     const usePassphrase = mode === 'passphrase';
     $('#unlock-mode-passphrase')?.classList.toggle('active', usePassphrase);
+    $('#unlock-mode-passphrase')?.classList.toggle('tab-active', usePassphrase);
     $('#unlock-mode-master')?.classList.toggle('active', !usePassphrase);
+    $('#unlock-mode-master')?.classList.toggle('tab-active', !usePassphrase);
     $('#unlock-passphrase-group')?.classList.toggle('hidden', !usePassphrase);
     $('#unlock-password-group')?.classList.toggle('hidden', usePassphrase);
     const focusEl = usePassphrase ? $('#unlock-passphrase') : $('#unlock-password');
@@ -78,6 +129,8 @@ export function createAuthScreens({
 
   /** Écran soft-lock : passphrase ou mot de passe maître (email jamais affiché). */
   function openUnlockScreen() {
+    setAuthCopy('Coffre verrouillé', 'Déverrouillez pour continuer', 'Déverrouiller');
+    $('#auth-panel-title')?.classList.remove('hidden');
     $('.auth-tabs')?.classList.add('hidden');
     hideAllAuthForms();
     $('#form-unlock')?.classList.remove('hidden');
@@ -90,7 +143,7 @@ export function createAuthScreens({
     if (modePassphraseBtn) modePassphraseBtn.disabled = !hasPassphrase;
     setUnlockMode(hasPassphrase ? 'passphrase' : 'master');
     showScreen('auth');
-    refreshIcons($('#screen-auth'));
+    refreshIcons($('#form-unlock'));
   }
 
   function recoveryExportMeta() {
@@ -157,6 +210,11 @@ export function createAuthScreens({
     });
     $('#tab-login')?.addEventListener('click', () => openAuthTab('login'));
     $('#tab-register')?.addEventListener('click', () => openAuthTab('register'));
+    $('#btn-register-next')?.addEventListener('click', () => {
+      if (registerIdentityValid()) showRegisterStep(2);
+    });
+    $('#btn-register-prev')?.addEventListener('click', () => showRegisterStep(1));
+    $('#form-register')?.addEventListener('reset', () => showRegisterStep(1, { animate: false }));
   }
 
   function bindRecoveryExportButtons({

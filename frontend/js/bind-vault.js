@@ -20,6 +20,7 @@ export function bindVault(deps) {
   const {
     state,
     renderDashboard, renderEntries, setViewMode, renderContactsPage,
+    renderSharesReceived, renderSharesSent,
     openAddModal, openEditModal, readEntryFormData, resetEntryFormModal,
     setEntryFormType, syncTypeFilterButtons, syncAddEntryButtonLabels,
     syncFolderFilterButtons, refreshCurrentView,
@@ -51,7 +52,7 @@ export function bindVault(deps) {
 
     const root = target.closest(
       '#dashboard-view, #dash-tiles-grid, #entries-list, #project-detail-list, '
-      + '#shares-received-list, #shares-sent-list, #contacts-list, '
+      + '#shares-received-view, #shares-sent-view, #contacts-view, '
       + '#contacts-detail-shares, #share-pick-entry-list, #share-contacts-chips',
     );
     if (!root) return;
@@ -71,6 +72,16 @@ export function bindVault(deps) {
     if (action === 'show-contact' && email) {
       state.contactsSelectedEmail = email;
       renderContactsPage();
+      return;
+    }
+    if (action === 'show-received-sender' && email) {
+      state.receivedSenderEmail = email;
+      renderSharesReceived();
+      return;
+    }
+    if (action === 'show-sent-recipient' && email) {
+      state.sentRecipientEmail = email;
+      renderSharesSent();
       return;
     }
     if (action === 'pick-share-contact' && email) {
@@ -100,8 +111,10 @@ export function bindVault(deps) {
     }
     if (action === 'copy-share-received' && id) {
       event.stopPropagation();
-      const e = state.sharesReceived.find((x) => x.id === id);
-      if (e?.password) {
+      const e = state.sharesReceived.find((x) => String(x.id) === String(id))
+        || state.sharesSent.find((x) => String(x.id) === String(id));
+      const secret = e?.password;
+      if (secret) {
         copyToClipboard(e.password).then((ok) => {
           toast(ok ? `"${e.title}" copié` : 'Impossible de copier', ok ? 'success' : 'error');
         }).catch(() => toast('Impossible de copier', 'error'));

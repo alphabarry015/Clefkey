@@ -1,10 +1,11 @@
-const CACHE_VERSION = 'v274';
+const CACHE_VERSION = 'v290';
 const CACHE_STATIC = `clefkey-static-${CACHE_VERSION}`;
 
 // Assets légers uniquement — pas les listes /data/ (trop volumineuses).
 const PRECACHE = [
   '/',
   '/favicon.ico',
+  '/assets/auth-astronaut.png',
   '/css/theme.css',
   '/css/base-p1.css',
   '/css/base-p2.css',
@@ -26,6 +27,7 @@ const PRECACHE = [
   '/css/responsive-a.css',
   '/css/responsive-b.css',
   '/css/vault-ds.css',
+  '/css/daisy-auth.css',
   '/css/privacy.css',
   '/js/app.js',
   '/js/app-compose.js',
@@ -43,6 +45,8 @@ const PRECACHE = [
   '/js/icons.js',
   '/js/pwa.js',
   '/js/theme.js',
+  '/js/theme-boot.js',
+  '/js/download-theme.js',
   '/js/common-passwords.js',
   '/js/master-password.js',
   '/js/passphrase.js',
@@ -145,20 +149,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const revalidate = url.pathname.startsWith('/js/')
+    || url.pathname.startsWith('/css/')
+    || url.pathname.startsWith('/vendor/');
+
   event.respondWith(
     caches.match(request).then((cached) => {
-      const networkFetch = fetch(request).then((response) => {
-        if (!response.ok) return response;
-        const clone = response.clone();
-        caches.open(CACHE_STATIC)
-          .then((cache) => cache.put(request, clone))
-          .catch(() => undefined);
-        return response;
-      }).catch(() => cached);
-      if (url.pathname.startsWith('/js/') || url.pathname.startsWith('/css/') || url.pathname.startsWith('/vendor/')) {
-        return networkFetch.catch(() => cached);
-      }
-      if (cached) return cached;
+      if (!revalidate && cached) return cached;
+      const networkFetch = fetch(request, revalidate ? { cache: 'no-cache' } : undefined)
+        .then((response) => {
+          if (!response.ok) return response;
+          const clone = response.clone();
+          caches.open(CACHE_STATIC)
+            .then((cache) => cache.put(request, clone))
+            .catch(() => undefined);
+          return response;
+        }).catch(() => cached);
       return networkFetch;
     }).catch(() => fetch(request)),
   );
